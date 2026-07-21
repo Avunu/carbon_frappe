@@ -105,8 +105,6 @@ for (const { file, text } of mapFiles) {
 // ---- Check 3: shadow-mirror sources still exist; desk imports diffed ------
 const mirrored = [
 	"frappe/public/scss/desk/index",
-	"frappe/public/scss/espresso_components",
-	"frappe/public/scss/common/utilities",
 	"frappe/public/scss/website/index",
 	"frappe/public/scss/login.bundle",
 	"frappe/public/scss/email.bundle",

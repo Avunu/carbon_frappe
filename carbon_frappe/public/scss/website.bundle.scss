@@ -14,10 +14,9 @@ $dropdown-border-radius: 0;
 // IBM Plex
 @import "./carbon/fonts";
 
-// frappe's website styles, recompiled (mirror of frappe/public/scss/website.bundle.scss)
+// frappe's website styles, recompiled (mirror of frappe/public/scss/website.bundle.scss,
+// which is itself just `@import "./website/index"`)
 @import "frappe/public/scss/website/index";
-@import "frappe/public/scss/espresso_components";
-@import "frappe/public/scss/common/utilities";
 
 // Carbon layers
 @import "./carbon/themes";
