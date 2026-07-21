@@ -1,23 +1,37 @@
-// Carbon v11 is square: every espresso/frappe-ui radius token goes to 0.
-// The pill family (--radius-9 / --radius-full) stays round — Carbon's tags
-// and avatars are its one rounded shape.
+// Carbon v11 is square: every frappe radius token collapses to 0.
+//
+// These are frappe **v16** token names (`--border-radius-*`, declared in
+// frappe/public/scss/espresso/_borders.scss). The develop branch renamed them to
+// `--radius-*`; this branch targets v16, so those names are gone from here.
+//
+// One override point squares the whole desk/website: frappe wires Bootstrap's own
+// `$border-radius` / `$border-radius-sm|lg` / `$input-border-radius` to
+// `var(--border-radius*)` in desk|website/variables.scss, and frappe's component
+// SCSS reads `var(--border-radius*)` directly — so zeroing these custom properties
+// re-radiuses Bootstrap controls (inputs, badges, alerts, pagination, …) AND every
+// frappe surface at once. The map layer is imported after frappe's espresso tokens,
+// so these `:root` declarations win the cascade.
+//
+// The pill family (`--border-radius-full`) stays round on purpose: Carbon's tags,
+// indicator pills and round avatars are its one deliberately-curved shape. Flip it
+// to 0 if you'd rather square those too.
 :root {
-	--radius-0: 0;
-	--radius-1: 0;
-	--radius-2: 0;
-	--radius-3: 0;
-	--radius-4: 0;
-	--radius-5: 0;
-	--radius-6: 0;
-	--radius-7: 0;
-	--radius-8: 0;
-	--radius-none: 0;
-	--radius-sm: 0;
-	--radius: 0;
-	--radius-md: 0;
-	--radius-lg: 0;
-	--radius-xl: 0;
-	--radius-2xl: 0;
-	--radius-9: 999px;
-	--radius-full: 9999px;
+	--border-radius-tiny: 0;
+	--border-radius-sm: 0;
+	--border-radius: 0;
+	--border-radius-md: 0;
+	--border-radius-lg: 0;
+	--border-radius-xl: 0;
+	--border-radius-2xl: 0;
+	--border-radius-full: 999px; // pill — Carbon's one rounded shape
+
+	// Derived / component tokens, pinned explicitly so they can't inherit a
+	// non-zero base if frappe reorders its declarations:
+	--card-border-radius: 0; // also forced via `$card-border-radius: 0` injection
+	--dt-border-radius: 0; // datatable; frappe defaults it to var(--border-radius)
+
+	// Legacy #desktop page ships its own desktop.css (loaded *after* this bundle)
+	// that re-declares this at :root, so squaring that one modal needs a
+	// consumer-level override there — see _misc.scss. We still state intent here.
+	--desktop-modal-radius: 0;
 }

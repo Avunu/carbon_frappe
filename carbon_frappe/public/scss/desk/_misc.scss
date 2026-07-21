@@ -134,5 +134,14 @@ pre,
 .avatar,
 .avatar-frame,
 .es-avatar {
-	border-radius: var(--radius-full);
+	border-radius: var(--border-radius-full);
+}
+
+// legacy #desktop page: its own desktop.css declares `--desktop-modal-radius: 30px`
+// at :root and loads *after* this bundle, so the token override in map/_radius.scss
+// can't reach it. Square the modal at the consumer instead — !important because we
+// tie on specificity with desktop.css's `.desktop-modal .modal-dialog .modal-content`
+// but lose on load order.
+.desktop-modal .modal-dialog .modal-content {
+	border-radius: 0 !important;
 }

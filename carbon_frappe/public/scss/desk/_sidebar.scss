@@ -35,3 +35,9 @@
 .body-sidebar .standard-sidebar-item:not(.active-sidebar):has(a:not(.section-break)):hover {
 	border-radius: 0;
 }
+
+// frappe's `.hover` utility pulls in hover-mixin(), which hardcodes an 8px radius
+// (a literal, not a token) so the map/_radius override can't reach it — square it here.
+.hover {
+	border-radius: 0;
+}
