@@ -1,0 +1,10 @@
+[
+	{
+		"doctype": "Print Style",
+		"name": "Carbon",
+		"print_style_name": "Carbon",
+		"standard": 0,
+		"disabled": 0,
+		"css": ".print-format {\n\tfont-family: \"IBM Plex Sans\", \"Helvetica Neue\", \"Segoe UI\", Arial, sans-serif;\n\tfont-size: 9pt;\n\tcolor: #161616;\n}\n\n.print-heading {\n\tborder-bottom: 1px solid #c6c6c6;\n\tpadding-bottom: 8px;\n\tmargin-bottom: 16px;\n\tcolor: #161616;\n}\n\n.print-heading h2 {\n\tfont-size: 20pt;\n\tfont-weight: 400;\n\tletter-spacing: 0;\n}\n\n.print-heading small {\n\tcolor: #525252;\n\tfont-size: 9pt;\n}\n\n.print-format table.table {\n\tborder-collapse: collapse;\n}\n\n.print-format table.table thead th {\n\tbackground-color: #e0e0e0;\n\tcolor: #161616;\n\tfont-weight: 600;\n\tborder: none;\n\tborder-bottom: 1px solid #c6c6c6;\n\ttext-transform: none;\n\tfont-size: 9pt;\n\tpadding: 8px;\n}\n\n.print-format table.table td {\n\tborder: none;\n\tborder-bottom: 1px solid #e0e0e0;\n\tpadding: 8px;\n\tvertical-align: top;\n}\n\n.print-format .letter-head {\n\tmargin-bottom: 24px;\n}\n\n.print-format .important .value {\n\tfont-size: 11pt;\n\tfont-weight: 600;\n}\n\n.print-format label {\n\tcolor: #525252;\n\tfont-size: 8pt;\n\tfont-weight: 400;\n\tletter-spacing: 0.32px;\n\tmargin-bottom: 2px;\n}\n\n.print-format .section-break {\n\tborder-bottom: 1px solid #e0e0e0;\n\tpadding-bottom: 12px;\n\tmargin-bottom: 12px;\n}\n\n.print-format .comment-block,\n.print-format blockquote {\n\tborder-left: 3px solid #8d8d8d;\n\tpadding-left: 12px;\n\tcolor: #525252;\n}"
+	}
+]

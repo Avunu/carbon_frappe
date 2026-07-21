@@ -1,0 +1,30 @@
+// Typography remap: IBM Plex + a conservative snap of frappe's --text-* scale
+// toward Carbon's type scale. Body stays 14px (Carbon body-compact-01) and
+// --text-sm stays 13px in v1 to avoid global reflow; revisit after QA.
+:root {
+	--font-stack: "IBM Plex Sans", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto",
+		"Helvetica Neue", "Arial", sans-serif;
+	--font-family-mono: "IBM Plex Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
+
+	// Plex has no 420 optical weight and Carbon's idiom caps emphasis at
+	// SemiBold; bold/black collapse to 600 (QA fallback: 700 — Plex ships it).
+	--font-weight-regular: 400;
+	--font-weight-medium: 500;
+	--font-weight-semibold: 600;
+	--font-weight-bold: 600;
+	--font-weight-black: 600;
+
+	// Nearest Carbon type-scale steps (12/14/16/20/24/28/32/42/48/54)
+	--text-tiny: 12px; // label-01
+	--text-2xs: 12px;
+	--text-xl: 16px;
+	--text-2xl: 20px; // heading-03
+	--text-5xl: 28px;
+}
+
+code,
+pre,
+kbd,
+samp {
+	font-family: var(--font-family-mono);
+}

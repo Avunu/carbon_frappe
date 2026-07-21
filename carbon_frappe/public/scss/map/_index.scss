@@ -1,0 +1,10 @@
+// Frappe / frappe-ui variable remap onto Carbon tokens (var(--cds-*)).
+// Ordered: raw palette first (cascades through espresso's semantic layer),
+// then semantic pins, legacy pins, shape/type/effects.
+@import "./colors-palette";
+@import "./colors-semantic";
+@import "./colors-legacy";
+@import "./typography";
+@import "./radius";
+@import "./effects";
+@import "./charts";

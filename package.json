@@ -1,0 +1,38 @@
+{
+  "name": "carbon-frappe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Carbon Design System theme for Frappe",
+  "keywords": [
+    "frappe",
+    "erpnext",
+    "carbon",
+    "design"
+  ],
+  "homepage": "https://github.com/Avunu/carbon-frappe#readme",
+  "bugs": {
+    "url": "https://github.com/Avunu/carbon-frappe/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Avunu/carbon-frappe.git"
+  },
+  "license": "MIT",
+  "author": "Avunu LLC",
+  "type": "module",
+  "dependencies": {
+    "@carbon/charts": "1.27.16",
+    "@carbon/styles": "1.111.0"
+  },
+  "devDependencies": {
+    "@ibm/plex-mono": "1.1.0",
+    "@ibm/plex-sans": "1.1.0",
+    "sass": "1.69.5"
+  },
+  "scripts": {
+    "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only",
+    "codegen": "node scripts/sync-fonts.mjs && node scripts/generate-chart-palettes.mjs",
+    "audit": "node scripts/audit-tokens.mjs --strict",
+    "compile": "node scripts/dev-compile.mjs"
+  }
+}

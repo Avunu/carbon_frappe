@@ -1,0 +1,48 @@
+// carbon_frappe_ui — standalone Carbon token remap for frappe-ui apps.
+// NOT hooked or shadowed: this is the opt-in artifact for SPA apps (CRM,
+// Helpdesk, custom portals) that build their own bundles. frappe-ui emits the
+// same semantic variables (--surface-*/--ink-*/--outline-*/--radius-*/
+// --elevation-*/--focus-*) inside Tailwind's @layer base; this file is
+// unlayered, so it wins regardless of load order.
+//
+// Usage (best-effort, see README): include
+//   /assets/carbon_frappe/dist/css/carbon_frappe_ui.bundle.<hash>.css
+// after the app's own stylesheet — resolve the hashed name via
+// sites/assets/assets.json key "carbon_frappe_ui.bundle.css".
+
+@import "./carbon/fonts";
+@import "./carbon/themes";
+@import "./map";
+@import "./map/frappe-ui-utilities";
+
+// frappe-ui hardcodes html { font-family: InterVar ... } in its plugin base
+html {
+	font-family: var(--font-stack);
+	font-variation-settings: normal;
+}
+
+// generic form component classes (mirrors desk/_controls essentials)
+.form-input,
+.form-select,
+.form-textarea {
+	background-color: var(--cds-field-01);
+	border: none;
+	border-bottom: 1px solid var(--cds-border-strong-01);
+	border-radius: 0;
+
+	&:focus {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+		border-bottom-color: transparent;
+		box-shadow: none;
+	}
+}
+
+.form-checkbox {
+	border-radius: 1px;
+	color: var(--cds-icon-primary);
+
+	&:checked {
+		background-color: var(--cds-icon-primary);
+	}
+}

@@ -1,0 +1,46 @@
+// carbon_frappe print bundle — SHADOWS frappe's print.bundle.css.
+// Used by /printview and PDF generation (wkhtmltopdf: no custom-property
+// support) — overrides are LITERAL values only. Deeper Carbon print styling
+// ships as the "Carbon" Print Style fixture (selectable in Print Settings).
+@use "@carbon/colors" as c;
+
+// frappe's print styles, recompiled (bootstrap 3 css + print chrome)
+@import "frappe/public/scss/print.bundle";
+
+// -- Carbon overrides (literals only) ----------------------------------------
+$print-font: "IBM Plex Sans", "Helvetica Neue", "Segoe UI", "Arial", sans-serif;
+
+body {
+	font-family: $print-font;
+	color: c.$gray-100;
+}
+
+.print-format {
+	font-family: $print-font;
+
+	table.table {
+		border-color: c.$gray-30;
+
+		thead th {
+			background-color: c.$gray-20;
+			color: c.$gray-100;
+			font-weight: 600;
+			border-bottom: 1px solid c.$gray-30;
+		}
+
+		td,
+		th {
+			border-color: c.$gray-30;
+		}
+	}
+}
+
+.print-heading {
+	border-bottom: 1px solid c.$gray-30;
+	color: c.$gray-100;
+}
+
+.btn,
+.btn-primary {
+	border-radius: 0;
+}

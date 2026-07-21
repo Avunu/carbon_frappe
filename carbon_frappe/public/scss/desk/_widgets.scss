@@ -1,0 +1,81 @@
+// WP9 — Workspace widgets -> Carbon tiles; indicators -> Carbon tags;
+// bootstrap alerts -> Carbon inline notifications; progress -> Carbon bar.
+
+// Carbon tile: $layer-01, flat, square, 16px padding; clickable tiles get
+// $layer-hover on hover.
+.widget {
+	background-color: var(--cds-layer-01);
+	border-radius: 0;
+	padding: 16px;
+
+	&.widget-shadow:hover {
+		box-shadow: none;
+		background-color: var(--cds-layer-hover-01);
+	}
+
+	&.border {
+		border-color: transparent;
+	}
+
+	&.shortcut-widget-box:hover {
+		background-color: var(--cds-layer-hover-01);
+	}
+
+	.widget-title {
+		color: var(--cds-text-secondary);
+	}
+}
+
+// number cards: label-over-value, Carbon heading-05-esque value (32px/400)
+.widget.number-widget-box .widget-content .number {
+	font-size: var(--text-7xl);
+	font-weight: var(--font-weight-regular);
+	color: var(--cds-text-primary);
+}
+
+// indicator pills: the --bg-<c>/--text-on-<c> pairs already resolve to Carbon
+// tag colors (<c>-20 background / <c>-70 text) via the ramp remap; enforce the
+// tag silhouette (24px pill)
+.indicator-pill,
+.indicator-pill-right {
+	border-radius: var(--radius-full);
+	height: 24px;
+	align-items: center;
+}
+
+// bootstrap .alert banners -> Carbon inline notification: square with a
+// 3px inline-start support bar (colors flow from the remapped --alert-* vars)
+.alert {
+	border-radius: 0;
+	border: 1px solid var(--cds-border-subtle-01);
+	border-inline-start-width: 3px;
+
+	&.alert-danger {
+		border-inline-start-color: var(--cds-support-error);
+	}
+	&.alert-success {
+		border-inline-start-color: var(--cds-support-success);
+	}
+	&.alert-warning {
+		border-inline-start-color: var(--cds-support-warning);
+	}
+	&.alert-info {
+		border-inline-start-color: var(--cds-support-info);
+	}
+}
+
+// progress -> Carbon: square track/bar, $interactive fill (via
+// --progress-bar-bg pin)
+.progress {
+	border-radius: 0;
+	background-color: var(--cds-layer-accent-01);
+
+	.progress-bar {
+		border-radius: 0;
+	}
+}
+
+// es-progress and skeleton follow tokens; add Carbon's subtle shimmer pacing
+.es-skeleton {
+	animation-duration: var(--carbon-duration-moderate-02);
+}

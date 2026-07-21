@@ -1,0 +1,138 @@
+// WP10 — Long-tail desk surfaces: kanban, calendar, tree, timeline,
+// awesomebar/link dropdowns, cards. Mostly geometry (Carbon is square) —
+// colors flow from the token remap.
+
+// main content cards (list/form containers)
+.layout-main-section.frappe-card,
+.frappe-card {
+	border-radius: 0;
+	box-shadow: none;
+	border: 1px solid var(--cds-border-subtle-00);
+}
+
+// awesomplete/link-field dropdowns -> Carbon menu panel
+.awesomplete > ul {
+	border-radius: 0;
+	border: none;
+	box-shadow: 0 2px 6px var(--cds-shadow);
+	background-color: var(--cds-layer-01);
+
+	> li {
+		min-height: 32px;
+
+		&[aria-selected="true"] {
+			background-color: var(--cds-layer-hover-01);
+			color: var(--cds-text-primary);
+		}
+	}
+
+	mark {
+		background: transparent;
+		color: var(--cds-link-primary);
+		font-weight: var(--font-weight-semibold);
+	}
+}
+
+// kanban: $layer-01 columns, card = $background tile with subtle border
+.kanban {
+	.kanban-column {
+		background-color: var(--cds-layer-01);
+		border-radius: 0;
+	}
+
+	.kanban-card,
+	.kanban-card-wrapper .kanban-card-body {
+		background-color: var(--cds-background);
+		border: 1px solid var(--cds-border-subtle-00);
+		border-radius: 0;
+		box-shadow: none;
+	}
+}
+
+// calendar (fullcalendar): subtle grid, $highlight today, square event chips
+.fc-theme-standard {
+	td,
+	th {
+		border-color: var(--cds-border-subtle-00);
+	}
+
+	.fc-day-today {
+		background-color: var(--cds-highlight) !important;
+	}
+
+	.fc-event {
+		border-radius: 0;
+	}
+
+	.fc-button {
+		border-radius: 0;
+	}
+}
+
+// tree view
+.tree-link {
+	border-radius: 0;
+
+	&:hover {
+		background-color: var(--cds-layer-hover-01);
+	}
+
+	&.active {
+		background-color: var(--cds-layer-selected-01);
+	}
+}
+
+// timeline: subtle connector + dots
+.new-timeline {
+	&:before {
+		border-color: var(--cds-border-subtle-01);
+		background: var(--cds-border-subtle-01);
+	}
+
+	.timeline-dot {
+		background-color: var(--cds-layer-01);
+		border-color: var(--cds-border-strong-01);
+	}
+
+	.timeline-content.frappe-card {
+		border: 1px solid var(--cds-border-subtle-00);
+		border-radius: 0;
+		box-shadow: none;
+	}
+}
+
+// gantt bars -> $interactive
+.gantt {
+	.bar {
+		fill: var(--cds-interactive);
+	}
+
+	.bar-progress {
+		fill: var(--cds-button-primary-active, #002d9c);
+	}
+}
+
+// global search / navbar-spawned modals inherit modal treatment; highlight
+// matched text Carbon-style
+.global-search-modal mark,
+.search-results mark {
+	background: transparent;
+	color: var(--cds-link-primary);
+	font-weight: var(--font-weight-semibold);
+}
+
+// code blocks on $layer-01 with Plex Mono (font set in map/_typography)
+pre,
+.frappe-code,
+.code-block {
+	background-color: var(--cds-layer-01);
+	border-radius: 0;
+}
+
+// scrollbars follow tokens already; kill remaining rounded avatars' squareness
+// exception — avatars stay round (Carbon's rounded family)
+.avatar,
+.avatar-frame,
+.es-avatar {
+	border-radius: var(--radius-full);
+}

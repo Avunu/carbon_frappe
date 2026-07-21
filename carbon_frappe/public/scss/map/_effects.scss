@@ -1,0 +1,61 @@
+// Effects remap: Carbon's flat elevation language and 2px focus ring.
+// var(--cds-shadow) and var(--cds-focus) flip with the theme, so one
+// theme-agnostic block covers light and dark — it also overrides frappe's
+// dark-mode 3px focus ring (Carbon is 2px in all themes).
+@use "@carbon/motion";
+
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark {
+	// Carbon has essentially one drop shadow (menus/dropdowns) and relies on
+	// $overlay for modals. Strip espresso's inset top-light entirely.
+	--elevation-sm: 0 2px 6px var(--cds-shadow);
+	--elevation-base: 0 2px 6px var(--cds-shadow);
+	--elevation-md: 0 2px 6px var(--cds-shadow);
+	--elevation-lg: 0 4px 8px var(--cds-shadow);
+	--elevation-xl: 0 4px 8px var(--cds-shadow);
+	--elevation-2xl: 0 4px 8px var(--cds-shadow);
+	--elevation-status: 0 0 0 1.5px var(--cds-background);
+
+	--shadow-xs: none;
+	--custom-shadow-sm: 0 2px 6px var(--cds-shadow);
+	--drop-shadow: 0 2px 6px var(--cds-shadow);
+	--shadow-inset: none;
+
+	// common/css_variables.scss aliases — Carbon tiles/buttons are flat
+	--card-shadow: none;
+	--btn-shadow: none;
+	--modal-shadow: 0 4px 8px var(--cds-shadow);
+	--highlight-shadow: 0 0 0 2px var(--cds-focus);
+
+	// Focus: Carbon 2px $focus ring; invalid state keeps the support colors
+	--focus-default: 0 0 0 2px var(--cds-focus);
+	--focus-outline-default: 2px solid var(--cds-focus);
+	--focus-red: 0 0 0 2px var(--cds-support-error);
+	--focus-outline-red: 2px solid var(--cds-support-error);
+	--focus-green: 0 0 0 2px var(--cds-support-success);
+	--focus-outline-green: 2px solid var(--cds-support-success);
+	--focus-amber: 0 0 0 2px var(--cds-support-warning);
+	--focus-outline-amber: 2px solid var(--cds-support-warning);
+	--focus-blue: 0 0 0 2px var(--cds-focus);
+	--focus-outline-blue: 2px solid var(--cds-focus);
+	--focus-violet: 0 0 0 2px var(--cds-focus);
+	--focus-outline-violet: 2px solid var(--cds-focus);
+
+	--checkbox-focus-shadow: 0 0 0 2px var(--cds-focus);
+	--checkbox-gradient: linear-gradient(
+		180deg,
+		var(--cds-icon-primary) 0%,
+		var(--cds-icon-primary) 100%
+	);
+
+	// Carbon motion tokens for component overrides (frappe has no motion vars)
+	--carbon-duration-fast-01: #{motion.$duration-fast-01};
+	--carbon-duration-fast-02: #{motion.$duration-fast-02};
+	--carbon-duration-moderate-01: #{motion.$duration-moderate-01};
+	--carbon-duration-moderate-02: #{motion.$duration-moderate-02};
+	--carbon-easing-standard: #{motion.motion(standard, productive)};
+	--carbon-easing-entrance: #{motion.motion(entrance, productive)};
+	--carbon-easing-exit: #{motion.motion(exit, productive)};
+}

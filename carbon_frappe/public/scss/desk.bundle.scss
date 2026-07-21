@@ -1,0 +1,29 @@
+// carbon_frappe desk bundle — SHADOWS frappe's desk.bundle.css via assets.json
+// (see scripts/patch-assets.mjs). Recompiles frappe's own desk styles with
+// Carbon values injected at compile time, then layers Carbon tokens and
+// component overrides on top. Mirror of frappe/public/scss/desk.bundle.scss —
+// scripts/audit-tokens.mjs flags drift in frappe's import list.
+
+// -- Compile-time injections (all !default-guarded in frappe/Bootstrap) ------
+$btn-border-radius: 0;
+$btn-border-radius-lg: 0;
+$btn-border-radius-sm: 0;
+$card-border-radius: 0;
+$dropdown-border-radius: 0;
+
+// -- IBM Plex (replaces frappe's Inter import) -------------------------------
+@import "./carbon/fonts";
+
+// -- frappe's desk styles, recompiled ---------------------------------------
+@import "~frappe-charts/dist/frappe-charts.min";
+@import "~plyr/dist/plyr";
+@import "frappe/public/scss/desk/index";
+@import "frappe/public/scss/espresso_components";
+@import "frappe/public/node_modules/highlight.js/styles/tomorrow.css";
+@import "frappe/public/scss/common/utilities";
+
+// -- Carbon layers -----------------------------------------------------------
+@import "./carbon/themes"; // --cds-* emission (White + g100)
+@import "./map"; // frappe/frappe-ui var remap -> var(--cds-*)
+@import "./desk"; // Carbon component anatomy (WP3–WP10)
+@import "./map/frappe-ui-utilities"; // hardcoded Tailwind utility overrides

@@ -1,0 +1,28 @@
+// Semantic pins: espresso/frappe-ui slots that must land on EXACT Carbon
+// theme tokens, independent of the ramp snapping in _colors-palette.scss.
+// Written once, theme-agnostically — the var(--cds-*) indirection flips with
+// data-theme (emitted in carbon/_themes.scss).
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark {
+	// Surfaces -> Carbon layering model
+	--surface-base: var(--cds-background);
+	--surface-gray-1: var(--cds-layer-01);
+	--surface-sidebar: var(--cds-background);
+
+	// Ink -> Carbon text roles
+	--ink-gray-9: var(--cds-text-primary);
+	--ink-gray-8: var(--cds-text-primary);
+	--ink-gray-6: var(--cds-text-secondary);
+	--ink-gray-5: var(--cds-text-helper);
+	--ink-gray-3: var(--cds-text-placeholder);
+	--ink-blue-link: var(--cds-link-primary);
+
+	// Outlines -> Carbon border roles
+	--outline-gray-1: var(--cds-border-subtle-00);
+	--outline-gray-2: var(--cds-border-subtle-01);
+	--outline-gray-3: var(--cds-border-strong-01);
+	--outline-elevation-1: var(--cds-border-subtle-00);
+	--outline-elevation-2: var(--cds-border-subtle-01);
+}

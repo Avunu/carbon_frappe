@@ -1,0 +1,96 @@
+// WP13 — Overrides for frappe-ui's hardcoded raw-palette Tailwind utilities.
+// ~9% of frappe-ui styling compiles to literal oklch values (bg-blue-500,
+// text-gray-600, ...) that no CSS-variable remap can reach. This list covers
+// the high-frequency classes measured in frappe-ui/src/components (top ~20 by
+// occurrence). Loaded last and unlayered, so it beats Tailwind's @layer
+// utilities without !important.
+@use "@carbon/colors" as c;
+
+.bg-gray-900 {
+	background-color: var(--cds-background-inverse);
+}
+.bg-gray-500 {
+	background-color: #{c.$gray-50};
+}
+.bg-gray-400 {
+	background-color: #{c.$gray-30};
+}
+.text-gray-900,
+.text-gray-800 {
+	color: var(--cds-text-primary);
+}
+.text-gray-700 {
+	color: #{c.$gray-80};
+}
+.text-gray-600 {
+	color: var(--cds-text-secondary);
+}
+.text-gray-400 {
+	color: #{c.$gray-50};
+}
+.text-gray-300 {
+	color: #{c.$gray-30};
+}
+.text-gray-100 {
+	color: #{c.$gray-10};
+}
+.border-gray-100 {
+	border-color: var(--cds-border-subtle-00);
+}
+
+.bg-blue-500,
+.bg-blue-600 {
+	background-color: var(--cds-interactive);
+}
+.bg-blue-300 {
+	background-color: #{c.$blue-30};
+}
+.bg-blue-200 {
+	background-color: #{c.$blue-20};
+}
+.border-blue-400 {
+	border-color: #{c.$blue-40};
+}
+.text-blue-500,
+.text-blue-600 {
+	color: var(--cds-link-primary);
+}
+
+.text-red-500 {
+	color: var(--cds-support-error);
+}
+.text-red-700 {
+	color: #{c.$red-70};
+}
+
+.bg-green-500 {
+	background-color: var(--cds-support-success);
+}
+.bg-green-300 {
+	background-color: #{c.$green-30};
+}
+.bg-green-200 {
+	background-color: #{c.$green-20};
+}
+.border-green-500 {
+	border-color: var(--cds-support-success);
+}
+.text-green-800 {
+	color: #{c.$green-80};
+}
+
+.text-yellow-500,
+.text-yellow-600 {
+	color: var(--cds-support-warning);
+}
+
+// frappe-ui Dialog panel rounding -> square
+.rounded-xl,
+.rounded-2xl,
+.rounded-lg,
+.rounded-md {
+	border-radius: 0;
+}
+.rounded-full {
+	border-radius: 9999px;
+}

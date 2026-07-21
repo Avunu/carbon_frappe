@@ -1,0 +1,245 @@
+// Raw palette remap: frappe/espresso color ramps (--<family>-50..950) snapped
+// to Carbon (@carbon/colors) scales. Espresso's semantic layer
+// (--surface-*/--ink-*/--outline-*) references these ramps, so this single
+// remap cascades through the semantic and legacy alias layers for BOTH desk
+// and frappe-ui. Ramps run light->dark in both frappe modes (no inversion);
+// the dark block uses values tuned so espresso's inverted semantic slots land
+// on Carbon g100 tokens. Exact-token slots are then pinned in
+// _colors-semantic.scss / _colors-legacy.scss.
+@use "sass:map";
+@use "@carbon/colors" as c;
+
+// Frappe step -> Carbon value, per family.
+// Anchors (light): <c>-100 = tag background (Carbon <c>-20), <c>-500 = solid
+// fill (support color), <c>-700 = tag text (Carbon <c>-70).
+$light-ramps: (
+	"gray": (
+		50: c.$gray-10,
+		100: c.$gray-10,
+		200: #e8e8e8, // gray-10 hover
+		300: c.$gray-20,
+		400: c.$gray-30,
+		500: c.$gray-50,
+		600: c.$gray-60,
+		700: c.$gray-70,
+		800: c.$gray-80,
+		900: c.$gray-100,
+		950: c.$gray-100,
+	),
+	"blue": (
+		50: c.$blue-10,
+		100: c.$blue-20,
+		200: c.$blue-20,
+		300: c.$blue-30,
+		400: c.$blue-40,
+		500: c.$blue-60, // interactive
+		600: c.$blue-70,
+		700: c.$blue-70,
+		800: c.$blue-80,
+		900: c.$blue-90,
+		950: c.$blue-100,
+	),
+	"green": (
+		50: c.$green-10,
+		100: c.$green-20,
+		200: c.$green-20,
+		300: c.$green-30,
+		400: c.$green-40,
+		500: c.$green-50, // support-success
+		600: c.$green-60,
+		700: c.$green-70,
+		800: c.$green-80,
+		900: c.$green-90,
+		950: c.$green-100,
+	),
+	"red": (
+		50: c.$red-10,
+		100: c.$red-20,
+		200: c.$red-20,
+		300: c.$red-30,
+		400: c.$red-40,
+		500: c.$red-60, // support-error
+		600: c.$red-60,
+		700: c.$red-70,
+		800: c.$red-80,
+		900: c.$red-90,
+		950: c.$red-100,
+	),
+	"orange": (
+		50: c.$orange-10,
+		100: c.$orange-20,
+		200: c.$orange-20,
+		300: c.$orange-30,
+		400: c.$orange-40, // support-caution-minor
+		500: c.$orange-50,
+		600: c.$orange-60,
+		700: c.$orange-70,
+		800: c.$orange-80,
+		900: c.$orange-90,
+		950: c.$orange-100,
+	),
+	"amber": (
+		50: c.$yellow-10,
+		100: c.$yellow-20,
+		200: c.$yellow-20,
+		300: c.$yellow-30,
+		400: c.$yellow-30,
+		500: c.$yellow-30, // support-warning
+		600: c.$yellow-40,
+		700: c.$yellow-50,
+		800: c.$yellow-60,
+		900: c.$yellow-70,
+		950: c.$yellow-80,
+	),
+	"yellow": (
+		50: c.$yellow-10,
+		100: c.$yellow-20,
+		200: c.$yellow-20,
+		300: c.$yellow-30,
+		400: c.$yellow-30,
+		500: c.$yellow-30, // support-warning
+		600: c.$yellow-40,
+		700: c.$yellow-50,
+		800: c.$yellow-60,
+		900: c.$yellow-70,
+		950: c.$yellow-80,
+	),
+	"teal": (
+		50: c.$teal-10,
+		100: c.$teal-20,
+		200: c.$teal-20,
+		300: c.$teal-30,
+		400: c.$teal-40,
+		500: c.$teal-60,
+		600: c.$teal-70,
+		700: c.$teal-70,
+		800: c.$teal-80,
+		900: c.$teal-90,
+		950: c.$teal-100,
+	),
+	"cyan": (
+		50: c.$cyan-10,
+		100: c.$cyan-20,
+		200: c.$cyan-20,
+		300: c.$cyan-30,
+		400: c.$cyan-40,
+		500: c.$cyan-60,
+		600: c.$cyan-70,
+		700: c.$cyan-70,
+		800: c.$cyan-80,
+		900: c.$cyan-90,
+		950: c.$cyan-100,
+	),
+	"purple": (
+		50: c.$purple-10,
+		100: c.$purple-20,
+		200: c.$purple-20,
+		300: c.$purple-30,
+		400: c.$purple-40,
+		500: c.$purple-60,
+		600: c.$purple-70,
+		700: c.$purple-70,
+		800: c.$purple-80,
+		900: c.$purple-90,
+		950: c.$purple-100,
+	),
+	"violet": (
+		50: c.$purple-10,
+		100: c.$purple-20,
+		200: c.$purple-20,
+		300: c.$purple-30,
+		400: c.$purple-40,
+		500: c.$purple-60,
+		600: c.$purple-70,
+		700: c.$purple-70,
+		800: c.$purple-80,
+		900: c.$purple-90,
+		950: c.$purple-100,
+	),
+	"pink": (
+		50: c.$magenta-10,
+		100: c.$magenta-20,
+		200: c.$magenta-20,
+		300: c.$magenta-30,
+		400: c.$magenta-40,
+		500: c.$magenta-60,
+		600: c.$magenta-70,
+		700: c.$magenta-70,
+		800: c.$magenta-80,
+		900: c.$magenta-90,
+		950: c.$magenta-100,
+	),
+);
+
+// Dark (g100). Espresso's dark semantics invert ramp usage (surface-<c>-1 =
+// <c>-950, ink-<c>-8 = <c>-300), so: low steps stay light (text on dark),
+// high steps go deep (subtle backgrounds). Anchors: 300 = dark support tone
+// (Carbon <c>-30), 500 = dark interactive (<c>-50), 900/950 = dark subtle
+// backgrounds (<c>-80/90).
+$dark-color-steps: (
+	50: 10,
+	100: 20,
+	200: 30,
+	300: 30,
+	400: 40,
+	500: 50,
+	600: 60,
+	700: 70,
+	800: 70,
+	900: 80,
+	950: 90,
+);
+
+$dark-families: (
+	"blue": (10: c.$blue-10, 20: c.$blue-20, 30: c.$blue-30, 40: c.$blue-40, 50: c.$blue-50, 60: c.$blue-60, 70: c.$blue-70, 80: c.$blue-80, 90: c.$blue-90),
+	"green": (10: c.$green-10, 20: c.$green-20, 30: c.$green-30, 40: c.$green-40, 50: c.$green-40, 60: c.$green-60, 70: c.$green-70, 80: c.$green-80, 90: c.$green-90),
+	"red": (10: c.$red-10, 20: c.$red-20, 30: c.$red-30, 40: c.$red-40, 50: c.$red-50, 60: c.$red-60, 70: c.$red-70, 80: c.$red-80, 90: c.$red-90),
+	"orange": (10: c.$orange-10, 20: c.$orange-20, 30: c.$orange-30, 40: c.$orange-40, 50: c.$orange-50, 60: c.$orange-60, 70: c.$orange-70, 80: c.$orange-80, 90: c.$orange-90),
+	"amber": (10: c.$yellow-10, 20: c.$yellow-20, 30: c.$yellow-30, 40: c.$yellow-30, 50: c.$yellow-40, 60: c.$yellow-50, 70: c.$yellow-60, 80: c.$yellow-70, 90: c.$yellow-80),
+	"yellow": (10: c.$yellow-10, 20: c.$yellow-20, 30: c.$yellow-30, 40: c.$yellow-30, 50: c.$yellow-40, 60: c.$yellow-50, 70: c.$yellow-60, 80: c.$yellow-70, 90: c.$yellow-80),
+	"teal": (10: c.$teal-10, 20: c.$teal-20, 30: c.$teal-30, 40: c.$teal-40, 50: c.$teal-50, 60: c.$teal-60, 70: c.$teal-70, 80: c.$teal-80, 90: c.$teal-90),
+	"cyan": (10: c.$cyan-10, 20: c.$cyan-20, 30: c.$cyan-30, 40: c.$cyan-40, 50: c.$cyan-50, 60: c.$cyan-60, 70: c.$cyan-70, 80: c.$cyan-80, 90: c.$cyan-90),
+	"purple": (10: c.$purple-10, 20: c.$purple-20, 30: c.$purple-30, 40: c.$purple-40, 50: c.$purple-50, 60: c.$purple-60, 70: c.$purple-70, 80: c.$purple-80, 90: c.$purple-90),
+	"violet": (10: c.$purple-10, 20: c.$purple-20, 30: c.$purple-30, 40: c.$purple-40, 50: c.$purple-50, 60: c.$purple-60, 70: c.$purple-70, 80: c.$purple-80, 90: c.$purple-90),
+	"pink": (10: c.$magenta-10, 20: c.$magenta-20, 30: c.$magenta-30, 40: c.$magenta-40, 50: c.$magenta-50, 60: c.$magenta-60, 70: c.$magenta-70, 80: c.$magenta-80, 90: c.$magenta-90),
+);
+
+// Dark gray ramp, hand-tuned so espresso's inverted neutral slots land on
+// g100 tokens: 950 -> $background, 900 -> $layer-01, 700 -> $layer-hover-01,
+// 500/600 -> $layer-02, 100 -> $text-secondary, 50 -> $text-primary.
+$dark-gray: (
+	50: c.$gray-10,
+	100: c.$gray-30,
+	200: #a8a8a8, // gray-40
+	300: c.$gray-50,
+	400: c.$gray-60,
+	450: c.$gray-70,
+	500: c.$gray-80,
+	600: c.$gray-80,
+	700: #333333, // g100 layer-hover-01
+	800: #292929, // between layer-01 and layer-02
+	900: #262626, // g100 layer-01
+	950: c.$gray-100,
+);
+
+:root,
+[data-theme="light"] {
+	@each $family, $steps in $light-ramps {
+		@each $step, $value in $steps {
+			--#{$family}-#{$step}: #{$value};
+		}
+	}
+}
+
+[data-theme="dark"],
+.dark {
+	@each $step, $value in $dark-gray {
+		--gray-#{$step}: #{$value};
+	}
+
+	@each $family, $scale in $dark-families {
+		@each $step, $carbon-step in $dark-color-steps {
+			--#{$family}-#{$step}: #{map.get($scale, $carbon-step)};
+		}
+	}
+}

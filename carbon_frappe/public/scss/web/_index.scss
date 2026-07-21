@@ -1,0 +1,57 @@
+// Carbon overrides for website/portal pages. Reuses the generic component
+// partials (selectors like .form-control/.btn/.navbar are shared between desk
+// and web), plus web-only chrome.
+@import "../desk/controls";
+@import "../desk/buttons";
+@import "../desk/navbar";
+@import "../desk/modals";
+
+// footer -> g100 block (matches the header for brand unity)
+.web-footer {
+	background-color: #161616;
+	border-top: none;
+	color: #c6c6c6;
+
+	a,
+	.footer-link {
+		color: #f4f4f4;
+	}
+}
+
+// web page cards / web forms
+.page-card,
+.web-form-container .web-form {
+	border-radius: 0;
+	box-shadow: none;
+	border: 1px solid var(--cds-border-subtle-00);
+}
+
+.web-form-actions .btn-primary {
+	height: 48px;
+	padding-inline: 16px 64px;
+	text-align: start;
+}
+
+// portal sidebar -> side-nav treatment
+.website-sidebar .sidebar-item {
+	border-radius: 0;
+
+	&.active,
+	&.selected {
+		background-color: var(--cds-layer-selected-01);
+		box-shadow: inset 4px 0 0 0 var(--cds-border-interactive);
+	}
+}
+
+// markdown/docs content: Plex Mono code on $layer-01
+.from-markdown {
+	pre,
+	code {
+		background-color: var(--cds-layer-01);
+		border-radius: 0;
+	}
+
+	blockquote {
+		border-inline-start: 3px solid var(--cds-border-strong-01);
+	}
+}

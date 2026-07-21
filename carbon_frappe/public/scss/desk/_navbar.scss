@@ -1,0 +1,105 @@
+// WP5a — Navbar -> Carbon UI Shell header.
+// Carbon's strongest signature: the g100 (#161616) header in BOTH themes,
+// 48px tall (frappe's --navbar-height already is). Implemented as a scoped
+// token flip so every descendant (icons, menus, search) inverts without
+// touching markup. Dropdown panels anchored inside the navbar become g100
+// layer panels.
+@use "@carbon/colors" as c;
+
+$header-bg: c.$gray-100; // #161616
+$header-hover: #292929;
+$header-active: #333333;
+$header-border: c.$gray-80; // #393939
+$header-text: c.$gray-10; // #f4f4f4
+$header-text-secondary: c.$gray-30; // #c6c6c6
+
+.navbar {
+	// scoped inversion — legacy + espresso + icon tokens
+	--navbar-bg: #{$header-bg};
+	--bg-color: #{$header-bg};
+	--fg-color: #{$header-hover};
+	--fg-hover-color: #{$header-hover};
+	--text-color: #{$header-text};
+	--heading-color: #{$header-text};
+	--text-muted: #{$header-text-secondary};
+	--text-light: #{$header-text-secondary};
+	--ink-gray-9: #{$header-text};
+	--ink-gray-8: #{$header-text};
+	--ink-gray-7: #{$header-text-secondary};
+	--ink-gray-6: #{$header-text-secondary};
+	--ink-gray-5: #{$header-text-secondary};
+	--icon-stroke: #{$header-text};
+	--border-color: #{$header-border};
+	--dark-border-color: #{$header-border};
+	--outline-gray-1: #{$header-border};
+	--outline-gray-2: #{$header-border};
+	--control-bg: #{$header-hover};
+	--awesomebar-focus-bg: #{$header-hover};
+	--awesomplete-hover-bg: #{$header-active};
+	--btn-default-hover-bg: #{$header-hover};
+	--btn-ghost-hover-bg: #{$header-hover};
+	--highlight-color: #{$header-active};
+	--focus-default: 0 0 0 2px #{c.$white};
+	--focus-outline-default: 2px solid #{c.$white};
+
+	background: var(--navbar-bg);
+	border-bottom: none;
+
+	.nav-link,
+	.navbar-brand {
+		color: var(--text-color);
+	}
+
+	// header search -> Carbon header search field
+	.awesomplete input,
+	#navbar-search {
+		background-color: transparent;
+		border: none;
+		border-radius: 0;
+		color: $header-text;
+
+		&::placeholder {
+			color: $header-text-secondary;
+		}
+
+		&:focus {
+			background-color: $header-hover;
+			outline: 2px solid c.$white;
+			outline-offset: -2px;
+			box-shadow: none;
+		}
+	}
+
+	// menus opened from the header are g100 panels
+	.dropdown-menu {
+		--fg-color: #{$header-hover};
+		background-color: #262626;
+		border: none;
+		border-radius: 0;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+
+		.dropdown-item {
+			color: $header-text;
+
+			&:hover,
+			&:focus {
+				background-color: $header-active;
+				color: $header-text;
+			}
+		}
+
+		.dropdown-divider {
+			border-color: $header-border;
+		}
+	}
+
+	.btn,
+	.btn-reset,
+	.es-icon {
+		color: $header-text;
+	}
+
+	.vertical-bar {
+		border-color: $header-border;
+	}
+}

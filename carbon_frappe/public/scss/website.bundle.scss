@@ -1,0 +1,25 @@
+// carbon_frappe website bundle — SHADOWS frappe's website.bundle.css via
+// assets.json (see scripts/patch-assets.mjs). Recompiles frappe's website
+// styles with Carbon injections, then layers tokens + web overrides.
+// NOTE: Website Theme's get_scss_paths() also auto-imports this file into
+// custom compiled themes; ours cascades last there too.
+
+// Compile-time injections (!default-guarded in frappe/Bootstrap)
+$btn-border-radius: 0;
+$btn-border-radius-lg: 0;
+$btn-border-radius-sm: 0;
+$card-border-radius: 0;
+$dropdown-border-radius: 0;
+
+// IBM Plex
+@import "./carbon/fonts";
+
+// frappe's website styles, recompiled (mirror of frappe/public/scss/website.bundle.scss)
+@import "frappe/public/scss/website/index";
+@import "frappe/public/scss/espresso_components";
+@import "frappe/public/scss/common/utilities";
+
+// Carbon layers
+@import "./carbon/themes";
+@import "./map";
+@import "./web";

@@ -1,0 +1,71 @@
+// WP6 — List view, page head, filter area -> Carbon data-table language.
+// Header row = $layer-accent-01 with 600-weight labels; rows hover
+// $layer-hover; square everything; filter pills become Carbon dismissible
+// tags (the pill silhouette is Carbon's one rounded family).
+
+.list-row-container {
+	border-radius: 0;
+}
+
+.list-row-head {
+	background-color: var(--cds-layer-accent-01);
+	border-radius: 0;
+	border-bottom: 1px solid var(--cds-border-subtle-01);
+
+	.list-row-col,
+	.list-subject,
+	.list-count,
+	span {
+		font-weight: var(--font-weight-semibold);
+		color: var(--cds-text-primary);
+	}
+
+	input[type="checkbox"] {
+		border-color: var(--cds-icon-primary);
+	}
+}
+
+// page head: flat $background bar with heading-03 title (20px / 400)
+.page-head {
+	background: var(--bg-color);
+	border-bottom: 1px solid var(--cds-border-subtle-00);
+}
+
+.page-title .title-text,
+.page-title h3 {
+	font-size: var(--text-2xl);
+	font-weight: var(--font-weight-regular);
+	color: var(--cds-text-primary);
+}
+
+// filter/tag pills -> Carbon dismissible tag (24px, pill, gray)
+.filter-pill,
+.filter-label,
+.tag-pill {
+	background-color: var(--cds-layer-accent-01);
+	color: var(--cds-text-primary);
+	border: none;
+	border-radius: var(--radius-full);
+	font-size: var(--text-xs);
+
+	&:hover {
+		background-color: var(--cds-border-subtle-01);
+	}
+}
+
+// list paging area -> flat Carbon pagination-style buttons
+.list-paging-area {
+	border-top: 1px solid var(--cds-border-subtle-00);
+
+	.btn-group .btn {
+		border-radius: 0;
+		border: 1px solid var(--cds-border-subtle-00);
+	}
+}
+
+// like/comment/assignment chips inherit tag treatment via tokens; keep counts
+// legible on the accent header
+.list-row:hover,
+.list-row-container:hover {
+	border-radius: 0;
+}

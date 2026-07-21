@@ -1,0 +1,37 @@
+// WP5b — Desk sidebar -> Carbon side-nav.
+// White (=$background) panel, square items, $layer-selected + 4px
+// $border-interactive left inset on the active item.
+
+:root,
+[data-theme="dark"],
+.dark {
+	--sidebar-hover-color: var(--cds-layer-hover-01);
+	--sidebar-active-color: var(--cds-layer-selected-01);
+	--sidebar-border-color: var(--cds-border-subtle-00);
+	--divider-color: var(--cds-border-subtle-00);
+	--sidebar-active-shadow: none;
+}
+
+.body-sidebar,
+.list-sidebar,
+.form-sidebar {
+	.standard-sidebar-item,
+	.sidebar-item-container .item-anchor,
+	.desk-sidebar-item {
+		border-radius: 0;
+	}
+}
+
+.active-sidebar {
+	border-radius: 0;
+	box-shadow: inset 4px 0 0 0 var(--cds-border-interactive);
+
+	[dir="rtl"] & {
+		box-shadow: inset -4px 0 0 0 var(--cds-border-interactive);
+	}
+}
+
+// hover pills in the workspace sidebar go square too
+.body-sidebar .standard-sidebar-item:not(.active-sidebar):has(a:not(.section-break)):hover {
+	border-radius: 0;
+}

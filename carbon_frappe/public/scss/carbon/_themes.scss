@@ -1,0 +1,17 @@
+// Emit Carbon Design System v11 tokens as --cds-* custom properties.
+// Light = White theme, Dark = Gray 100, mirroring frappe's theme selectors
+// (frappe sets data-theme on <html>; frappe-ui/espresso also honor `.dark`).
+// This is the only place Carbon's theme() mixin runs; everything else
+// references the emitted variables.
+@use "@carbon/styles/scss/theme";
+@use "@carbon/styles/scss/themes";
+
+:root,
+[data-theme="light"] {
+	@include theme.theme(themes.$white);
+}
+
+[data-theme="dark"],
+.dark {
+	@include theme.theme(themes.$g100);
+}

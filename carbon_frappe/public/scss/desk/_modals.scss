@@ -1,0 +1,193 @@
+// WP7 — Modals, dropdown menus, popovers, toasts, tabs -> Carbon anatomy.
+@use "@carbon/colors" as c;
+
+// ---- Modal: $layer surface, square, $overlay backdrop ----------------------
+.modal {
+	.modal-content {
+		background-color: var(--modal-bg);
+		border: none;
+		border-radius: 0;
+		box-shadow: var(--modal-shadow);
+	}
+
+	.modal-header {
+		border-bottom: none;
+		padding: 16px;
+	}
+
+	.modal-title {
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-regular);
+		color: var(--cds-text-primary);
+	}
+
+	.modal-body {
+		padding-inline: 16px;
+	}
+
+	.modal-footer {
+		border-top: none;
+		padding: 16px;
+
+		// Carbon modal signature: with exactly two actions, buttons go
+		// full-bleed edge-to-edge (secondary left, primary right)
+		&:has(.btn:nth-last-child(2):first-child) {
+			padding: 0;
+			gap: 0;
+
+			.btn {
+				flex: 1;
+				margin: 0;
+				border-radius: 0;
+				height: 48px;
+				text-align: start;
+				justify-content: flex-start;
+				padding: 0 16px;
+			}
+		}
+	}
+}
+
+.modal-backdrop.show {
+	background-color: #000;
+	opacity: 0.6;
+}
+
+// ---- Dropdown menus: $layer panel, 32px items, single Carbon shadow --------
+.dropdown-menu {
+	background-color: var(--cds-layer-01);
+	border: none;
+	border-radius: 0;
+	box-shadow: 0 2px 6px var(--cds-shadow);
+	padding-block: 4px;
+
+	.dropdown-item {
+		min-height: 32px;
+		color: var(--cds-text-secondary);
+
+		&:hover,
+		&:focus {
+			background-color: var(--cds-layer-hover-01);
+			color: var(--cds-text-primary);
+		}
+
+		&:active {
+			background-color: var(--cds-layer-active-01);
+		}
+	}
+
+	.dropdown-divider {
+		margin: 4px 0;
+		border-color: var(--cds-border-subtle-01);
+	}
+}
+
+// ---- Popovers / espresso panels --------------------------------------------
+.popover {
+	border-radius: 0;
+	border: none;
+	box-shadow: 0 2px 6px var(--cds-shadow);
+
+	.popover-body {
+		background-color: var(--popover-bg);
+	}
+}
+
+.es-popover,
+.es-hover-card,
+.es-menu {
+	border-radius: 0;
+	box-shadow: 0 2px 6px var(--cds-shadow);
+}
+
+// ---- Toasts / desk alerts -> Carbon toast notification ----------------------
+// $layer panel with a 3px inline-start support-color bar
+.es-toast,
+.desk-alert {
+	border-radius: 0;
+	border: 1px solid var(--cds-border-subtle-01);
+	border-inline-start: 3px solid var(--cds-support-info);
+	box-shadow: 0 2px 6px var(--cds-shadow);
+
+	&[data-type="success"],
+	&.alert-success {
+		border-inline-start-color: var(--cds-support-success);
+	}
+
+	&[data-type="error"],
+	&[data-type="danger"],
+	&.alert-danger {
+		border-inline-start-color: var(--cds-support-error);
+	}
+
+	&[data-type="warning"],
+	&.alert-warning {
+		border-inline-start-color: var(--cds-support-warning);
+	}
+}
+
+// ---- Tabs -> Carbon line tabs ----------------------------------------------
+// 2px transparent bottom border; selected = $border-interactive + 600 weight;
+// hover reveals $border-strong.
+.form-tabs-list {
+	border-radius: 0;
+
+	.form-tabs .nav-item .nav-link {
+		color: var(--cds-text-secondary);
+		border-bottom: 2px solid transparent;
+		padding-bottom: 8px;
+
+		&:hover {
+			border-bottom-color: var(--cds-border-strong-01);
+			color: var(--cds-text-primary);
+		}
+
+		&.active {
+			border-bottom: 2px solid var(--cds-border-interactive);
+			padding-bottom: 8px;
+			color: var(--cds-text-primary);
+			font-weight: var(--font-weight-semibold);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--cds-focus);
+			outline-offset: -2px;
+			font-weight: inherit;
+		}
+	}
+}
+
+.es-tabs {
+	.es-tabs__tab {
+		color: var(--cds-text-secondary);
+
+		&[data-state="active"] {
+			color: var(--cds-text-primary);
+			font-weight: var(--font-weight-semibold);
+		}
+	}
+
+	.es-tabs__indicator {
+		background-color: var(--cds-border-interactive);
+		height: 2px;
+	}
+}
+
+// es-tab-buttons -> Carbon content switcher: bordered box, selected segment
+// inverts to $layer-selected-inverse
+.es-tab-buttons {
+	border: 1px solid var(--cds-border-subtle-01);
+	border-radius: 0;
+	background: transparent;
+
+	.es-tab-btn,
+	button {
+		border-radius: 0;
+
+		&[data-state="active"],
+		&.active {
+			background-color: var(--cds-layer-selected-inverse);
+			color: var(--cds-text-inverse);
+		}
+	}
+}

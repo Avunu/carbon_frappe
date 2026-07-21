@@ -1,0 +1,32 @@
+// WP12 — frappe-charts theming via --charts-* custom properties, plus the
+// Carbon categorical palette exposed as --chart-color-1..14 (consumed by the
+// carbon_charts.bundle.js shim and available to custom dashboards).
+@use "../generated/chart-palettes" as palettes;
+
+.chart-container {
+	// Carbon data-viz chrome: secondary labels, subtle axes, inverse tooltip
+	--charts-label-color: var(--cds-text-secondary);
+	--charts-axis-line-color: var(--cds-border-subtle-00);
+	--charts-stroke-width: 2px;
+	--charts-dataset-circle-stroke: var(--cds-background);
+	--charts-dataset-circle-stroke-width: 2px;
+	--charts-tooltip-title: var(--cds-text-inverse);
+	--charts-tooltip-label: var(--cds-text-inverse);
+	--charts-tooltip-value: var(--cds-text-inverse);
+	--charts-tooltip-bg: var(--cds-background-inverse);
+	--charts-legend-label: var(--cds-text-secondary);
+}
+
+:root,
+[data-theme="light"] {
+	@for $i from 1 through length(palettes.$chart-colors-light) {
+		--chart-color-#{$i}: #{nth(palettes.$chart-colors-light, $i)};
+	}
+}
+
+[data-theme="dark"],
+.dark {
+	@for $i from 1 through length(palettes.$chart-colors-dark) {
+		--chart-color-#{$i}: #{nth(palettes.$chart-colors-dark, $i)};
+	}
+}

@@ -1,0 +1,44 @@
+// carbon_frappe email bundle — SHADOWS frappe's email.bundle.css.
+// Premailer inlines this into outgoing HTML email and mail clients strip
+// custom properties, so every override here is a LITERAL value (no var()).
+@use "@carbon/colors" as c;
+
+// frappe's email styles, recompiled (self-contained $-var stylesheet)
+@import "frappe/public/scss/email.bundle";
+
+// -- Carbon overrides (literals only) ----------------------------------------
+$email-font: "IBM Plex Sans", "Helvetica Neue", "Segoe UI", "Roboto", "Arial", sans-serif;
+
+body,
+.body-table,
+.body-table td {
+	font-family: $email-font;
+	color: c.$gray-100; // #161616
+}
+
+a {
+	color: c.$blue-60; // #0f62fe
+}
+
+hr {
+	border-top: 1px solid c.$gray-20; // #e0e0e0
+}
+
+.with-container p {
+	color: c.$gray-70; // #525252
+}
+
+.email-masthead a,
+.brand-name {
+	color: c.$gray-100;
+}
+
+// buttons in transactional mails -> Carbon primary, square
+.btn,
+.button,
+.btn-primary {
+	background-color: c.$blue-60;
+	border-radius: 0;
+	color: #ffffff;
+	border: none;
+}

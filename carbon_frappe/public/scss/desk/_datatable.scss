@@ -1,0 +1,53 @@
+// WP8 — Report view / frappe-datatable + editable child-table grid -> Carbon
+// data table. Colors and borders only: .dt-row heights and inline-editor
+// heights are JS-measured by frappe-datatable and MUST NOT change.
+
+.datatable {
+	--dt-border-radius: 0;
+	--dt-header-cell-bg: var(--cds-layer-accent-01);
+	--dt-cell-bg: var(--cds-layer-01);
+	--dt-border-color: var(--cds-border-subtle-01);
+	--dt-selection-highlight-color: var(--cds-highlight);
+	--dt-light-bg: var(--cds-layer-hover-01);
+	--dt-primary-color: var(--cds-interactive);
+	--dt-text-color: var(--cds-text-primary);
+
+	.dt-header .dt-cell {
+		font-weight: var(--font-weight-semibold);
+		color: var(--cds-text-primary);
+	}
+
+	// focused cell: Carbon 2px $focus (replaces hardcoded #9bccf8)
+	.dt-cell--focused .dt-cell__content {
+		border-color: var(--cds-focus) !important;
+	}
+}
+
+// editable child-table grid
+.grid-heading-row {
+	background-color: var(--cds-layer-accent-01);
+	border-radius: 0;
+	font-weight: var(--font-weight-semibold);
+	color: var(--cds-text-primary);
+}
+
+.form-grid,
+.grid-body {
+	border-radius: 0;
+
+	.grid-row {
+		&:hover {
+			background-color: var(--cds-layer-hover-01);
+		}
+	}
+
+	.grid-static-col,
+	.row-index {
+		border-color: var(--cds-border-subtle-01);
+	}
+}
+
+.grid-add-row,
+.grid-footer .btn {
+	color: var(--cds-link-primary);
+}

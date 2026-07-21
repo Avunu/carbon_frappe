@@ -1,0 +1,176 @@
+// WP3 — Form controls -> Carbon field anatomy.
+// Carbon text-input: $field background, bottom border only ($border-strong),
+// zero radius, 16px inline padding, 2px inset $focus outline, invalid state
+// = 2px $support-error. Selectors cover desk (.form-control) and frappe-ui's
+// component classes (.form-input/.form-select/.form-textarea) so any
+// frappe-ui surface served with this CSS matches.
+
+:root {
+	// Carbon sm field height (32px). --checkbox-size: Carbon checkbox is 16px.
+	--input-height: 32px;
+	--btn-height: 32px;
+	--checkbox-size: 16px;
+}
+
+.form-control,
+.form-input,
+.form-select,
+.form-textarea {
+	background-color: var(--control-bg);
+	border: none;
+	border-bottom: 1px solid var(--cds-border-strong-01);
+	border-radius: 0;
+	color: var(--cds-text-primary);
+	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard),
+		outline var(--carbon-duration-fast-01) var(--carbon-easing-standard);
+
+	&::placeholder {
+		color: var(--cds-text-placeholder);
+	}
+
+	&:hover:not(:disabled):not([readonly]) {
+		background-color: var(--cds-field-hover-01);
+	}
+
+	&:focus,
+	&:focus-within {
+		background-color: var(--control-bg);
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+		border-bottom-color: transparent;
+		box-shadow: none;
+	}
+
+	&:disabled,
+	&[readonly] {
+		background-color: var(--cds-field-01);
+		border-bottom-color: transparent;
+		color: var(--cds-text-disabled);
+		-webkit-text-fill-color: var(--cds-text-disabled);
+	}
+}
+
+textarea.form-control,
+.form-textarea {
+	height: auto;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+
+select.form-control,
+.form-select {
+	padding-inline-end: 32px;
+}
+
+// Invalid state: Carbon uses a 2px support-error outline (not a red border)
+.frappe-control.has-error {
+	input,
+	select,
+	textarea,
+	.control-input {
+		border: none !important;
+		border-radius: 0;
+		outline: 2px solid var(--cds-support-error);
+		outline-offset: -2px;
+
+		&:focus {
+			box-shadow: none;
+		}
+	}
+}
+
+// Read-only display fields: Carbon read-only field keeps a subtle bottom rule
+.like-disabled-input {
+	background-color: var(--cds-field-01);
+	border-radius: 0;
+	border-bottom: 1px solid var(--cds-border-subtle-01);
+	color: var(--cds-text-primary);
+}
+
+// Labels: Carbon label-01 (12px, $text-secondary, 8px gap)
+.control-label {
+	font-size: var(--text-xs);
+	font-weight: var(--font-weight-regular);
+	color: var(--cds-text-secondary);
+	letter-spacing: 0.32px;
+	margin-bottom: 8px;
+}
+
+.control-label.reqd:after {
+	color: var(--cds-support-error);
+}
+
+// Helper text: Carbon helper-text-01
+.help-box {
+	font-size: var(--text-xs);
+	color: var(--cds-text-helper);
+	letter-spacing: 0.32px;
+}
+
+// Checkbox: Carbon 16px, 1px radius, $icon-primary border, flat checked fill
+input[type="checkbox"] {
+	border: 1px solid var(--cds-icon-primary);
+	border-radius: 1px;
+
+	&:checked {
+		background-color: var(--cds-icon-primary);
+	}
+
+	&.disabled-deselected,
+	&:disabled {
+		border-color: var(--cds-icon-disabled);
+		background-color: transparent;
+		box-shadow: none;
+	}
+
+	&.disabled-selected,
+	&:disabled:checked {
+		background-color: var(--cds-icon-disabled);
+	}
+}
+
+// Radio: Carbon ring + dot in $icon-primary
+input[type="radio"] {
+	&::before {
+		border: 1px solid var(--cds-icon-primary);
+	}
+
+	&:checked::before {
+		background-color: var(--cds-icon-primary);
+		box-shadow: inset 0 0 0 3px var(--cds-background);
+	}
+
+	&:focus-visible::before {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: 1px;
+	}
+}
+
+// Toggle/switch (bootstrap custom-switch): Carbon toggle — $toggle-off track,
+// $support-success when on, round knob
+.custom-switch .custom-control-input {
+	~ .custom-control-label::before {
+		background-color: var(--cds-toggle-off);
+		border: none;
+		border-radius: 999px;
+	}
+
+	~ .custom-control-label::after {
+		background-color: var(--cds-icon-on-color);
+		border-radius: 999px;
+	}
+
+	&:checked ~ .custom-control-label::before {
+		background-color: var(--cds-support-success);
+	}
+
+	&:focus ~ .custom-control-label::before {
+		box-shadow: 0 0 0 2px var(--cds-focus);
+	}
+}
+
+// Code editors keep the field treatment
+.ace_editor {
+	border-radius: 0;
+	border-bottom: 1px solid var(--cds-border-strong-01);
+}

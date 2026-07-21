@@ -1,0 +1,34 @@
+// Legacy alias pins. Most of frappe's legacy vars (espresso/legacy.css) alias
+// the semantic layer and follow the ramp remap automatically; these are the
+// slots with Carbon-specific meanings that need exact values.
+@use "@carbon/colors" as c;
+
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark {
+	// THE headline change: frappe's black primary button becomes Carbon
+	// button-primary (blue-60 in every Carbon theme).
+	--btn-primary: #{c.$blue-60};
+	--primary: #{c.$blue-60}; // bootstrap theme color; drives --brand-color etc.
+	--primary-color: #{c.$blue-60};
+
+	// Carbon field tokens (dark: field-01 #262626 differs deliberately from
+	// the dark hover layer #333333 that --surface-gray-2 resolves to).
+	--control-bg: var(--cds-field-01);
+	--control-bg-on-gray: var(--cds-field-02);
+	--disabled-control-bg: var(--cds-field-01);
+	--input-disabled-bg: var(--cds-field-01);
+
+	// frappe uses --highlight-color for row/element HOVER tints (not selection)
+	--highlight-color: var(--cds-layer-hover-01);
+	--sidebar-select-color: var(--cds-layer-selected-01);
+	--switch-bg: var(--cds-toggle-off);
+	--skeleton-bg: var(--cds-skeleton-background);
+	--awesomebar-focus-bg: var(--cds-field-02);
+	--awesomplete-hover-bg: var(--cds-layer-hover-01);
+	--fg-hover-color: var(--cds-layer-hover-01);
+	--date-active-bg: var(--cds-background-inverse);
+	--date-active-text: var(--cds-text-inverse);
+	--progress-bar-bg: var(--cds-interactive);
+}

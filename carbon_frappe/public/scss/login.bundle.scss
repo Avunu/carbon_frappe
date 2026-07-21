@@ -1,0 +1,61 @@
+// carbon_frappe login bundle — SHADOWS frappe's login.bundle.css.
+// Login/reset-password pages are standalone (no desk bundle), so this carries
+// fonts + tokens + the generic control/button partials itself.
+
+@import "./carbon/fonts";
+
+// frappe's login styles, recompiled
+@import "frappe/public/scss/login.bundle";
+
+// Carbon layers
+@import "./carbon/themes";
+@import "./map";
+@import "./desk/controls";
+@import "./desk/buttons";
+
+// login card -> flat Carbon tile with a full-height field treatment
+.for-login,
+.for-forgot,
+.for-login-with-email-link,
+.for-signup,
+.for-email-login,
+.for-reset-password {
+	.page-card {
+		border-radius: 0;
+		border: 1px solid var(--cds-border-subtle-00);
+
+		.page-card-body {
+			input[type="text"],
+			input[type="email"],
+			input[type="password"] {
+				height: 40px; // Carbon md field on the roomier login layout
+				border: none;
+				border-bottom: 1px solid var(--cds-border-strong-01);
+				border-radius: 0;
+				background-color: var(--cds-field-01);
+				padding: 0 16px;
+
+				&:focus {
+					outline: 2px solid var(--cds-focus);
+					outline-offset: -2px;
+					border-bottom-color: transparent;
+				}
+			}
+
+			.form-group.invalid input {
+				border: none;
+				outline: 2px solid var(--cds-support-error);
+				outline-offset: -2px;
+			}
+		}
+
+		.btn-primary,
+		.btn-login {
+			width: 100%;
+			height: 48px;
+			border-radius: 0;
+			text-align: start;
+			justify-content: flex-start;
+		}
+	}
+}
