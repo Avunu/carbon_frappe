@@ -23,31 +23,79 @@
 	}
 }
 
-// editable child-table grid
+// editable child-table grid -> Carbon DataTable. Colors & borders only; row
+// and inline-editor heights are JS-measured by frappe and MUST NOT change.
+//
+// Carbon DataTable palette: header $layer-accent-01 (#e0e0e0), rows $layer-01
+// (#f4f4f4), hover $layer-hover-01 (#e8e8e8), separators $border-subtle-01,
+// no vertical cell dividers, semibold $text-primary header labels.
+
+// Header row -> Carbon accent-gray. frappe paints the header *cells*
+// (.grid-static-col / .row-check / .row-index) and the inner .grid-row
+// --subtle-fg at higher specificity than the row, so the accent has to be
+// re-applied to them too (incl. the sticky check/index columns).
 .grid-heading-row {
 	background-color: var(--cds-layer-accent-01);
 	border-radius: 0;
+	border-bottom-color: var(--cds-border-subtle-01);
 	font-weight: var(--font-weight-semibold);
 	color: var(--cds-text-primary);
+
+	.grid-row,
+	.grid-static-col,
+	.row-check,
+	.row-index {
+		background-color: var(--cds-layer-accent-01);
+	}
 }
 
-.form-grid,
+// Container: square, subtle Carbon border.
+.form-grid {
+	border-radius: 0;
+	border-color: var(--cds-border-subtle-01);
+}
+
+// Body: rows on $layer-01. frappe paints every cell surface --fg-color (white)
+// at .grid-body scope, so re-point them all — otherwise the rows stay white and
+// the row-hover (below) is occluded by the opaque cell backgrounds.
 .grid-body {
 	border-radius: 0;
 
-	.grid-row {
-		&:hover {
+	.grid-static-col,
+	.data-row .row-check,
+	.data-row .row-index,
+	.col:last-child {
+		background-color: var(--cds-layer-01);
+		border-color: var(--cds-border-subtle-01);
+	}
+
+	// row hover -> $layer-hover-01, applied to the cells so it is visible over
+	// their opaque $layer-01 background.
+	.grid-row:hover {
+		.grid-static-col,
+		.data-row .row-check,
+		.data-row .row-index,
+		.col:last-child {
 			background-color: var(--cds-layer-hover-01);
 		}
 	}
-
-	.grid-static-col,
-	.row-index {
-		border-color: var(--cds-border-subtle-01);
-	}
 }
 
+// Carbon has no vertical cell dividers — drop frappe's per-column right border.
+.grid-row > .row .col {
+	border-right: none;
+}
+
+// Horizontal row separators -> Carbon $border-subtle-01.
+.grid-row {
+	border-bottom-color: var(--cds-border-subtle-01);
+}
+
+// Footer + row action buttons render as Carbon links (Add row, custom actions,
+// Download / Upload, pagination).
 .grid-add-row,
-.grid-footer .btn {
+.grid-footer .btn,
+.grid-custom-buttons .btn,
+.grid-footer-toolbar button {
 	color: var(--cds-link-primary);
 }
