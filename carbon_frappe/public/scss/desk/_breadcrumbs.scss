@@ -1,0 +1,97 @@
+// WP — Breadcrumbs -> Carbon Design System breadcrumb.
+//
+// Frappe's default (frappe/public/scss/desk/breadcrumb.scss) renders breadcrumb
+// links in muted gray (--ink-gray-5) at --text-lg / medium weight, with a dark
+// last item. Carbon's breadcrumb is different in kind: $link-primary (blue)
+// links, body-compact-01 (14px / regular), no underline until hover, a
+// $text-secondary "/" divider, and a $text-primary (near-black) *current page*
+// that reads as text, not a link.
+//
+// All values are --cds-* tokens, which the carbon theme flips between light and
+// dark, so this converges in both themes. carbon's desk bundle @imports the
+// frappe bundle first, so these equal-specificity rules win by load order.
+
+.navbar-breadcrumbs {
+	// Every breadcrumb item except the current page is a link.
+	a {
+		color: var(--cds-link-primary);
+		font-size: var(--text-md); // 14px — Carbon body-compact-01
+		font-weight: var(--font-weight-regular);
+		letter-spacing: 0;
+		text-decoration: none;
+
+		&:hover {
+			color: var(--cds-link-primary-hover);
+			text-decoration: underline;
+			text-underline-offset: 2px;
+		}
+
+		// "/" divider between items -> Carbon $text-secondary. (frappe's
+		// higher-specificity `li:first-child a::before { content: none }` still
+		// suppresses the divider before the home item.)
+		&::before {
+			content: "/";
+			color: var(--cds-text-secondary);
+			margin-left: 8px;
+			margin-right: 8px;
+			font-size: var(--text-md);
+			font-weight: var(--font-weight-regular);
+			letter-spacing: 0;
+			text-decoration: none;
+		}
+	}
+
+	// Home (first) icon-link follows the link color. Frappe icons take their
+	// color from --icon-stroke, so re-point it locally — this is the idiomatic
+	// pattern (see frappe desk/form_sidebar.scss) and works for the stroke-based
+	// line icon without assuming fill vs stroke.
+	li:first-child a {
+		--icon-stroke: var(--cds-link-primary);
+
+		&:hover {
+			--icon-stroke: var(--cds-link-primary-hover);
+		}
+	}
+
+	// Overflow "..." trigger -> render like a breadcrumb link, not a default btn.
+	.more-button.btn-default {
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		--icon-stroke: var(--cds-link-primary);
+
+		&:hover {
+			background: var(--cds-layer-hover-01);
+			--icon-stroke: var(--cds-link-primary-hover);
+		}
+	}
+}
+
+// The workspace / doctype / form links carry frappe classes that get a separate
+// "page title" treatment which breaks trail consistency: `.title-text` is sized
+// to --text-2xl (20px) + $text-primary by desk/_list.scss, and to --text-lg
+// (16px) on Form routes by frappe's own rules. Force every breadcrumb item back
+// to the uniform link size/weight. The `.page-title ... li a.<class>` selector
+// (specificity 0,3,2) outranks both offenders, and carbon loads last.
+.page-title .navbar-breadcrumbs li a.title-text,
+.page-title .navbar-breadcrumbs li a.title-text-form,
+.page-title .navbar-breadcrumbs li a.worksapce-breadcrumb {
+	font-size: var(--text-md);
+	font-weight: var(--font-weight-regular);
+	color: var(--cds-link-primary);
+}
+
+// Current page (last / disabled item) is text, not a link -> $text-primary,
+// no underline. Wins over the link colouring above (equal specificity, later)
+// and over frappe's `li:last-child > a { color: --ink-gray-9 !important }`.
+.page-title .navbar-breadcrumbs li:last-child > a,
+.page-title .navbar-breadcrumbs li.disabled > a {
+	color: var(--cds-text-primary) !important;
+	font-size: var(--text-md);
+	font-weight: var(--font-weight-regular);
+
+	&:hover {
+		color: var(--cds-text-primary) !important;
+		text-decoration: none;
+	}
+}
