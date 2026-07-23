@@ -21,18 +21,19 @@
   "author": "Avunu LLC",
   "type": "module",
   "dependencies": {
-    "@carbon/charts": "1.27.16",
+    "@carbon/charts": "1.27.17",
     "@carbon/styles": "1.111.0"
   },
   "devDependencies": {
-    "@ibm/plex-mono": "1.1.0",
+    "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
-    "sass": "1.69.5"
+    "sass": "1.101.6"
   },
   "scripts": {
     "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only",
     "codegen": "node scripts/sync-fonts.mjs && node scripts/generate-chart-palettes.mjs",
     "audit": "node scripts/audit-tokens.mjs --strict",
-    "compile": "node scripts/dev-compile.mjs"
+    "compile": "node scripts/dev-compile.mjs",
+    "upgrade": "npx npm-check-updates -u && yarn install && yarn build"
   }
 }
