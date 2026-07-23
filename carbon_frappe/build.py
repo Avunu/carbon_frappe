@@ -13,7 +13,7 @@ import frappe
 SHADOWED_BUNDLES = ("desk", "website", "login", "email", "print")
 
 
-def patch_assets():
+def patch_assets(app_name=None):
 	"""Point frappe's stylesheet keys in assets.json at carbon_frappe's shadow bundles.
 
 	esbuild's assets.json merge is ordering-dependent; this makes the shadow
