@@ -64,6 +64,10 @@
 	.dropdown-item {
 		min-height: 32px;
 		color: var(--cds-text-secondary);
+		// frappe desk/global.scss hardcodes an 8px literal (not a radius token),
+		// so it survives the token squaring — the item hover reads as a rounded
+		// pill. Square it to match Carbon's menu items.
+		border-radius: 0;
 
 		&:hover,
 		&:focus {

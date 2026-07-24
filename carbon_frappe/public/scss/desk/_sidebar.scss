@@ -32,7 +32,15 @@
 }
 
 // hover pills in the workspace sidebar go square too
-.body-sidebar .standard-sidebar-item:not(.active-sidebar):has(a:not(.section-break)):hover {
+.body-sidebar .standard-sidebar-item:not(.active-sidebar):has(a:not(.section-break)):hover,
+.body-sidebar-container.expanded .body-sidebar .dropdown-navbar-user:hover {
+	border-radius: 0;
+}
+
+// workspace header logo + app-icon boxes hardcode 8px / 10px radius literals
+// (sidebar_header.scss) that bypass token squaring.
+.header-logo-container,
+.header-logo .icon-container {
 	border-radius: 0;
 }
 

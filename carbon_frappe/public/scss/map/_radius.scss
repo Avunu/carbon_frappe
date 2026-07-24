@@ -1,8 +1,11 @@
-// Carbon v11 is square: every frappe radius token collapses to 0.
+// Carbon v11 is square: every frappe / frappe-ui radius token collapses to 0.
 //
-// These are frappe **v16** token names (`--border-radius-*`, declared in
-// frappe/public/scss/espresso/_borders.scss). The develop branch renamed them to
-// `--radius-*`; this branch targets v16, so those names are gone from here.
+// Two token families are squared here:
+//   1. `--border-radius-*` — frappe **v16** desk/website names (declared in
+//      frappe/public/scss/espresso/_borders.scss).
+//   2. `--radius-*` — frappe-ui's Tailwind radius tokens, consumed by the SPA
+//      apps (CRM/Helpdesk/Builder) via carbon_frappe_ui.bundle. Declared at the
+//      bottom of this block.
 //
 // One override point squares the whole desk/website: frappe wires Bootstrap's own
 // `$border-radius` / `$border-radius-sm|lg` / `$input-border-radius` to
@@ -34,4 +37,34 @@
 	// that re-declares this at :root, so squaring that one modal needs a
 	// consumer-level override there — see _misc.scss. We still state intent here.
 	--desktop-modal-radius: 0;
+
+	// frappe-ui (v1) radius tokens. frappe-ui's Tailwind plugin rewires EVERY
+	// `borderRadius` key to `var(--radius-<key>)` (tailwind/plugin.js
+	// buildRadiusConfig), and bare `rounded` (its single most-used class, 601
+	// occurrences) resolves to `var(--radius-4)`. Declaring the whole set here
+	// squares ~1,600 rounding occurrences across CRM/Helpdesk/Builder at once —
+	// far more than the per-class `.rounded-*` overrides in _frappe-ui-utilities
+	// ever reached — and lets those class hacks be retired for v1. Emitted in the
+	// desk bundle too (harmless: v16 desk reads --border-radius-*, not --radius-*),
+	// and carried into carbon_frappe_ui.bundle for the SPA apps.
+	//
+	// Keys/values mirror frappe-ui/tailwind/generated/radius.json. --radius-9
+	// (999px) and --radius-full (9999px) stay round: Carbon's one curved shape.
+	--radius-0: 0;
+	--radius-none: 0;
+	--radius-1: 0;
+	--radius-2: 0;
+	--radius-3: 0;
+	--radius-4: 0; // `rounded` (DEFAULT) resolves here
+	--radius-5: 0;
+	--radius-6: 0;
+	--radius-7: 0;
+	--radius-8: 0;
+	--radius-sm: 0;
+	--radius-md: 0;
+	--radius-lg: 0;
+	--radius-xl: 0;
+	--radius-2xl: 0;
+	--radius-9: 999px; // pill
+	--radius-full: 9999px; // pill / round avatar
 }

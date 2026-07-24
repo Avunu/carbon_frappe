@@ -17,7 +17,10 @@
 		color: var(--cds-text-primary);
 	}
 
-	// focused cell: Carbon 2px $focus (replaces hardcoded #9bccf8)
+	// focused cell: Carbon 2px $focus (replaces hardcoded #9bccf8). frappe-datatable
+	// emits `.dt-cell--focus` (no -ed); the -ed spelling never matched, so keyboard
+	// focus fell through to the UA ring. Cover both.
+	.dt-cell--focus .dt-cell__content,
 	.dt-cell--focused .dt-cell__content {
 		border-color: var(--cds-focus) !important;
 	}
@@ -89,6 +92,15 @@
 // Horizontal row separators -> Carbon $border-subtle-01.
 .grid-row {
 	border-bottom-color: var(--cds-border-subtle-01);
+}
+
+// The add-row / custom-button toolbar under the grid inherits frappe's
+// var(--fg-color) fill (grid.scss) — now layer-01, which reads as a heavy gray
+// bar under the table on a white form. Carbon's add-row is a plain text action;
+// drop the fill so it sits flush on the form surface.
+.grid-footer,
+.grid-custom-buttons {
+	background-color: transparent;
 }
 
 // Footer + row action buttons render as Carbon links (Add row, custom actions,

@@ -1,6 +1,14 @@
 // WP9 — Workspace widgets -> Carbon tiles; indicators -> Carbon tags;
 // bootstrap alerts -> Carbon inline notifications; progress -> Carbon bar.
 
+// .frappe-card (workspace / dashboard cards) hardcodes a 12px radius literal
+// (card.scss) that bypasses the radius-token squaring — square it. The
+// .search-bar affordance likewise hardcodes 8px (navbar.scss).
+.frappe-card,
+.search-bar .search-icon {
+	border-radius: 0;
+}
+
 // Carbon tile: $layer-01, flat, square, 16px padding; clickable tiles get
 // $layer-hover on hover.
 .widget {

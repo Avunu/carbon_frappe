@@ -1,20 +1,78 @@
 // WP13 — Overrides for frappe-ui's hardcoded raw-palette Tailwind utilities.
-// ~9% of frappe-ui styling compiles to literal oklch values (bg-blue-500,
-// text-gray-600, ...) that no CSS-variable remap can reach. This list covers
-// the high-frequency classes measured in frappe-ui/src/components (top ~20 by
-// occurrence). Loaded last and unlayered, so it beats Tailwind's @layer
-// utilities without !important.
+// ~11% of frappe-ui styling compiles to LITERAL colors — oklch on frappe-ui v1
+// (CRM/Helpdesk/Builder), hex on v0 (Wiki/Insights/HRMS) — that no CSS-variable
+// remap can reach, because the utility inlines the color instead of reading
+// var(--gray-*). This file rewrites the chrome-relevant ones. Loaded last and
+// unlayered, so it beats Tailwind's @layer utilities without !important.
+//
+// Scope note — CHROME, not CONTENT. Utilities whose whole job is to *be* a color
+// (the editor font-color swatch picker's full `bg-<hue>-100`/`text-<hue>-600`
+// rainbow and frappe-ui's parallel `dark-<hue>-*` palette, Builder's page-preset
+// thumbnails, CRM's like/rating icons) are deliberately NOT remapped here —
+// re-theming them would defeat their purpose. We cover neutrals, the handful of
+// semantic status classes used as UI chrome, rings, and overlay scrims.
 @use "@carbon/colors" as c;
 
-.bg-gray-900 {
+// State-variant fan-out. Tailwind compiles `hover:bg-x` to `.hover\:bg-x:hover`
+// — a DIFFERENT selector a bare `.bg-x` rule never matches. Half-themed
+// interactive states (Carbon at rest, raw espresso on hover) read worse than
+// unthemed, so every rule that has an observed hover/active/focus variant emits
+// all of them together.
+@mixin v($base) {
+	.#{$base},
+	.hover\:#{$base}:hover,
+	.focus\:#{$base}:focus,
+	.focus-visible\:#{$base}:focus-visible,
+	.active\:#{$base}:active,
+	.group:hover .group-hover\:#{$base} {
+		@content;
+	}
+}
+
+// -- Neutrals: white / black / gray ------------------------------------------
+// bg-black / text-white are the Carbon "inverse" pattern (tooltips, inverted
+// chrome): dark surface in light theme, flipping with the theme tokens.
+@include v("bg-white") {
+	background-color: var(--cds-layer-01);
+}
+@include v("bg-black") {
 	background-color: var(--cds-background-inverse);
 }
-.bg-gray-500 {
+@include v("text-white") {
+	color: var(--cds-text-on-color);
+}
+@include v("text-black") {
+	color: var(--cds-text-primary);
+}
+
+@include v("bg-gray-900") {
+	background-color: var(--cds-background-inverse);
+}
+@include v("bg-gray-800") {
+	background-color: #{c.$gray-80};
+}
+@include v("bg-gray-700") {
+	background-color: #{c.$gray-70};
+}
+@include v("bg-gray-600") {
+	background-color: #{c.$gray-60};
+}
+@include v("bg-gray-500") {
 	background-color: #{c.$gray-50};
 }
-.bg-gray-400 {
+@include v("bg-gray-400") {
 	background-color: #{c.$gray-30};
 }
+@include v("bg-gray-200") {
+	background-color: var(--cds-layer-02);
+}
+@include v("bg-gray-100") {
+	background-color: var(--cds-layer-01);
+}
+@include v("bg-gray-50") {
+	background-color: var(--cds-layer-01);
+}
+
 .text-gray-900,
 .text-gray-800 {
 	color: var(--cds-text-primary);
@@ -22,34 +80,115 @@
 .text-gray-700 {
 	color: #{c.$gray-80};
 }
-.text-gray-600 {
+.text-gray-600,
+.text-gray-500 {
 	color: var(--cds-text-secondary);
 }
 .text-gray-400 {
-	color: #{c.$gray-50};
+	color: var(--cds-text-helper);
 }
 .text-gray-300 {
 	color: #{c.$gray-30};
 }
+.text-gray-200,
 .text-gray-100 {
 	color: #{c.$gray-10};
 }
-.border-gray-100 {
+
+.border-gray-100,
+.border-gray-200 {
+	border-color: var(--cds-border-subtle-00);
+}
+.border-gray-400 {
+	border-color: var(--cds-border-subtle-01);
+}
+.border-gray-800,
+.border-black {
+	border-color: var(--cds-border-strong-01);
+}
+.border-white {
+	border-color: var(--cds-border-inverse);
+}
+.divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
 	border-color: var(--cds-border-subtle-00);
 }
 
-.bg-blue-500,
-.bg-blue-600 {
+// -- Rings (dropdown / popover panels) ---------------------------------------
+// The headless-ui panel idiom `ring-1 ring-black ring-opacity-5` renders a 5%
+// black hairline — invisible on a #262626 dark dropdown (every CRM/Helpdesk menu
+// had no edge). Repoint ring-black/white/gray at a Carbon border and cancel the
+// 5% opacity so it becomes a clean 1px Carbon rule.
+.ring-black,
+.ring-gray-100,
+.ring-gray-600 {
+	--tw-ring-color: var(--cds-border-subtle-01);
+}
+.ring-white {
+	--tw-ring-color: var(--cds-border-inverse);
+}
+.ring-blue-200,
+.ring-blue-400 {
+	--tw-ring-color: var(--cds-focus);
+}
+.ring-opacity-5,
+.ring-opacity-20 {
+	--tw-ring-opacity: 1;
+}
+
+// -- Overlay scrims (modal / drawer backdrops) -------------------------------
+// bg-black/40..90 and from-black/60 are backdrop scrims; map to Carbon $overlay
+// (rgba(0,0,0,0.6), theme-invariant). Slash-opacity compiles to yet another
+// selector shape (.bg-black\/65) unreachable by a bare .bg-black rule.
+.bg-black\/40,
+.bg-black\/50,
+.bg-black\/60,
+.bg-black\/65,
+.bg-black\/70,
+.bg-black\/80,
+.bg-black\/90,
+.sm\:bg-black\/90 {
+	background-color: var(--cds-overlay);
+}
+.bg-white\/80,
+.bg-white\/90 {
+	background-color: color-mix(in srgb, var(--cds-layer-01) 90%, transparent);
+}
+.bg-gray-900\/60 {
+	background-color: var(--cds-overlay);
+}
+.bg-opacity-20,
+.bg-opacity-40,
+.bg-opacity-50 {
+	--tw-bg-opacity: 1;
+}
+.black-overlay,
+.bg-black-overlay-200,
+.bg-black-overlay-500,
+.bg-black-overlay-700 {
+	background-color: var(--cds-overlay);
+}
+
+// -- Semantic status classes used as chrome ----------------------------------
+@include v("bg-blue-500") {
 	background-color: var(--cds-interactive);
 }
-.bg-blue-300 {
+@include v("bg-blue-600") {
+	background-color: var(--cds-interactive);
+}
+@include v("bg-blue-300") {
 	background-color: #{c.$blue-30};
 }
-.bg-blue-200 {
+@include v("bg-blue-200") {
 	background-color: #{c.$blue-20};
 }
-.border-blue-400 {
-	border-color: #{c.$blue-40};
+@include v("bg-blue-100") {
+	background-color: #{c.$blue-20};
+}
+@include v("border-blue-400") {
+	border-color: var(--cds-focus);
+}
+@include v("border-blue-500") {
+	border-color: var(--cds-focus);
 }
 .text-blue-500,
 .text-blue-600 {
@@ -62,21 +201,36 @@
 .text-red-700 {
 	color: #{c.$red-70};
 }
+@include v("bg-red-500") {
+	background-color: var(--cds-support-error);
+}
+.bg-red-100 {
+	background-color: #{c.$red-10};
+}
+.fill-red-500 {
+	fill: var(--cds-support-error);
+}
 
-.bg-green-500 {
+@include v("bg-green-500") {
 	background-color: var(--cds-support-success);
 }
-.bg-green-300 {
+@include v("bg-green-300") {
 	background-color: #{c.$green-30};
 }
-.bg-green-200 {
+@include v("bg-green-200") {
 	background-color: #{c.$green-20};
 }
-.border-green-500 {
+@include v("border-green-500") {
 	border-color: var(--cds-support-success);
+}
+.bg-green-100 {
+	background-color: #{c.$green-10};
 }
 .text-green-800 {
 	color: #{c.$green-80};
+}
+.text-green-600 {
+	color: var(--cds-support-success);
 }
 
 .text-yellow-500,
@@ -84,11 +238,51 @@
 	color: var(--cds-support-warning);
 }
 
-// frappe-ui Dialog panel rounding -> square
+// -- Dark-mode neutral variants (Builder chrome) -----------------------------
+// frappe-ui's darkMode is ['selector', '[data-theme="dark"]']; dark:bg-gray-800
+// etc. only take effect under that ancestor. Match Tailwind's :is() wrapper so
+// these win. (Only NEUTRAL dark: variants — the dark:<hue> font-picker swatches
+// are content and stay untouched.)
+:is([data-theme="dark"] .dark\:bg-black),
+:is(.dark .dark\:bg-black) {
+	background-color: var(--cds-background);
+}
+:is([data-theme="dark"] .dark\:bg-gray-800),
+:is(.dark .dark\:bg-gray-800) {
+	background-color: var(--cds-layer-02);
+}
+:is([data-theme="dark"] .dark\:text-gray-200),
+:is(.dark .dark\:text-gray-200),
+:is([data-theme="dark"] .dark\:\!text-gray-200),
+:is(.dark .dark\:\!text-gray-200) {
+	color: var(--cds-text-primary) !important;
+}
+:is([data-theme="dark"] .dark\:ring-white),
+:is(.dark .dark\:ring-white) {
+	--tw-ring-color: var(--cds-border-inverse);
+}
+
+// -- Radius ------------------------------------------------------------------
+// frappe-ui v1 wires radius to --radius-* (squared in map/_radius.scss), so v1
+// needs nothing here. frappe-ui v0 (Wiki/Insights/HRMS) HARDCODES radius per
+// class, so square the full set explicitly. rounded-full stays round.
+.rounded,
+.rounded-none,
+.rounded-sm,
+.rounded-md,
+.rounded-lg,
 .rounded-xl,
 .rounded-2xl,
-.rounded-lg,
-.rounded-md {
+.rounded-3xl,
+.rounded-t,
+.rounded-b,
+.rounded-l,
+.rounded-r,
+.rounded-t-sm,
+.rounded-tl-sm,
+.rounded-tr-sm,
+.rounded-b-lg,
+.rounded-l-none {
 	border-radius: 0;
 }
 .rounded-full {
