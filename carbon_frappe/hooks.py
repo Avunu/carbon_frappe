@@ -15,10 +15,12 @@ app_license = "MIT"
 # Chart palette shim: injects Carbon categorical colors into frappe.Chart
 app_include_js = ["carbon_charts.bundle.js"]
 
-# frappe-ui SPA pages (CRM/Helpdesk/Banking) bypass base.html, so *_include_css
-# can't reach them. This renderer injects carbon_frappe_ui.bundle.css into their
-# <head>, but only for SPAs whose app is installed on the bench. See renderer.py.
-page_renderer = ["carbon_frappe.renderer.CarbonSPARenderer"]
+# frappe-ui / Vite SPA pages (CRM, Helpdesk, Banking, Builder, Insights, Wiki,
+# HRMS, and any future app) bypass base.html, so *_include_css can't reach them
+# and the assets.json bundle-shadow doesn't apply. This after_request hook injects
+# carbon_frappe_ui.bundle.css into any HTML response carrying Vite's ES-module
+# entry signature — covering all such apps generically. See injector.py.
+after_request = ["carbon_frappe.injector.inject_carbon_ui_css"]
 
 # Re-assert the assets.json shadow after migrations (heals partial
 # `bench build --apps frappe` runs that re-point the keys at frappe's assets).
