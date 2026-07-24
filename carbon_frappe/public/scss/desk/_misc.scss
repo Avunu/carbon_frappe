@@ -156,6 +156,27 @@ pre,
 	.comment-input-wrapper .ql-editor {
 		background-color: var(--cds-field-02);
 	}
+
+	// the timeline's "Activity" heading + actions rows hardcode var(--bg-color)
+	// (white), which cuts a bright band across the tinted footer panel; clear it
+	// so comments + activity read as one continuous surface.
+	.activity-title,
+	.timeline-actions {
+		background-color: transparent;
+	}
+}
+
+// User-onboarding floating panel (OnboardingPanel.vue) injects its own inline
+// <style> at runtime — .onb-panel ships an 8px radius, a big soft 0 12px 40px
+// drop shadow, and a non-token dark surface (#232323). That <style> mounts after
+// this bundle, so square it, swap to Carbon's single raised shadow, and correct
+// the surface. !important is required to beat the runtime-injected rule and its
+// own [data-theme="dark"] variant.
+.onb-panel {
+	border-radius: 0 !important;
+	box-shadow: var(--modal-shadow) !important;
+	background-color: var(--cds-layer-01) !important;
+	border: 1px solid var(--cds-border-subtle-01);
 }
 
 // legacy #desktop page: its own desktop.css declares `--desktop-modal-radius: 30px`

@@ -94,6 +94,15 @@
 	border-bottom-color: var(--cds-border-subtle-01);
 }
 
+// The add-row / custom-button toolbar under the grid inherits frappe's
+// var(--fg-color) fill (grid.scss) — now layer-01, which reads as a heavy gray
+// bar under the table on a white form. Carbon's add-row is a plain text action;
+// drop the fill so it sits flush on the form surface.
+.grid-footer,
+.grid-custom-buttons {
+	background-color: transparent;
+}
+
 // Footer + row action buttons render as Carbon links (Add row, custom actions,
 // Download / Upload, pagination).
 .grid-add-row,
