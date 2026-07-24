@@ -40,7 +40,6 @@
 
 // filter/tag pills -> Carbon dismissible tag (24px, pill, gray)
 .filter-pill,
-.filter-label,
 .tag-pill {
 	background-color: var(--cds-layer-accent-01);
 	color: var(--cds-text-primary);
@@ -50,6 +49,21 @@
 
 	&:hover {
 		background-color: var(--cds-border-subtle-01);
+	}
+}
+
+// .filter-label is a filter SELECTOR (report / dashboard date-range & interval
+// dropdowns), NOT a dismissible tag — grouping it with the pills above gave it a
+// pill radius, and frappe hardcodes a 22px literal on it in .filter-selector.
+// Carbon selectors are square: de-conflate it and give it a square ghost hover.
+// The compound selector matches frappe's 22px-literal specificity so it wins.
+.filter-label,
+.page-form .filter-selector .btn-group .filter-label {
+	border-radius: 0;
+	color: var(--cds-text-primary);
+
+	&:hover {
+		background-color: var(--cds-layer-hover-01);
 	}
 }
 
