@@ -22,6 +22,26 @@
 	--text-5xl: 28px;
 }
 
+// Carbon body-compact-01 (the 14px desk body size) carries 0.16px tracking.
+// Espresso computes per-step letter-spacing (~0.02em) which this theme's type
+// remap otherwise leaves in place; set the Carbon value globally. Labels already
+// pin their own 0.32px in desk/_controls.scss; headings (>=20px) want 0 so they
+// aren't over-tracked, matching Carbon's heading-03+ specs.
+body {
+	letter-spacing: 0.16px;
+}
+
+h1,
+h2,
+h3,
+h4,
+.h1,
+.h2,
+.h3,
+.h4 {
+	letter-spacing: 0;
+}
+
 code,
 pre,
 kbd,

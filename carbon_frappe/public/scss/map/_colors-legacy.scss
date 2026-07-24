@@ -31,4 +31,33 @@
 	--date-active-bg: var(--cds-background-inverse);
 	--date-active-text: var(--cds-text-inverse);
 	--progress-bar-bg: var(--cds-interactive);
+
+	// Elevation roles. frappe collapses page / card / modal onto ONE ramp step
+	// (desk/dark.scss wires --bg-color, --fg-color, --card-bg all to
+	// var(--gray-900)), so at runtime they resolve identically (#262626 dark) and
+	// dark mode has no elevation. The ramp can't separate them — pin the roles to
+	// the ascending Carbon layer ladder instead. Flips with data-theme, so one
+	// block covers both. These sit after frappe's desk/dark.scss in the cascade.
+	--bg-color: var(--cds-background); // page canvas: #ffffff / #161616
+	--fg-color: var(--cds-layer-01); // content surface: #f4f4f4 / #262626
+	--card-bg: var(--cds-layer-01);
+	--btn-default-bg: var(--cds-layer-01);
+	--modal-bg: var(--cds-layer-02); // raised: #ffffff / #393939
+	--toast-bg: var(--cds-layer-02);
+	--popover-bg: var(--cds-layer-02);
+	--subtle-fg: var(--cds-layer-accent-01); // subtle fill: #e0e0e0 / #393939
+
+	// Text & border roles that failed WCAG AA in dark (all were driven off ramp
+	// steps tuned for light-mode text). --text-muted 3.01:1 -> ~8:1;
+	// --placeholder-color ~1.2:1 (invisible) -> legible; --border-color ~1.05:1
+	// (invisible) -> visible. Correct in light too (text-secondary is #525252).
+	--text-muted: var(--cds-text-secondary);
+	--placeholder-color: var(--cds-text-placeholder);
+	--disabled-text-color: var(--cds-text-disabled);
+	--border-color: var(--cds-border-subtle-00); // #e0e0e0 / #393939
+	--table-border-color: var(--cds-border-subtle-00);
+	--btn-group-border-color: var(--cds-border-subtle-01);
+
+	// frappe's dark --shadow-base is a blue-tinted glow; Carbon is one flat drop.
+	--shadow-base: 0 2px 6px var(--cds-shadow);
 }

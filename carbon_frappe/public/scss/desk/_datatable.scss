@@ -17,7 +17,10 @@
 		color: var(--cds-text-primary);
 	}
 
-	// focused cell: Carbon 2px $focus (replaces hardcoded #9bccf8)
+	// focused cell: Carbon 2px $focus (replaces hardcoded #9bccf8). frappe-datatable
+	// emits `.dt-cell--focus` (no -ed); the -ed spelling never matched, so keyboard
+	// focus fell through to the UA ring. Cover both.
+	.dt-cell--focus .dt-cell__content,
 	.dt-cell--focused .dt-cell__content {
 		border-color: var(--cds-focus) !important;
 	}

@@ -137,6 +137,27 @@ pre,
 	border-radius: var(--border-radius-full);
 }
 
+// Form surface swap. frappe defaults .form-page to var(--card-bg) — the raised
+// layer-01 tint — and leaves the comments/activity footer transparent, so the
+// darkened panel reads under the FIELDS. Invert it: put the fields on the page
+// background and move the subtle tint to the .form-footer (comments + timeline),
+// which reads as a distinct discussion panel below the record. Theme-agnostic
+// via --cds-*, so it holds in dark too (fields on #161616, footer on #262626).
+.std-form-layout > .form-layout > .form-page {
+	background-color: var(--cds-background);
+}
+.form-footer {
+	background-color: var(--cds-layer-01);
+	padding-block: 20px;
+
+	// the comment editor is a field-01 surface; on the now-tinted footer it would
+	// blend, so lift it to field-02 (white in light / #393939 in dark).
+	.comment-input-container .ql-editor,
+	.comment-input-wrapper .ql-editor {
+		background-color: var(--cds-field-02);
+	}
+}
+
 // legacy #desktop page: its own desktop.css declares `--desktop-modal-radius: 30px`
 // at :root and loads *after* this bundle, so the token override in map/_radius.scss
 // can't reach it. Square the modal at the consumer instead — !important because we
@@ -144,4 +165,32 @@ pre,
 // but lose on load order.
 .desktop-modal .modal-dialog .modal-content {
 	border-radius: 0 !important;
+}
+
+// Focus rings for interactive elements that fall through to the browser's UA
+// `outline: auto` (renders as a ~3px light ring in dark mode). Carbon spec: 2px
+// $focus, inset. :focus-visible (keyboard only) so mouse clicks stay quiet.
+// WP3/4 already cover form controls, buttons and bootstrap tabs; this catches
+// the long tail the audit found unringed: links, menu items, tree/sidebar,
+// espresso tabs and content-switcher segments.
+.dropdown-item:focus-visible,
+.dropdown-menu a:focus-visible,
+.awesomplete > ul > li:focus-visible,
+a.tree-link:focus-visible,
+.sidebar-item-container .item-anchor:focus-visible,
+.navbar-breadcrumbs a:focus-visible,
+.es-tabs__tab:focus-visible,
+.es-tab-buttons button:focus-visible,
+.list-row-container .list-subject a:focus-visible {
+	outline: 2px solid var(--cds-focus);
+	outline-offset: -2px;
+}
+
+// frappe squares child-table grid cells with a hardcoded 1px #c9c9c9 via its
+// grid-focus() mixin; give them the Carbon ring instead.
+.form-grid .grid-body .grid-row .col:focus-visible,
+.form-grid .grid-static-col:focus-visible {
+	outline: 2px solid var(--cds-focus) !important;
+	outline-offset: -2px;
+	border-color: transparent !important;
 }

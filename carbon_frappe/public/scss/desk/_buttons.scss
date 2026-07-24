@@ -76,6 +76,26 @@ $button-danger-active: c.$red-80;
 	}
 }
 
+// .btn-primary-light (frappe's "selected filter" pill, e.g. list .filter-button)
+// takes its text from var(--primary) = blue-60, which is a button-FILL token, not
+// a text token. On the dark #393939 pill that renders 2.31:1 (fails AA) and on the
+// light #e2e2e2 pill 3.86:1. Split the roles: blue-as-text -> Carbon link-primary
+// (flips to #78a9ff in g100), on a layer-01 fill so both themes clear AA.
+.btn.btn-primary-light {
+	background-color: var(--cds-layer-01);
+	color: var(--cds-link-primary);
+
+	&:hover {
+		background-color: var(--cds-layer-hover-01);
+		color: var(--cds-link-primary-hover);
+	}
+
+	&:active {
+		background-color: var(--cds-layer-active-01) !important;
+		color: var(--cds-link-primary) !important;
+	}
+}
+
 .btn-group {
 	.btn + .btn {
 		border-inline-start: 1px solid var(--cds-border-subtle-01);
