@@ -17,6 +17,10 @@ body {
 
 .print-format {
 	font-family: $print-font;
+	// standard.css (frappe core) rounds the on-screen "paper sheet" preview
+	// 8px — Carbon is square everywhere, including this preview chrome (the
+	// actual accent styling ships in the "Carbon" Print Style fixture).
+	border-radius: 0;
 
 	table.table {
 		border-color: c.$gray-30;
