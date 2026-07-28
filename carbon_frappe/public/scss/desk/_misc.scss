@@ -166,6 +166,19 @@ pre,
 	}
 }
 
+// .form-footer itself inherits frappe's own max-width + margin:auto centering
+// (form.scss), so the tint above paints a narrow floating column instead of a
+// full-width band. .layout-main-section-wrapper is the stable, full-width
+// ancestor .form-footer shares with .form-page; .form-page already carries an
+// opaque --cds-background fill (the swap above) that exactly covers the
+// fields area, so tinting the wrapper only shows through in .form-footer's
+// own space below it — full width, no extra masking needed. Scoped to
+// record/document forms so the many other .layout-main-section-wrapper users
+// (list, report, tree, workspace) are untouched.
+.layout-main-section-wrapper:has(.std-form-layout) {
+	background-color: var(--cds-layer-01);
+}
+
 // Form Builder color chain (FormBuilder.vue -> Section.vue -> Column.vue ->
 // Field.vue; Customize Form shares the same component). The design alternates
 // a "card" role (--fg-color/--card-bg, meant to read white) with a "recessed
