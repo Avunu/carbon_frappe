@@ -166,6 +166,28 @@ pre,
 	}
 }
 
+// Form Builder color chain (FormBuilder.vue -> Section.vue -> Column.vue ->
+// Field.vue; Customize Form shares the same component). The design alternates
+// a "card" role (--fg-color/--card-bg, meant to read white) with a "recessed
+// slot" role (--bg-light-gray, meant to read a visible light gray) at each
+// nesting level: canvas -> card/section (white) -> column/field slot (gray)
+// -> actual input (white again). The ramp remap pins --fg-color/--card-bg to
+// the SAME $layer-01 token already used for --bg-light-gray, so every one of
+// those alternating steps resolves to the identical fill and the whole tree
+// reads as one flat gray slab with only hairline borders left for definition.
+// Rescope the roles back apart for this subtree: canvas + column/field slots
+// on layer-01, card/section/actual-inputs on the page white. Custom
+// properties inherit through the DOM, so this reaches every nested Vue
+// component's scoped <style> — including ones that mount as runtime-injected
+// tags after this bundle — without a cascade-order fight, since we're not
+// overriding their background-color declarations, just the variable those
+// declarations already read from.
+.form-builder-container .form-container {
+	--disabled-control-bg: var(--cds-layer-01);
+	--fg-color: var(--cds-background);
+	--card-bg: var(--cds-background);
+}
+
 // User-onboarding floating panel (OnboardingPanel.vue) injects its own inline
 // <style> at runtime — .onb-panel ships an 8px radius, a big soft 0 12px 40px
 // drop shadow, and a non-token dark surface (#232323). That <style> mounts after
