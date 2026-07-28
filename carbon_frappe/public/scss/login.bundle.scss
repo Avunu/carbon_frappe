@@ -47,6 +47,20 @@
 				outline: 2px solid var(--cds-support-error);
 				outline-offset: -2px;
 			}
+
+			// The 16px flat padding above clobbers frappe's own
+			// padding-left/right: 38px (login.bundle.scss, base .email-field /
+			// .password-field rules) that reserves room for the absolutely
+			// positioned .field-icon / .toggle-password svgs, so the icon sits
+			// on top of the entered text. Restore the reserved space.
+			.email-field input,
+			.password-field input {
+				padding-left: 38px;
+			}
+
+			.password-field input {
+				padding-right: 38px;
+			}
 		}
 
 		.btn-primary,
