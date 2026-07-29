@@ -3,14 +3,67 @@
 // $layer-hover; square everything; filter pills become Carbon dismissible
 // tags (the pill silhouette is Carbon's one rounded family).
 
-.list-row-container {
-	border-radius: 0;
+// Carbon's data table has five row sizes (xs 24 / sm 32 / md 40 / lg 48 /
+// xl 64) and one hard rule: "The column header row should always match the row
+// size of the table." lg (48px) is forced here because frappe's page head is
+// already 48px and Carbon pairs the large toolbar only with lg/xl rows.
+//
+// --list-row-height also derives --list-checkbox-padding
+// (calc((row - checkbox) / 2)), so raising it to 48 sizes the checkbox cell to
+// Carbon's 40px-ish gutter for free.
+:root {
+	--list-row-height: 48px;
 }
 
+.list-row-container {
+	border-radius: 0;
+	// Carbon rows are full-bleed to the table edge; cells own their inset
+	padding-inline: 0;
+}
+
+.list-row {
+	min-height: 48px;
+	border-bottom: 1px solid var(--carbon-border-subtle);
+	// Carbon's row text ramp: secondary at rest, primary on hover. frappe
+	// animates `color` for 0.2s, which lags the hover feedback.
+	color: var(--cds-text-secondary);
+	transition: none;
+
+	&:hover:not(.list-row-head) {
+		color: var(--cds-text-primary);
+
+		// frappe casts a 5px scrim under the sticky right column on hover;
+		// Carbon tables have no shadows.
+		.level-right {
+			box-shadow: none;
+		}
+	}
+
+	// frappe pads .level-left vertically (--padding-xs) and .level-right 9px,
+	// which stacks on top of the row height and pushed rows to 59px against a
+	// 48px header. Carbon centres cell content in a fixed row instead.
+	.level-left,
+	.level-right {
+		padding-block: 0;
+		align-items: center;
+	}
+
+	.level-right {
+		// frappe marks the sticky column with a 2px accent rule
+		border-left: none;
+		background-color: inherit;
+		padding-inline: 16px;
+	}
+}
+
+// Column header: a filled band, not a bordered row. Carbon separates it by the
+// $layer-accent fill alone, so the bottom rule .list-row-head inherits from
+// @extend .list-row is removed.
 .list-row-head {
 	background-color: var(--cds-layer-accent-01);
 	border-radius: 0;
-	border-bottom: 1px solid var(--carbon-border-subtle);
+	border-bottom: none;
+	min-height: 48px;
 
 	.list-row-col,
 	.list-subject,
@@ -25,10 +78,49 @@
 	}
 }
 
+// Cells carry Carbon's 16px inset (frappe: a 15px right margin only).
+.list-row-col {
+	padding: 0 16px;
+	margin-right: 0;
+}
+
+// frappe derives --list-checkbox-padding from the row height and applies it on
+// all four sides, so at 48px rows the checkbox cell is itself 48px tall and
+// pushes the row to 49px with its rule. Keep the horizontal padding (it is the
+// click target) and let the row's own centring handle the vertical.
+.select-like {
+	padding-block: 0;
+}
+
+// Row selection, and the batch-action bar that replaces the column header when
+// anything is selected. Both are pure CSS via :has() — frappe already ships
+// :has() in its own list/sidebar scss, so this needs no JS.
+.list-row-container:has(.list-row-checkbox:checked) .list-row {
+	background-color: var(--cds-layer-selected-01);
+	color: var(--cds-text-primary);
+}
+
+.result:has(.list-row-checkbox:checked) .list-row-head {
+	background-color: var(--cds-background-brand);
+
+	.list-row-col,
+	.list-subject,
+	.list-count,
+	span {
+		color: var(--cds-text-on-color);
+	}
+
+	input[type="checkbox"] {
+		border-color: var(--cds-icon-on-color);
+	}
+}
+
 // page head: flat $background bar with heading-03 title (20px / 400)
 .page-head {
 	background: var(--bg-color);
 	border-bottom: 1px solid var(--carbon-border-subtle);
+	// frappe animates `top` for 0.5s on scroll
+	transition: none;
 }
 
 .page-title .title-text,
