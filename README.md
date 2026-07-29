@@ -45,11 +45,21 @@ Three mechanisms keep the shadow deterministic:
 
 Inside each bundle, the styling itself is a three-layer transposition:
 
--   **`scss/carbon/`** — emits Carbon's ~240 design tokens as `--cds-*` custom properties (Light → Carbon **White**, Dark → Carbon **g100**, keyed to frappe's `data-theme`), plus self-hosted IBM Plex `@font-face` rules.
--   **`scss/map/`** — transposes frappe's variable system onto Carbon: the espresso raw color ramps (`--gray-*`, `--blue-*`, …) snap to `@carbon/colors` scales (which cascades through frappe's semantic `--surface-*`/`--ink-*`/`--outline-*` layer _and_ frappe-ui's identical token names), with exact-token pins for the slots that must land on Carbon theme tokens (`--bg-color → --cds-background`, `--control-bg → --cds-field-01`, `--btn-primary → blue-60`, radii → 0, focus → 2px `$focus`, elevations → Carbon's single menu shadow, type → IBM Plex).
--   **`scss/desk/` + `scss/web/`** — Carbon component anatomy: bottom-border fields, Carbon button ramps, the black UI Shell header, side-nav selection bars, data-table headers, Carbon modals/menus/toasts/tags/tiles.
+-   **`scss/carbon/`** — emits Carbon's ~240 design tokens as `--cds-*` custom properties (Light → Carbon **g10**, Dark → Carbon **g100**, keyed to frappe's `data-theme`), plus self-hosted IBM Plex `@font-face` rules.
+-   **`scss/map/`** — transposes frappe's variable system onto Carbon: the espresso raw color ramps (`--gray-*`, `--blue-*`, …) snap to `@carbon/colors` scales (which cascades through frappe's semantic `--surface-*`/`--ink-*`/`--outline-*` layer _and_ frappe-ui's identical token names), with exact-token pins for the slots that must land on Carbon theme tokens (`--bg-color → --cds-background`, `--control-bg → --cds-field-02`, `--btn-primary → blue-60`, radii → 0, focus → 2px `$focus`, elevations → Carbon's single menu shadow, type → IBM Plex).
+-   **`scss/desk/` + `scss/web/`** — Carbon component anatomy: bottom-border fields, Carbon button ramps, the g100 UI Shell header, side-nav selection bars, 48px data tables, Carbon modals/menus/toasts/tags/tiles, and Carbon read-only states.
 
-Charts get `--charts-*` theming plus `carbon_charts.bundle.js`, which wraps `frappe.Chart` and injects the authentic `@carbon/charts` 14-color categorical palettes (theme-aware, with Carbon's sequential blue ramp for heatmaps) whenever a caller doesn't pass explicit colors.
+> **Why g10 and not White.** Carbon's product UIs put the page canvas on `$background` and lift cards, tiles and the side nav to `$layer-01`. The **White** theme inverts that ladder (`$background` `#ffffff` / `$layer-01` `#f4f4f4`), which renders as a white page with gray cards — the opposite of every Carbon reference product. **g10** gives `#f4f4f4` / `#ffffff`. The two themes differ in only 17 of 306 tokens, all in the `background` / `layer` / `field` / `border-subtle` family. Note `border-subtle-00`/`-01` **invert** between g10 and g100, so all subtle hairlines resolve through an app-level `--carbon-border-subtle` alias rather than a Carbon token directly.
+
+Charts get `--charts-*` theming plus `carbon_charts.bundle.js`, which wraps `frappe.Chart` and injects the authentic `@carbon/charts` 14-color categorical palettes whenever a caller doesn't pass explicit colors, and re-themes those charts when `data-theme` changes (frappe fires no theme event, so this observes the attribute). Chart chrome follows Carbon rather than the concept mockup: gridlines stay (Carbon names the grid as comprehension anatomy) and both axes are IBM Plex **Sans**.
+
+### Beyond CSS
+
+Three small JS bundles cover what stylesheets cannot reach. Every patch delegates to the original, never throws and never half-applies — a missing target degrades to stock frappe styling and reports itself, rather than throwing inside `desk.bundle.js`.
+
+-   **`carbon_desk.bundle.js`** — tags formatter output with `carbon-num` so numerics and dates get IBM Plex Mono. This is the only hook that reaches frappe-datatable, which emits no fieldtype or alignment class.
+-   **`carbon_anatomy.bundle.js`** — the Carbon UI Shell header (mounted into the empty `<header>` frappe leaves in `www/desk.html`), the page header (eyebrow + `heading-04` title, which has no host element in frappe), and 48px report-view rows.
+-   **`scripts/audit-markup.mjs`** — guards every selector, runtime shape and asset-shadow assumption the above depends on. See _Caveats_.
 
 ## Install
 
@@ -71,8 +81,24 @@ bench build
 
 -   **Bench-global**: assets.json is shared by every site on the bench, so the theme applies to sites that don't have the app installed. Run carbon\_frappe on a dedicated bench.
 -   **Partial builds**: `bench build --apps frappe` re-points the shadowed keys at frappe's assets until the next full `bench build` or `bench migrate`. Prefer plain `bench build`.
--   **`bench watch`**: rebuilds of frappe's own bundles can re-claim keys mid-session; re-run `node scripts/patch-assets.mjs` (or a full build) if stock styling reappears.
--   The shadowing relies on frappe's (undocumented) basename keying and merge semantics of `assets.json`. `scripts/audit-tokens.mjs` (run warn-only on every build, strict via `npm run audit`) watches for upstream drift: Carbon token renames, removed frappe variables, and changes to frappe's bundle entry imports. The orthodox fallback — `app_include_css`/`web_include_css` hooks — remains structurally compatible with this app's bundles if the shadow mechanism ever breaks.
+-   **`bench watch`**: rebuilds of frappe's own bundles re-claim the keys mid-session. This is the most common way to lose the theme, and it has **no symptom other than stock frappe styling reappearing** — nothing errors. `npm run audit` now checks for it explicitly; the fix is `node scripts/patch-assets.mjs`.
+-   The shadowing relies on frappe's (undocumented) basename keying and merge semantics of `assets.json`. The orthodox fallback — `app_include_css`/`web_include_css` hooks — remains structurally compatible with this app's bundles if the shadow mechanism ever breaks.
+
+### Drift guards
+
+Both run warn-only on every `bench build` and strict via `npm run audit`.
+
+-   **`scripts/audit-tokens.mjs`** — Carbon token renames, removed frappe variables, changes to frappe's bundle entry imports, the g10 premise, and the frappe runtime shapes the theme patches.
+-   **`scripts/audit-markup.mjs`** — every frappe class the stylesheet targets, every runtime shape `js/anatomy/*` wraps, the frappe declarations we deliberately override, and the asset shadow itself. Declared in `scripts/markup-manifest.mjs` so the guard and the code cannot drift apart.
+
+These exist because all of these failures are silent: the theme keeps loading and a component quietly reverts to stock frappe styling.
+
+### Deliberate deviations from Carbon
+
+Recorded rather than claimed as conformance:
+
+-   **Pinned form action bar.** Core Carbon scopes full-bleed 64px bars to modals, side panels and tearsheets, and prescribes left-aligned non-bleeding 48px buttons with the primary first for in-page forms; it defers pinned bars explicitly. This follows IBM Products' _Fixed button bars_ instead, appropriate for a dense ERP — and since the bar is full-bleed it uses dialog grammar (primary outermost right, equal widths, `$button-separator` hairlines).
+-   **IBM Plex Mono on tabular data.** Carbon is silent on numeric font and alignment in data tables. Monospaced tabular figures are a project choice for financial data; charts deliberately stay Plex Sans, matching Carbon's data-viz references.
 
 ## frappe-ui SPA apps
 

@@ -30,9 +30,9 @@
     "sass": "1.101.6"
   },
   "scripts": {
-    "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only",
+    "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only && node scripts/audit-markup.mjs --warn-only",
     "codegen": "node scripts/sync-fonts.mjs && node scripts/generate-chart-palettes.mjs",
-    "audit": "node scripts/audit-tokens.mjs --strict",
+    "audit": "node scripts/audit-tokens.mjs --strict && node scripts/audit-markup.mjs --strict",
     "compile": "node scripts/dev-compile.mjs",
     "upgrade": "npx npm-check-updates -u && yarn install && yarn build"
   }
