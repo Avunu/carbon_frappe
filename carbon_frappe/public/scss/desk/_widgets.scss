@@ -1,5 +1,6 @@
 // WP9 — Workspace widgets -> Carbon tiles; indicators -> Carbon tags;
 // bootstrap alerts -> Carbon inline notifications; progress -> Carbon bar.
+@use "@carbon/colors" as c;
 
 // .frappe-card (workspace / dashboard cards) hardcodes a 12px radius literal
 // (card.scss) that bypasses the radius-token squaring — square it. The
@@ -44,11 +45,90 @@
 	}
 }
 
-// number cards: label-over-value, Carbon heading-05-esque value (32px/400)
-.widget.number-widget-box .widget-content .number {
-	font-size: var(--text-7xl);
-	font-weight: var(--font-weight-regular);
-	color: var(--cds-text-primary);
+// Number cards -> Carbon KPI tile: title (heading-compact-01) over value
+// (heading-05, 32/40 regular) over a delta line (label-01).
+//
+// Specificity matters here. frappe styles the value at
+// `.widget.number-widget-box .widget-body .widget-content .number` — five
+// classes — so a shorter selector silently loses no matter how late we load.
+// Every rule below matches frappe's own depth and wins on order.
+// The workspace-scoped duplicate is not redundant: frappe re-declares the
+// border at [data-page-route="Workspaces"] .widget.number-widget-box (0,3,0),
+// which outranks a bare .widget.number-widget-box no matter how late we load.
+.widget.number-widget-box,
+[data-page-route="Workspaces"] .widget.number-widget-box {
+	min-height: 124px;
+	padding: 16px;
+	// the tile is layer-01 on the $background canvas; the tone carries it
+	border-color: transparent;
+
+	.widget-head .widget-title {
+		font-size: var(--text-md); // 14
+		font-weight: var(--font-weight-semibold);
+		color: var(--cds-text-primary);
+	}
+
+	.widget-body .widget-content {
+		padding-top: 0;
+
+		.number {
+			font-size: var(--text-6xl); // heading-05, 32px
+			line-height: 40px;
+			font-weight: var(--font-weight-regular);
+			color: var(--cds-text-primary);
+			// the value is Plex Sans, so tabular figures need asking for
+			font-variant-numeric: tabular-nums;
+		}
+
+		.percentage-stat-area {
+			font-size: var(--text-tiny); // 12
+			margin-top: 0;
+
+			// Carbon's differential indicator is a bare glyph, not a filled chip
+			.indicator-pill-round {
+				background: transparent;
+			}
+		}
+	}
+}
+
+// Delta tones. Carbon's support-success/-error are FILL tokens (green-50 /
+// red-60) and fail AA as text at 12px; the text tones are the 70 steps in
+// light and the 40 steps in dark. Matching frappe's selector depth
+// (desk/desktop.scss styles these at .green-stat / .red-stat with `use`
+// children for the caret icon).
+:root,
+[data-theme="light"] {
+	--carbon-stat-up: #{c.$green-70};
+	--carbon-stat-down: #{c.$red-70};
+}
+
+[data-theme="dark"],
+.dark {
+	--carbon-stat-up: #{c.$green-40};
+	--carbon-stat-down: #{c.$red-40};
+}
+
+.widget.number-widget-box .widget-body .widget-content {
+	.green-stat {
+		color: var(--carbon-stat-up);
+
+		use {
+			stroke: var(--carbon-stat-up);
+		}
+	}
+
+	.red-stat {
+		color: var(--carbon-stat-down);
+
+		use {
+			stroke: var(--carbon-stat-down);
+		}
+	}
+
+	.grey-stat {
+		color: var(--cds-text-secondary);
+	}
 }
 
 // indicator pills: the --bg-<c>/--text-on-<c> pairs already resolve to Carbon
@@ -85,6 +165,9 @@
 // progress -> Carbon: square track/bar, $interactive fill (via
 // --progress-bar-bg pin)
 .progress {
+	// Carbon's meter track (frappe: 10px in desk/list.scss — equal specificity,
+	// we load later)
+	height: 8px;
 	border-radius: 0;
 	background-color: var(--cds-layer-accent-01);
 
