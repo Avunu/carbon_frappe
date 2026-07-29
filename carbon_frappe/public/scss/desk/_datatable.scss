@@ -111,3 +111,12 @@
 .grid-footer-toolbar button {
 	color: var(--cds-link-primary);
 }
+
+// Carbon lg row (48px), matching the list view so a doctype reads the same in
+// either view. frappe pins 35px here as a static rule, which beats the
+// stylesheet frappe-datatable injects — so the override has to live in CSS.
+// js/anatomy/datatable.js sets the matching options.cellHeight; without it the
+// virtual scroller keeps striding 35px and rows overlap.
+.datatable .dt-row {
+	height: 48px;
+}

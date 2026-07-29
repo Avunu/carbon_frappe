@@ -17,7 +17,14 @@ app_license = "MIT"
 # carbon_desk: tags formatted numeric/date output with `carbon-num` so the
 #   stylesheet can set IBM Plex Mono on it (reaches frappe-datatable, which
 #   emits no fieldtype or alignment class of its own).
-app_include_js = ["carbon_charts.bundle.js", "carbon_desk.bundle.js"]
+# carbon_anatomy: the only places the theme reaches past CSS — 48px datatable
+#   rows, the Carbon page header, and the UI Shell header. Every patch
+#   delegates to the original and fails soft; see js/anatomy/patch.js.
+app_include_js = [
+    "carbon_charts.bundle.js",
+    "carbon_desk.bundle.js",
+    "carbon_anatomy.bundle.js",
+]
 
 # frappe-ui / Vite SPA pages (CRM, Helpdesk, Banking, Builder, Insights, Wiki,
 # HRMS, and any future app) bypass base.html, so *_include_css can't reach them

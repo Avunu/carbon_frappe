@@ -1,0 +1,191 @@
+// Carbon UI Shell header, page header, and the form action bar.
+// Markup for the first two is mounted by js/anatomy/*.js.
+@use "@carbon/colors" as c;
+
+// -- UI Shell header ---------------------------------------------------------
+// Carbon: 48px tall, 48x48 action cells with NO gaps between them, a
+// $border-subtle bottom rule. The zone runs the g100 theme, so its tones come
+// from that theme's tokens rather than hardcoded hex — the header restyles with
+// Carbon rather than drifting from it.
+.cf-shell-header {
+	display: flex;
+	align-items: center;
+	height: 48px;
+	background: #{c.$gray-100}; // g100 $background
+	border-bottom: 1px solid #{c.$gray-80}; // g100 $border-subtle
+	color: #{c.$gray-10}; // g100 $text-primary
+	font-size: var(--text-md);
+	position: relative;
+	z-index: 1030;
+
+	.cf-shell-menu {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 48px;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+
+		svg rect {
+			fill: #{c.$gray-10};
+		}
+
+		&:hover {
+			background: #{c.$gray-80};
+		}
+
+		&:focus-visible {
+			outline: 2px solid #{c.$white};
+			outline-offset: -2px;
+		}
+	}
+
+	.cf-shell-name {
+		padding-inline: 0 16px;
+		color: #{c.$gray-10};
+		text-decoration: none;
+		letter-spacing: 0.16px;
+		white-space: nowrap;
+	}
+
+	// Carbon brand split: company prefix regular, product name semibold
+	.cf-shell-prefix {
+		font-weight: var(--font-weight-regular);
+	}
+
+	.cf-shell-product {
+		font-weight: var(--font-weight-semibold);
+	}
+
+	.cf-shell-spacer {
+		flex: 1;
+	}
+
+	// "Icons should always be aligned to the right of the header with no gaps
+	// between icons."
+	.cf-shell-actions {
+		display: flex;
+		align-items: stretch;
+		gap: 0;
+		height: 100%;
+	}
+
+	// the relocated account menu adopts the 48px rail
+	.dropdown-navbar-user {
+		display: flex;
+		align-items: center;
+		margin: 0;
+		padding-inline: 12px;
+		border-inline-start: 1px solid #{c.$gray-80};
+
+		&:hover {
+			background: #{c.$gray-80};
+		}
+
+		// The sidebar rendered name + email beneath the avatar; a 48px header rail
+		// has no room for either, so the avatar carries it (the dropdown still
+		// names the user). frappe emits these as bootstrap .d-block utilities,
+		// which declare `display: block !important` — hence the !important here.
+		> a .d-block,
+		.user-email,
+		.full-name,
+		.sidebar-item-label {
+			display: none !important;
+		}
+	}
+}
+
+// -- Page header -------------------------------------------------------------
+// Carbon heading-04 (28/36, regular) under a secondary eyebrow.
+.cf-page-header {
+	padding: 24px 16px 16px;
+
+	.cf-page-eyebrow {
+		font-size: var(--text-md);
+		color: var(--cds-text-secondary);
+		margin-bottom: 8px;
+	}
+
+	.cf-page-title {
+		margin: 0;
+		font-size: var(--text-4xl); // 28px
+		line-height: 36px;
+		font-weight: var(--font-weight-regular);
+		color: var(--cds-text-primary);
+	}
+}
+
+// -- Form action bar ---------------------------------------------------------
+// Carbon's full-bleed action bar, pinned to the bottom of a document form.
+//
+// DEVIATION, recorded deliberately: core Carbon scopes full-bleed 64px bars to
+// "modals, side panels and narrow tearsheets" and prescribes left-aligned,
+// non-bleeding 48px buttons with the primary FIRST for in-page forms. It also
+// defers pinned bars explicitly — "If we feel it's necessary to pursue pinned
+// actions in the future, we should look into a pinned footer or tray." A pinned
+// bar is an IBM Products extension (their Fixed button bars pattern), chosen
+// here for a dense ERP. Since it IS full-bleed, it follows dialog grammar
+// consistently: destructive/secondary outermost left, primary outermost right,
+// equal widths, separated by $button-separator hairlines.
+//
+// position:fixed rather than a JS relocation: it keeps .standard-actions in the
+// DOM tree, so every jQuery reference frappe holds (btn_primary,
+// actions_btn_group) and every set_action() re-render keep working untouched.
+// Verified there is no transformed ancestor to break the containing block.
+body[data-route^="Form/"] {
+	.page-head .standard-actions {
+		position: fixed;
+		inset-inline: var(--sidebar-width) 0;
+		bottom: 0;
+		height: 64px;
+		display: flex;
+		justify-content: flex-end;
+		align-items: stretch;
+		gap: 0;
+		background: var(--cds-layer-01);
+		border-top: 1px solid var(--carbon-border-subtle);
+		z-index: 7;
+
+		.btn {
+			height: 64px;
+			margin: 0;
+			padding: 0 16px;
+			border-radius: 0;
+			// Carbon's bleed bar left-aligns labels within each button
+			justify-content: flex-start;
+			text-align: start;
+			// $button-separator hairline, not a transparent gap: the 1px must
+			// carry 3:1 separation, which a gap showing the bar behind cannot.
+			border-inline-start: 1px solid var(--carbon-border-subtle);
+		}
+
+		// Equal widths for the LABELLED actions — Carbon: "Do apply the same
+		// width to all buttons in a group". Icon-only buttons (prev/next doc,
+		// overflow menu) are navigation, not form actions, so they stay square
+		// on the bar's own height rather than being padded to 200px.
+		.btn:not(.icon-btn):not(.prev-doc):not(.next-doc) {
+			min-width: 200px;
+		}
+
+		.icon-btn,
+		.prev-doc,
+		.next-doc {
+			width: 64px;
+			min-width: 64px;
+			padding: 0;
+			justify-content: center;
+		}
+
+		// primary is the outermost right and takes the wider slot
+		.primary-action:not(.hide) {
+			min-width: 240px;
+		}
+	}
+
+	// keep the last form content clear of the bar
+	.layout-main-section-wrapper {
+		padding-bottom: 64px;
+	}
+}
