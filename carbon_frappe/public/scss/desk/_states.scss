@@ -1,0 +1,80 @@
+// Empty, loading and overflow states.
+
+// -- Empty states ------------------------------------------------------------
+// Carbon: "Empty state elements should be left-aligned as a block. The one
+// exception to this rule is an empty state in a small tile." frappe centres
+// both the flex container and the text inside it.
+//
+// The a11y half of Carbon's rule -- "an empty state for a table would replace
+// the table and the column headers and footer should not be present" -- is
+// already satisfied by frappe v16, which hides .result, .list-row-head and
+// .list-paging-area together with showing .no-result. Verified at runtime; no
+// override needed.
+.no-result {
+	justify-content: flex-start;
+	padding-inline: 16px;
+}
+
+.msg-box {
+	text-align: start;
+	padding: 48px 0;
+	color: var(--cds-text-secondary);
+
+	// Carbon pairs the empty-state title with body copy; frappe emits a bare <p>
+	p {
+		max-width: 60ch;
+		margin-bottom: 16px;
+	}
+
+	// decorative illustration — Carbon wants it above the left-aligned block
+	.icon-xl {
+		stroke: var(--cds-icon-secondary);
+	}
+}
+
+// -- Skeletons ---------------------------------------------------------------
+// Carbon's skeleton is a $skeleton-background container with a $skeleton-element
+// shimmer on a 3000ms ease-in-out loop, and it MUST honour reduced motion and
+// forced colours. frappe ships neither branch.
+.es-skeleton,
+.skeleton {
+	background-color: var(--cds-skeleton-background);
+	animation-duration: 3000ms;
+	animation-timing-function: ease-in-out;
+
+	&::before {
+		background-color: var(--cds-skeleton-element);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.es-skeleton,
+	.skeleton {
+		animation: none;
+
+		&::before {
+			animation: none;
+		}
+	}
+}
+
+@media (forced-colors: active) {
+	.es-skeleton,
+	.skeleton {
+		forced-color-adjust: none;
+	}
+}
+
+// -- Overflow ----------------------------------------------------------------
+// Carbon bans truncation on headings, labels, error messages and notifications:
+// "Truncation should not be used on page headers, titles, labels, error
+// messages, or validation messages." frappe applies its truncate mixin broadly,
+// including to sidebar/section labels and control labels.
+.control-label,
+.form-message,
+.section-head > .h6,
+.page-title .title-text {
+	text-overflow: clip;
+	overflow: visible;
+	white-space: normal;
+}
