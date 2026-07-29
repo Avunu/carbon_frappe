@@ -7,7 +7,7 @@
 .frappe-card {
 	border-radius: 0;
 	box-shadow: none;
-	border: 1px solid var(--cds-border-subtle-00);
+	border: 1px solid var(--carbon-border-subtle);
 }
 
 // awesomplete/link-field dropdowns -> Carbon menu panel
@@ -43,7 +43,7 @@
 	.kanban-card,
 	.kanban-card-wrapper .kanban-card-body {
 		background-color: var(--cds-background);
-		border: 1px solid var(--cds-border-subtle-00);
+		border: 1px solid var(--carbon-border-subtle);
 		border-radius: 0;
 		box-shadow: none;
 	}
@@ -53,7 +53,7 @@
 .fc-theme-standard {
 	td,
 	th {
-		border-color: var(--cds-border-subtle-00);
+		border-color: var(--carbon-border-subtle);
 	}
 
 	.fc-day-today {
@@ -85,8 +85,8 @@
 // timeline: subtle connector + dots
 .new-timeline {
 	&:before {
-		border-color: var(--cds-border-subtle-01);
-		background: var(--cds-border-subtle-01);
+		border-color: var(--carbon-border-subtle);
+		background: var(--carbon-border-subtle);
 	}
 
 	.timeline-dot {
@@ -95,7 +95,7 @@
 	}
 
 	.timeline-content.frappe-card {
-		border: 1px solid var(--cds-border-subtle-00);
+		border: 1px solid var(--carbon-border-subtle);
 		border-radius: 0;
 		box-shadow: none;
 	}
@@ -211,7 +211,7 @@ pre,
 	border-radius: 0 !important;
 	box-shadow: var(--modal-shadow) !important;
 	background-color: var(--cds-layer-01) !important;
-	border: 1px solid var(--cds-border-subtle-01);
+	border: 1px solid var(--carbon-border-subtle);
 }
 
 // legacy #desktop page: its own desktop.css declares `--desktop-modal-radius: 30px`

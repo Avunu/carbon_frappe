@@ -97,10 +97,10 @@
 
 .border-gray-100,
 .border-gray-200 {
-	border-color: var(--cds-border-subtle-00);
+	border-color: var(--carbon-border-subtle);
 }
 .border-gray-400 {
-	border-color: var(--cds-border-subtle-01);
+	border-color: var(--carbon-border-subtle);
 }
 .border-gray-800,
 .border-black {
@@ -110,7 +110,7 @@
 	border-color: var(--cds-border-inverse);
 }
 .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
-	border-color: var(--cds-border-subtle-00);
+	border-color: var(--carbon-border-subtle);
 }
 
 // -- Rings (dropdown / popover panels) ---------------------------------------
@@ -121,7 +121,7 @@
 .ring-black,
 .ring-gray-100,
 .ring-gray-600 {
-	--tw-ring-color: var(--cds-border-subtle-01);
+	--tw-ring-color: var(--carbon-border-subtle);
 }
 .ring-white {
 	--tw-ring-color: var(--cds-border-inverse);

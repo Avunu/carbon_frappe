@@ -39,17 +39,21 @@
 	--ink-gray-3: var(--cds-text-placeholder);
 	--ink-blue-link: var(--cds-link-primary);
 
-	// Outlines -> Carbon border roles
-	--outline-gray-1: var(--cds-border-subtle-00);
-	--outline-gray-2: var(--cds-border-subtle-01);
+	// Outlines -> Carbon border roles. The subtle hairline goes through the
+	// --carbon-border-subtle alias (see map/_colors-legacy.scss) because
+	// Carbon's -00/-01 index inverts between g10 and g100. --outline-gray-3/-4
+	// and --dark-border-color are the STRONG border role (#8d8d8d / #6f6f6f),
+	// which is index-stable and stays on the Carbon token.
+	--outline-gray-1: var(--carbon-border-subtle);
+	--outline-gray-2: var(--carbon-border-subtle);
 	--outline-gray-3: var(--cds-border-strong-01);
 	--outline-gray-4: var(--cds-border-strong-01);
-	--outline-gray-5: var(--cds-border-subtle-01);
-	--outline-gray-modals: var(--cds-border-subtle-01);
-	--outline-white: var(--cds-border-subtle-01);
+	--outline-gray-5: var(--carbon-border-subtle);
+	--outline-gray-modals: var(--carbon-border-subtle);
+	--outline-white: var(--carbon-border-subtle);
 	--dark-border-color: var(--cds-border-strong-01);
-	--outline-elevation-1: var(--cds-border-subtle-00);
-	--outline-elevation-2: var(--cds-border-subtle-01);
+	--outline-elevation-1: var(--carbon-border-subtle);
+	--outline-elevation-2: var(--carbon-border-subtle);
 }
 
 // -- Overloaded neutral ladder + chromatic status slots: light -------------

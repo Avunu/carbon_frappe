@@ -64,7 +64,7 @@
 // 3px inline-start support bar (colors flow from the remapped --alert-* vars)
 .alert {
 	border-radius: 0;
-	border: 1px solid var(--cds-border-subtle-01);
+	border: 1px solid var(--carbon-border-subtle);
 	border-inline-start-width: 3px;
 
 	&.alert-danger {

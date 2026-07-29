@@ -10,7 +10,7 @@
 .list-row-head {
 	background-color: var(--cds-layer-accent-01);
 	border-radius: 0;
-	border-bottom: 1px solid var(--cds-border-subtle-01);
+	border-bottom: 1px solid var(--carbon-border-subtle);
 
 	.list-row-col,
 	.list-subject,
@@ -28,7 +28,7 @@
 // page head: flat $background bar with heading-03 title (20px / 400)
 .page-head {
 	background: var(--bg-color);
-	border-bottom: 1px solid var(--cds-border-subtle-00);
+	border-bottom: 1px solid var(--carbon-border-subtle);
 }
 
 .page-title .title-text,
@@ -48,7 +48,8 @@
 	font-size: var(--text-xs);
 
 	&:hover {
-		background-color: var(--cds-border-subtle-01);
+		// a FILL, not a border — stays on the layer ladder, not the hairline alias
+		background-color: var(--cds-layer-selected-01);
 	}
 }
 
@@ -69,11 +70,11 @@
 
 // list paging area -> flat Carbon pagination-style buttons
 .list-paging-area {
-	border-top: 1px solid var(--cds-border-subtle-00);
+	border-top: 1px solid var(--carbon-border-subtle);
 
 	.btn-group .btn {
 		border-radius: 0;
-		border: 1px solid var(--cds-border-subtle-00);
+		border: 1px solid var(--carbon-border-subtle);
 	}
 }
 

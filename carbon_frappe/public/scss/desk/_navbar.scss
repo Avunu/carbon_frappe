@@ -33,6 +33,8 @@ $header-text-secondary: c.$gray-30; // #c6c6c6
 	--dark-border-color: #{$header-border};
 	--outline-gray-1: #{$header-border};
 	--outline-gray-2: #{$header-border};
+	// components inside the header resolve their hairline through the alias
+	--carbon-border-subtle: #{$header-border};
 	--control-bg: #{$header-hover};
 	--awesomebar-focus-bg: #{$header-hover};
 	--awesomplete-hover-bg: #{$header-active};

@@ -3,6 +3,29 @@
 // slots with Carbon-specific meanings that need exact values.
 @use "@carbon/colors" as c;
 
+// Carbon's border-subtle index is CONTEXTUAL: -00 is the border for content on
+// $background, -01 for content on $layer-01. g10 and g100 disagree about which
+// index lands on the single hairline tone this design uses everywhere
+// (#e0e0e0 light / #393939 dark):
+//
+//                     border-subtle-00   border-subtle-01
+//   g10  (light)          #c6c6c6            #e0e0e0   <- want -01
+//   g100 (dark)           #393939            #525252   <- want -00
+//
+// No Carbon token spans both, and frappe has no layer-context system to pick
+// per subtree. Bind one app-level alias per theme and reference THAT from every
+// component, so the choice lives in one place and scoped overrides (e.g. the
+// g100 UI Shell header) can re-point it for their subtree.
+:root,
+[data-theme="light"] {
+	--carbon-border-subtle: var(--cds-border-subtle-01); // #e0e0e0
+}
+
+[data-theme="dark"],
+.dark {
+	--carbon-border-subtle: var(--cds-border-subtle-00); // #393939
+}
+
 :root,
 [data-theme="light"],
 [data-theme="dark"],
@@ -54,9 +77,9 @@
 	--text-muted: var(--cds-text-secondary);
 	--placeholder-color: var(--cds-text-placeholder);
 	--disabled-text-color: var(--cds-text-disabled);
-	--border-color: var(--cds-border-subtle-00); // #e0e0e0 / #393939
-	--table-border-color: var(--cds-border-subtle-00);
-	--btn-group-border-color: var(--cds-border-subtle-01);
+	--border-color: var(--carbon-border-subtle); // #e0e0e0 / #393939
+	--table-border-color: var(--carbon-border-subtle);
+	--btn-group-border-color: var(--carbon-border-subtle);
 
 	// frappe's dark --shadow-base is a blue-tinted glow; Carbon is one flat drop.
 	--shadow-base: 0 2px 6px var(--cds-shadow);

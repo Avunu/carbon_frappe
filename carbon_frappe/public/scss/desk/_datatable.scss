@@ -6,7 +6,7 @@
 	--dt-border-radius: 0;
 	--dt-header-cell-bg: var(--cds-layer-accent-01);
 	--dt-cell-bg: var(--cds-layer-01);
-	--dt-border-color: var(--cds-border-subtle-01);
+	--dt-border-color: var(--carbon-border-subtle);
 	--dt-selection-highlight-color: var(--cds-highlight);
 	--dt-light-bg: var(--cds-layer-hover-01);
 	--dt-primary-color: var(--cds-interactive);
@@ -40,7 +40,7 @@
 .grid-heading-row {
 	background-color: var(--cds-layer-accent-01);
 	border-radius: 0;
-	border-bottom-color: var(--cds-border-subtle-01);
+	border-bottom-color: var(--carbon-border-subtle);
 	font-weight: var(--font-weight-semibold);
 	color: var(--cds-text-primary);
 
@@ -55,7 +55,7 @@
 // Container: square, subtle Carbon border.
 .form-grid {
 	border-radius: 0;
-	border-color: var(--cds-border-subtle-01);
+	border-color: var(--carbon-border-subtle);
 }
 
 // Body: rows on $layer-01. frappe paints every cell surface --fg-color (white)
@@ -69,7 +69,7 @@
 	.data-row .row-index,
 	.col:last-child {
 		background-color: var(--cds-layer-01);
-		border-color: var(--cds-border-subtle-01);
+		border-color: var(--carbon-border-subtle);
 	}
 
 	// row hover -> $layer-hover-01, applied to the cells so it is visible over
@@ -91,7 +91,7 @@
 
 // Horizontal row separators -> Carbon $border-subtle-01.
 .grid-row {
-	border-bottom-color: var(--cds-border-subtle-01);
+	border-bottom-color: var(--carbon-border-subtle);
 }
 
 // The add-row / custom-button toolbar under the grid inherits frappe's
