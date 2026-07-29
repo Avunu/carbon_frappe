@@ -1,15 +1,128 @@
-// WP5b — Desk sidebar -> Carbon side-nav.
-// White (=$background) panel, square items, $layer-selected + 4px
-// $border-interactive left inset on the active item.
+// WP5b — Desk sidebar -> Carbon UI Shell side nav.
+//
+// Carbon spec (components/UI-shell-left-panel): 256px panel, 32px links, 32px
+// sub-menu items, selected = $background-selected + a $border-interactive bar.
+// Nested links indent to $spacing-07 (32px).
+//
+// Two deliberate departures from the reference ERP concept, both because
+// official Carbon says otherwise:
+//   * No uppercase section labels. Carbon's side-nav type is 14px throughout,
+//     it has no section-label element, and the content guidelines are explicit:
+//     "Menu labels and text should be set in sentence case" / "Do not use all
+//     caps capitalization ... shown to be slower to read." Grouping is carried
+//     by dividers and weight instead.
+//   * The selection bar is 3px, matching Carbon's shipped side-nav source. The
+//     published style table says 4px; the code disagrees with its own docs, and
+//     we follow the code.
 
 :root,
 [data-theme="dark"],
 .dark {
 	--sidebar-hover-color: var(--cds-layer-hover-01);
-	--sidebar-active-color: var(--cds-layer-selected-01);
+	--sidebar-active-color: var(--cds-background-selected);
 	--sidebar-border-color: var(--carbon-border-subtle);
 	--divider-color: var(--carbon-border-subtle);
 	--sidebar-active-shadow: none;
+	// Carbon panel width (frappe: 220px)
+	--sidebar-width: 256px;
+}
+
+.body-sidebar {
+	// Carbon's collapsed rail is 48px, on the same grid as the shell header
+	// (frappe: 50px)
+	width: 48px;
+	// frappe animates `all` for 0.3s, which drags the whole panel on every
+	// route change; Carbon's expansion is a fast, single-property move
+	transition-property: width;
+	transition-duration: var(--carbon-duration-moderate-01);
+	transition-timing-function: var(--carbon-easing-standard);
+	// frappe spaces the top/bottom groups 14px apart; Carbon items are flush
+	gap: 0;
+
+	.divider {
+		margin: 16px 0;
+		border-top: 1px solid var(--divider-color);
+	}
+
+	.standard-sidebar-item {
+		margin-bottom: 0;
+		// frappe transitions `all`, which animates the selection bar sliding in
+		transition-property: background-color;
+		transition-duration: var(--carbon-duration-fast-02);
+
+		.item-anchor {
+			height: 32px;
+			padding: 0 16px;
+			// Carbon spaces the icon with margin-inline-end, NOT a flex gap: a gap
+			// also separates the trailing control/chevron, stealing width from the
+			// label (enough to truncate "Request for Quotation" at 256px).
+			gap: 0;
+			font-size: var(--text-md); // 14px
+			color: var(--cds-text-secondary);
+			border-radius: 0;
+
+			// Nested to match frappe's own depth — it styles this at
+			// `.body-sidebar .standard-sidebar-item .item-anchor .sidebar-item-icon`,
+			// so a shallower selector loses. Carbon's icon is a fixed 16px box with
+			// a 24px trailing margin, putting the label 56px from the panel edge;
+			// frappe pads it 7px and lets the box grow to 30px.
+			.sidebar-item-icon {
+				padding: 0;
+				flex: 0 0 16px;
+				margin-inline-end: 24px;
+			}
+		}
+
+		// Selected: filled + a 3px interactive bar, with the inline padding
+		// reduced by the bar's width so the label stays on the same optical line
+		// as its unselected siblings. Scoped to this depth so it outranks the
+		// `.item-anchor { padding: 0 16px }` above.
+		&.active-sidebar .item-anchor {
+			border-inline-start: 3px solid var(--cds-border-interactive);
+			padding-inline-start: 13px;
+			font-weight: var(--font-weight-semibold);
+			color: var(--cds-text-primary);
+		}
+	}
+
+	// Section headings: sentence case at body size, de-emphasised by color only.
+	// frappe hardcodes `margin-left: 7px` and an !important ink color.
+	.item-anchor.section-break,
+	.section-break {
+		margin-left: 0 !important;
+		padding: 0 16px;
+		height: 32px;
+		font-size: var(--text-md);
+		font-weight: var(--font-weight-semibold);
+		color: var(--cds-text-primary) !important;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+}
+
+// Fill + square applies to sidebars outside .body-sidebar too (list, form);
+// the bar and padding compensation are scoped above where the depth is needed.
+.active-sidebar {
+	border-radius: 0;
+	box-shadow: none;
+	background: var(--sidebar-active-color);
+}
+
+// Nesting. frappe indents the CONTAINER (`.indent + .nested-container`), which
+// would push a nested item's selection bar off the panel edge. Move the indent
+// onto the item so every bar stays flush at x=0, as Carbon's sub-menu does.
+.indent + .nested-container {
+	margin-left: 0;
+}
+
+.nested-container {
+	.item-anchor {
+		padding-inline-start: 32px; // $spacing-07
+	}
+
+	.active-sidebar .item-anchor {
+		padding-inline-start: 29px; // 32 - 3px bar
+	}
 }
 
 .body-sidebar,
@@ -19,15 +132,6 @@
 	.sidebar-item-container .item-anchor,
 	.desk-sidebar-item {
 		border-radius: 0;
-	}
-}
-
-.active-sidebar {
-	border-radius: 0;
-	box-shadow: inset 4px 0 0 0 var(--cds-border-interactive);
-
-	[dir="rtl"] & {
-		box-shadow: inset -4px 0 0 0 var(--cds-border-interactive);
 	}
 }
 
