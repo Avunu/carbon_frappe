@@ -29,7 +29,7 @@
 	}
 
 	&:hover:not(:disabled):not([readonly]) {
-		background-color: var(--cds-field-hover-01);
+		background-color: var(--cds-field-hover-02);
 	}
 
 	&:focus,
@@ -43,7 +43,7 @@
 
 	&:disabled,
 	&[readonly] {
-		background-color: var(--cds-field-01);
+		background-color: var(--cds-field-02);
 		border-bottom-color: transparent;
 		color: var(--cds-text-disabled);
 		-webkit-text-fill-color: var(--cds-text-disabled);
@@ -81,7 +81,7 @@ select.form-control,
 
 // Read-only display fields: Carbon read-only field keeps a subtle bottom rule
 .like-disabled-input {
-	background-color: var(--cds-field-01);
+	background-color: var(--cds-field-02);
 	border-radius: 0;
 	border-bottom: 1px solid var(--carbon-border-subtle);
 	color: var(--cds-text-primary);

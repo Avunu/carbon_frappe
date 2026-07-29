@@ -36,12 +36,17 @@
 	--primary: #{c.$blue-60}; // bootstrap theme color; drives --brand-color etc.
 	--primary-color: #{c.$blue-60};
 
-	// Carbon field tokens (dark: field-01 #262626 differs deliberately from
-	// the dark hover layer #333333 that --surface-gray-2 resolves to).
-	--control-bg: var(--cds-field-01);
-	--control-bg-on-gray: var(--cds-field-02);
-	--disabled-control-bg: var(--cds-field-01);
-	--input-disabled-bg: var(--cds-field-01);
+	// Carbon field tokens are LAYER-CONTEXTUAL: $field-01 is for a field sitting
+	// on $background, $field-02 for a field on $layer-01. Frappe puts fields on
+	// cards (.form-page is --card-bg = layer-01), so field-02 is the correct
+	// step — and it lands on the tones Carbon's own form examples use:
+	// #f4f4f4 on a white card (g10), #393939 on a #262626 card (g100).
+	// field-01 would be #ffffff under g10: an invisible field on a white card.
+	--control-bg: var(--cds-field-02);
+	// ...and a field rendered directly on the canvas steps the other way.
+	--control-bg-on-gray: var(--cds-field-01);
+	--disabled-control-bg: var(--cds-field-02);
+	--input-disabled-bg: var(--cds-field-02);
 
 	// frappe uses --highlight-color for row/element HOVER tints (not selection)
 	--highlight-color: var(--cds-layer-hover-01);

@@ -150,11 +150,12 @@ pre,
 	background-color: var(--cds-layer-01);
 	padding-block: 20px;
 
-	// the comment editor is a field-01 surface; on the now-tinted footer it would
-	// blend, so lift it to field-02 (white in light / #393939 in dark).
+	// Fields default to field-02 (the on-a-card step), but the footer sits on the
+	// page canvas, where field-02 is the same tone. Step the editor the other way
+	// so it reads as a raised input: #ffffff light / #262626 dark.
 	.comment-input-container .ql-editor,
 	.comment-input-wrapper .ql-editor {
-		background-color: var(--cds-field-02);
+		background-color: var(--cds-field-01);
 	}
 
 	// the timeline's "Activity" heading + actions rows hardcode var(--bg-color)
