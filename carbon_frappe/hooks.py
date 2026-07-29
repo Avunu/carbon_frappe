@@ -9,7 +9,7 @@ app_email = "mail@avu.nu"
 app_license = "MIT"
 
 # Theme CSS is delivered by shadowing frappe's own bundle names in assets.json
-# (desk/website/login/email/print .bundle.css), not via *_include_css hooks.
+# (desk/website/login/email .bundle.css), not via *_include_css hooks.
 # See build.py and scripts/patch-assets.mjs.
 
 # Chart palette shim: injects Carbon categorical colors into frappe.Chart
@@ -26,5 +26,3 @@ after_request = ["carbon_frappe.injector.inject_carbon_ui_css"]
 # `bench build --apps frappe` runs that re-point the keys at frappe's assets).
 after_migrate = ["carbon_frappe.build.patch_assets"]
 after_app_install = ["carbon_frappe.build.patch_assets"]
-
-fixtures = [{"dt": "Print Style", "filters": [["name", "in", ["Carbon"]]]}]

@@ -6,7 +6,7 @@
  * existing keys, so the winner of a name collision depends on build order.
  * This script runs as this app's `build` script — i.e. after `bench build` has
  * compiled all bundles and written assets.json — and deterministically points
- * the shadowed keys (desk/website/login/email/print .bundle.css and their
+ * the shadowed keys (desk/website/login/email .bundle.css and their
  * rtl_ variants) at carbon_frappe's compiled assets, then clears the
  * `assets_json` redis cache so the web workers re-read the file.
  *
@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
-const SHADOWED_BUNDLES = ["desk", "website", "login", "email", "print"];
+const SHADOWED_BUNDLES = ["desk", "website", "login", "email"];
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const benchRoot = process.env.FRAPPE_BENCH_ROOT || path.resolve(appRoot, "..", "..");

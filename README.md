@@ -1,6 +1,6 @@
 # Carbon Frappe
 
-A comprehensive [Carbon Design System](https://carbondesignsystem.com) (v11) theme for [Frappe](https://frappeframework.com) sites. Every surface — desk, website/portal, login, print, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
+A comprehensive [Carbon Design System](https://carbondesignsystem.com) (v11) theme for [Frappe](https://frappeframework.com) sites. Every surface — desk, website/portal, login, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
 
 ## Screenshots
 
@@ -33,13 +33,9 @@ Login — IBM Plex, square fields, Carbon Blue primary action:
 
 <img src="docs/images/login-light.png" alt="Login page" width="420">
 
-Print — the "Carbon" Print Style: square geometry, Carbon Blue accent bar, IBM Plex, forced onto ERPNext's own bundled print formats too (see [Print & email](#print--email)):
-
-![Print preview](docs/images/print-preview-light.png)
-
 ## How it works
 
-Frappe resolves every stylesheet through `sites/assets/assets.json`, keyed by bare bundle basename. This app **shadows** frappe's own bundles: it ships same-named entries (`desk.bundle.scss`, `website.bundle.scss`, `login.bundle.scss`, `email.bundle.scss`, `print.bundle.scss`) that _recompile frappe's SCSS sources_ with Carbon values injected at compile time, then layer Carbon tokens and component overrides on top. The server is thereby forced to serve the Carbon stylesheets **instead of** frappe's — one stylesheet per surface, no double download, no cascade fights.
+Frappe resolves every stylesheet through `sites/assets/assets.json`, keyed by bare bundle basename. This app **shadows** frappe's own bundles: it ships same-named entries (`desk.bundle.scss`, `website.bundle.scss`, `login.bundle.scss`, `email.bundle.scss`) that _recompile frappe's SCSS sources_ with Carbon values injected at compile time, then layer Carbon tokens and component overrides on top. The server is thereby forced to serve the Carbon stylesheets **instead of** frappe's — one stylesheet per surface, no double download, no cascade fights.
 
 Three mechanisms keep the shadow deterministic:
 
@@ -82,10 +78,9 @@ bench build
 
 Apps that build their own bundles (CRM, Helpdesk, custom portals) can't be reached by the bench pipeline. For those, this app publishes a standalone tokens-only stylesheet — `carbon_frappe_ui.bundle.css` — that re-themes frappe-ui's semantic variables (unlayered, so it beats Tailwind's `@layer base` regardless of order) and covers frappe-ui's hardcoded utility classes. Resolve the hashed path via the `"carbon_frappe_ui.bundle.css"` key in `sites/assets/assets.json` and include it after the app's own CSS.
 
-## Print & email
+## Email
 
--   A **"Carbon" Print Style** record is installed as a fixture (select it in Print Settings). The `print.bundle` shadow restyles print preview; both use literal values (wkhtmltopdf has no CSS-variable support). For exact PDF fidelity install the IBM Plex system fonts on the server; the stack falls back cleanly otherwise.
--   The `email.bundle` shadow is Premailer-inlined into outgoing mail — also literals only.
+-   The `email.bundle` shadow is Premailer-inlined into outgoing mail — literal values only (no CSS-variable support in that pipeline).
 
 ## Development
 

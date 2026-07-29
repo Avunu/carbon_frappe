@@ -162,7 +162,6 @@ const mirrored = [
 	"frappe/public/scss/website/index",
 	"frappe/public/scss/login.bundle",
 	"frappe/public/scss/email.bundle",
-	"frappe/public/scss/print.bundle",
 ];
 for (const m of mirrored) {
 	const base = path.join(frappeRoot, m);

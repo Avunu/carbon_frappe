@@ -11,7 +11,7 @@ from frappe.utils.redis_wrapper import ClientCache
 # Frappe bundle names this theme shadows. Each has a same-named
 # public/scss/<name>.bundle.scss in this app; assets.json keys are bare
 # basenames, so whichever app's entry is written last owns the key.
-SHADOWED_BUNDLES = ("desk", "website", "login", "email", "print")
+SHADOWED_BUNDLES = ("desk", "website", "login", "email")
 
 
 def patch_assets(app_name=None):
