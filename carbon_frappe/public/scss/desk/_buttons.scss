@@ -25,7 +25,10 @@ $button-danger-active: c.$red-80;
 	&:focus-visible {
 		outline: 2px solid var(--cds-focus);
 		outline-offset: -2px;
-		box-shadow: inset 0 0 0 1px var(--cds-focus), inset 0 0 0 2px var(--cds-background) !important;
+		// $focus-inset is the token for the inner ring of a two-tone focus
+		// indicator (#ffffff / #161616 in every theme); $background is now the
+		// gray canvas tone and would smear the ring.
+		box-shadow: inset 0 0 0 1px var(--cds-focus), inset 0 0 0 2px var(--cds-focus-inset) !important;
 	}
 }
 
@@ -81,12 +84,16 @@ $button-danger-active: c.$red-80;
 // a text token. On the dark #393939 pill that renders 2.31:1 (fails AA) and on the
 // light #e2e2e2 pill 3.86:1. Split the roles: blue-as-text -> Carbon link-primary
 // (flips to #78a9ff in g100), on a layer-01 fill so both themes clear AA.
+// This is frappe's SELECTED-filter pill, so it needs to read as selected: on a
+// layer-01 fill it would be white-on-white under g10. layer-selected-* is
+// Carbon's selected-ghost ladder and is index-stable across both themes
+// (#e0e0e0 -> #d1d1d1 light, #393939 -> #474747 dark).
 .btn.btn-primary-light {
-	background-color: var(--cds-layer-01);
+	background-color: var(--cds-layer-selected-01);
 	color: var(--cds-link-primary);
 
 	&:hover {
-		background-color: var(--cds-layer-hover-01);
+		background-color: var(--cds-layer-selected-hover-01);
 		color: var(--cds-link-primary-hover);
 	}
 

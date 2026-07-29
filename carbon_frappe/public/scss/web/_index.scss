@@ -43,11 +43,12 @@
 	}
 }
 
-// markdown/docs content: Plex Mono code on $layer-01
+// markdown/docs content: code recesses to the canvas tone (a white block on a
+// white card is invisible)
 .from-markdown {
 	pre,
 	code {
-		background-color: var(--cds-layer-01);
+		background-color: var(--cds-background);
 		border-radius: 0;
 	}
 

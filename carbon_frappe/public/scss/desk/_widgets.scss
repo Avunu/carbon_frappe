@@ -10,10 +10,11 @@
 }
 
 // Workspace canvas. frappe paints [data-page-route="Workspaces"]
-// .layout-main-section with --fg-color (now layer-01), so the whole workspace
-// goes gray and the tiles blend into it. Carbon puts the canvas on `background`
-// and tiles on layer-01 — restore the white/background canvas so the .widget
-// tiles below read as raised cards. (background = #ffffff light / #161616 dark.)
+// .layout-main-section with --fg-color (= layer-01, the CARD tone), so the
+// whole workspace takes the tile fill and the tiles below blend into it.
+// Carbon puts the canvas on $background and tiles on $layer-01 — restore that
+// split so the .widget tiles read as raised cards.
+// (background = #f4f4f4 light / #161616 dark.)
 [data-page-route="Workspaces"] .layout-main-section {
 	background-color: var(--cds-background);
 }

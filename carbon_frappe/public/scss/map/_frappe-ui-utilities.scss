@@ -63,14 +63,21 @@
 @include v("bg-gray-400") {
 	background-color: #{c.$gray-30};
 }
+// The low end of the ramp is frappe-ui's "subtle neutral fill" band — SPA page
+// canvases behind white cards, and hover tints on those cards. Under g10
+// layer-01 is #ffffff, so leaving 50/100 there made both vanish against the
+// cards they were meant to sit behind. $background is the tone that band wants
+// (#f4f4f4), and it keeps the ramp monotonic against 200 and 400 below.
+// QA: needs a CRM/Helpdesk pass to confirm the split between canvas use and
+// hover use — if a hover reads too weak, 100 can move to $layer-hover-01.
 @include v("bg-gray-200") {
-	background-color: var(--cds-layer-02);
+	background-color: var(--cds-layer-accent-01);
 }
 @include v("bg-gray-100") {
-	background-color: var(--cds-layer-01);
+	background-color: var(--cds-background);
 }
 @include v("bg-gray-50") {
-	background-color: var(--cds-layer-01);
+	background-color: var(--cds-background);
 }
 
 .text-gray-900,

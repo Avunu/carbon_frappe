@@ -33,16 +33,16 @@
 	}
 }
 
-// kanban: $layer-01 columns, card = $background tile with subtle border
+// kanban: lanes recess to the canvas tone, cards lift to $layer-01
 .kanban {
 	.kanban-column {
-		background-color: var(--cds-layer-01);
+		background-color: var(--cds-background);
 		border-radius: 0;
 	}
 
 	.kanban-card,
 	.kanban-card-wrapper .kanban-card-body {
-		background-color: var(--cds-background);
+		background-color: var(--cds-layer-01);
 		border: 1px solid var(--carbon-border-subtle);
 		border-radius: 0;
 		box-shadow: none;
@@ -121,11 +121,13 @@
 	font-weight: var(--font-weight-semibold);
 }
 
-// code blocks on $layer-01 with Plex Mono (font set in map/_typography)
+// code blocks recess to the canvas tone (a white block on a white card is
+// invisible); Plex Mono comes from map/_typography
 pre,
 .frappe-code,
 .code-block {
-	background-color: var(--cds-layer-01);
+	background-color: var(--cds-background);
+	border: 1px solid var(--carbon-border-subtle);
 	border-radius: 0;
 }
 
@@ -137,17 +139,13 @@ pre,
 	border-radius: var(--border-radius-full);
 }
 
-// Form surface swap. frappe defaults .form-page to var(--card-bg) — the raised
-// layer-01 tint — and leaves the comments/activity footer transparent, so the
-// darkened panel reads under the FIELDS. Invert it: put the fields on the page
-// background and move the subtle tint to the .form-footer (comments + timeline),
-// which reads as a distinct discussion panel below the record. Theme-agnostic
-// via --cds-*, so it holds in dark too (fields on #161616, footer on #262626).
-.std-form-layout > .form-layout > .form-page {
-	background-color: var(--cds-background);
-}
+// Form surface. Under g10 frappe's own default is already right: .form-page
+// paints from --card-bg (= layer-01, #ffffff) and the page body is --bg-color
+// (= background, #f4f4f4), so the record reads as a white card on a gray canvas
+// and the transparent .form-footer below it shows that canvas by itself. The
+// swap and the full-width :has() tint that used to live here only existed to
+// undo the White theme's inverted ladder; both are deleted.
 .form-footer {
-	background-color: var(--cds-layer-01);
 	padding-block: 20px;
 
 	// Fields default to field-02 (the on-a-card step), but the footer sits on the
@@ -167,39 +165,19 @@ pre,
 	}
 }
 
-// .form-footer itself inherits frappe's own max-width + margin:auto centering
-// (form.scss), so the tint above paints a narrow floating column instead of a
-// full-width band. .layout-main-section-wrapper is the stable, full-width
-// ancestor .form-footer shares with .form-page; .form-page already carries an
-// opaque --cds-background fill (the swap above) that exactly covers the
-// fields area, so tinting the wrapper only shows through in .form-footer's
-// own space below it — full width, no extra masking needed. Scoped to
-// record/document forms so the many other .layout-main-section-wrapper users
-// (list, report, tree, workspace) are untouched.
-.layout-main-section-wrapper:has(.std-form-layout) {
-	background-color: var(--cds-layer-01);
-}
-
-// Form Builder color chain (FormBuilder.vue -> Section.vue -> Column.vue ->
-// Field.vue; Customize Form shares the same component). The design alternates
-// a "card" role (--fg-color/--card-bg, meant to read white) with a "recessed
-// slot" role (--bg-light-gray, meant to read a visible light gray) at each
-// nesting level: canvas -> card/section (white) -> column/field slot (gray)
-// -> actual input (white again). The ramp remap pins --fg-color/--card-bg to
-// the SAME $layer-01 token already used for --bg-light-gray, so every one of
-// those alternating steps resolves to the identical fill and the whole tree
-// reads as one flat gray slab with only hairline borders left for definition.
-// Rescope the roles back apart for this subtree: canvas + column/field slots
-// on layer-01, card/section/actual-inputs on the page white. Custom
-// properties inherit through the DOM, so this reaches every nested Vue
-// component's scoped <style> — including ones that mount as runtime-injected
-// tags after this bundle — without a cascade-order fight, since we're not
-// overriding their background-color declarations, just the variable those
-// declarations already read from.
+// Form Builder (FormBuilder.vue -> Section.vue -> Column.vue -> Field.vue;
+// Customize Form shares the component). Its design alternates a "card" role
+// (--fg-color/--card-bg) with a "recessed slot" role (--bg-light-gray, which
+// frappe defines as var(--gray-100) = #f4f4f4) at each nesting level: canvas ->
+// section -> field slot -> input. Under g10 --fg-color/--card-bg resolve to
+// #ffffff, so that alternation separates on its own and the role swap that used
+// to live here is gone.
+//
+// One pin remains: Phase 4 moved the global disabled fill to field-02, which is
+// the same #f4f4f4 as the Form Builder's own slot tone — so preview inputs would
+// blend into the slot holding them. Step them the other way.
 .form-builder-container .form-container {
-	--disabled-control-bg: var(--cds-layer-01);
-	--fg-color: var(--cds-background);
-	--card-bg: var(--cds-background);
+	--disabled-control-bg: var(--cds-field-01);
 }
 
 // User-onboarding floating panel (OnboardingPanel.vue) injects its own inline

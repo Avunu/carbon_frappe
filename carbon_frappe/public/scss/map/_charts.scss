@@ -8,7 +8,7 @@
 	--charts-label-color: var(--cds-text-secondary);
 	--charts-axis-line-color: var(--carbon-border-subtle);
 	--charts-stroke-width: 2px;
-	--charts-dataset-circle-stroke: var(--cds-background);
+	--charts-dataset-circle-stroke: var(--cds-layer-01); // chart sits on a card
 	--charts-dataset-circle-stroke-width: 2px;
 	--charts-tooltip-title: var(--cds-text-inverse);
 	--charts-tooltip-label: var(--cds-text-inverse);
