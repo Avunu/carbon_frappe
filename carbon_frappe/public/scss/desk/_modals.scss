@@ -198,3 +198,80 @@
 		}
 	}
 }
+
+// ---- Awesomebar / command palette ------------------------------------------
+// frappe's global search is a modal wrapping an .awesomplete list, with a
+// transparent input in the header and a keyboard-hint footer. Carbon has no
+// command-palette component; the closest reading is a Search field sitting on
+// a menu panel, so that is what it is built as. Scoped by the footer class so
+// ordinary dialogs are untouched.
+.modal:has(.cool-awesomebar-modal-footer) {
+	.modal-content {
+		border-radius: 0;
+		border: 1px solid var(--carbon-border-subtle);
+		background: var(--cds-layer-01);
+		box-shadow: 0 2px 6px var(--cds-shadow);
+	}
+
+	// NOTE: layout is left entirely alone here. frappe renders the magnifier and
+	// input inside .modal-body (not .modal-header, which is empty), and the
+	// results <ul> is absolutely positioned by awesomplete — restructuring the
+	// rows collapses the panel. Only tone, type and item metrics are set.
+
+	// the search field: Carbon field tone with a strong bottom rule, square.
+	// Its 2px focus ring comes from desk/_controls.scss and is correct here.
+	.awesomebar-input-row input.form-control,
+	input.form-control {
+		height: 40px;
+		border-radius: 0;
+		font-size: var(--text-md);
+	}
+
+	// Carbon menu items: 40px, 16px inset, hover/selected on the layer ladder.
+	// frappe ships unclassed <li> at 35px/7px.
+	.awesomplete > ul {
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
+		background: transparent;
+		margin: 0;
+		padding: 0;
+
+		> li {
+			height: 40px;
+			display: flex;
+			align-items: center;
+			padding: 0 16px;
+			border-radius: 0;
+			font-size: var(--text-md);
+			color: var(--cds-text-primary);
+
+			&:hover,
+			&[aria-selected="true"] {
+				background: var(--cds-layer-hover-01);
+				color: var(--cds-text-primary);
+			}
+		}
+	}
+
+	.modal-footer.cool-awesomebar-modal-footer {
+		padding: 8px 16px;
+		border-top: 1px solid var(--carbon-border-subtle);
+		border-radius: 0;
+		font-size: var(--text-tiny);
+		color: var(--cds-text-secondary);
+
+		// keyboard hints as square Carbon key caps
+		kbd,
+		.shortcut-key,
+		[class*="keyboard"] {
+			border-radius: 0;
+			border: 1px solid var(--carbon-border-subtle);
+			background: var(--cds-layer-accent-01);
+			color: var(--cds-text-secondary);
+			font-family: var(--font-family-mono);
+			font-size: var(--text-tiny);
+			padding: 1px 6px;
+		}
+	}
+}

@@ -2,6 +2,16 @@
 // Markup for the first two is mounted by js/anatomy/*.js.
 @use "@carbon/colors" as c;
 
+// The landing page ships its own header. js/anatomy/ui_shell.js harvests its
+// utilities and removes it, but that is a one-shot at mount time and the
+// desktop page can finish rendering AFTER the mount — which put a second black
+// bar under ours. Hiding it in CSS is race-proof; the JS removal still runs
+// first, so the fallback harvest can take its contents when the side nav has
+// none to give.
+.desktop-navbar {
+	display: none !important;
+}
+
 // -- UI Shell header ---------------------------------------------------------
 // Carbon: 48px tall, 48x48 action cells with NO gaps between them, a
 // $border-subtle bottom rule. The zone runs the g100 theme, so its tones come
@@ -295,6 +305,71 @@ body[data-route^="Form/"] {
 
 		.primary-action {
 			order: 2;
+		}
+	}
+
+	// Menus opening off the bar should read as an extension of the button that
+	// opened them, not as a floating card.
+	//
+	// Popper positions these with a transform that lands ~15px off the trigger's
+	// edge. Overriding it is safe HERE specifically: the bar is pinned to the
+	// bottom and its triggers are always on screen, so the collision handling
+	// popper is doing has nothing to solve. The menu is pinned above its own
+	// button instead, which needs the wrapper to be the positioning context.
+	.page-head .standard-actions .dropdown,
+	.page-head .standard-actions .btn-group,
+	.page-head .standard-actions .inner-group-button {
+		position: relative;
+	}
+
+	.page-head .standard-actions .dropdown-menu {
+		position: absolute !important;
+		transform: none !important;
+		inset: auto auto 100% 0 !important;
+		// a downward drop shadow under an upward-opening menu reads as a
+		// detached card and lights the wrong edge; the hairline does the work
+		box-shadow: none;
+		border: 1px solid var(--carbon-border-subtle);
+		border-radius: 0;
+		// Carbon menus have no outer padding — the items reach the edges
+		padding: 0;
+		margin: 0;
+		background: var(--cds-layer-01);
+		// frappe declares `.dropdown-item { padding: var(--dropdown-padding)
+		// !important }`, which no amount of specificity beats. Retarget the
+		// variable it reads instead of starting an !important war.
+		--dropdown-padding: 0 16px;
+
+		.dropdown-item,
+		li > a {
+			// Carbon menu item, and the 16px inset lines the labels up with the
+			// bar button above them
+			height: 40px;
+			display: flex;
+			align-items: center;
+			padding: 0 16px;
+			font-size: var(--text-md);
+			color: var(--cds-text-primary);
+			border-radius: 0;
+
+			&:hover,
+			&:focus {
+				background: var(--cds-layer-hover-01);
+				color: var(--cds-text-primary);
+			}
+		}
+	}
+
+	// An open trigger takes Carbon's selected-ghost tone instead of bootstrap's
+	// gray, so it stays in the bar's language while its menu is up.
+	.page-head .standard-actions {
+		.dropdown.show > .btn,
+		.btn-group.show > .btn,
+		.show > .btn.dropdown-toggle {
+			&:not(.btn-primary) {
+				background: var(--cds-layer-selected-01);
+				color: var(--cds-text-primary);
+			}
 		}
 	}
 
