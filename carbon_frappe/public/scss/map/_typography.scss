@@ -14,12 +14,23 @@
 	--font-weight-bold: 600;
 	--font-weight-black: 600;
 
-	// Nearest Carbon type-scale steps (12/14/16/20/24/28/32/42/48/54)
-	--text-tiny: 12px; // label-01
+	// Snap frappe's 16-step ramp onto Carbon's productive type scale, which has
+	// exactly eight sizes: 12 / 14 / 16 / 20 / 28 / 32 / 42 / 54. frappe's 11,
+	// 18, 24, 26, 40, 48 are not Carbon steps and move to the nearest one.
+	// Collapsing is unavoidable at 8-onto-16; where a frappe step falls midway
+	// (24px) it snaps down, keeping it in the productive range rather than
+	// promoting it to a display size.
+	--text-tiny: 12px; // label-01 / caption-01 / helper-text-01 (was 11)
 	--text-2xs: 12px;
-	--text-xl: 16px;
+	--text-xl: 16px; // body-02 / heading-02 (was 18)
 	--text-2xl: 20px; // heading-03
-	--text-5xl: 28px;
+	--text-3xl: 20px; // heading-03 (was 24)
+	--text-4xl: 28px; // heading-04 (was 26)
+	--text-5xl: 28px; // heading-04
+	--text-6xl: 32px; // heading-05 — pinned so the number card can rely on it
+	--text-7xl: 42px; // heading-06 (was 40)
+	--text-8xl: 42px; // heading-06 (was 44)
+	--text-9xl: 54px; // heading-07 (was 48)
 }
 
 // Carbon body-compact-01 (the 14px desk body size) carries 0.16px tracking.
@@ -40,6 +51,24 @@ h4,
 .h3,
 .h4 {
 	letter-spacing: 0;
+}
+
+// Carbon pairs each type step with a specific line-height. frappe's
+// --text-line-height-* are percentages keyed to different steps, so remapping
+// them would compound against the sizes above; set the Carbon values on the
+// consumers instead. heading-03 20/28, heading-04 28/36, heading-05 32/40.
+h1,
+.h1 {
+	font-size: var(--text-4xl); // heading-04
+	line-height: 36px;
+	font-weight: var(--font-weight-regular);
+}
+
+h2,
+.h2 {
+	font-size: var(--text-2xl); // heading-03
+	line-height: 28px;
+	font-weight: var(--font-weight-regular);
 }
 
 code,
