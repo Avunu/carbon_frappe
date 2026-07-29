@@ -44,7 +44,17 @@ export const PATCH_TARGETS = [
 		/setup_datatable\s*\(/,
 	],
 	[
-		"frappe.router event emitter (Carbon page header)",
+		"toolbar.setup_editable_title_click_event (clickable page title)",
+		"frappe/public/js/frappe/form/toolbar.js",
+		/setup_editable_title_click_event\s*\(/,
+	],
+	[
+		"editable-title class on .title-area (marks a renameable doc)",
+		"frappe/public/js/frappe/form/toolbar.js",
+		/"editable-title"/,
+	],
+	[
+		"frappe.router event emitter (form action collection)",
 		"frappe/public/js/frappe/router.js",
 		/make_event_emitter\(frappe\.router\)/,
 	],

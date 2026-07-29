@@ -215,22 +215,78 @@
 }
 
 // -- Page header -------------------------------------------------------------
-// Carbon heading-04 (28/36, regular) under a secondary eyebrow.
-.cf-page-header {
-	padding: 24px 16px 16px;
+// Carbon heading-04 (28/36, regular) under a breadcrumb eyebrow — built from
+// frappe's OWN breadcrumb trail rather than an inserted element.
+//
+// This used to insert a .cf-page-header with a copied title, which was a
+// mistake: it duplicated the title on screen, and it could not carry the
+// behaviour attached to the real one. frappe's last crumb is `.title-text-form`
+// on a form (`.title-text` on a list), page.set_title() writes into it, and
+// form/toolbar.js toggles `editable-title` on the enclosing `.title-area` to
+// mark a document as renameable. A copy gets none of that.
+//
+// So the trail is re-laid-out instead: it wraps, the parent crumbs stay a 14px
+// eyebrow row, and the last crumb — the page's own subject — drops to its own
+// line as the heading. Same element, same classes, same handlers.
+.page-head {
+	height: auto;
 
-	.cf-page-eyebrow {
-		font-size: var(--text-md);
-		color: var(--cds-text-secondary);
-		margin-bottom: 8px;
+	.page-head-content {
+		height: auto;
+		min-height: 48px;
+		align-items: flex-start;
+		padding-block: 12px;
+	}
+}
+
+.page-title {
+	flex: 1;
+
+	// frappe truncates the whole trail to one line; the heading needs to wrap
+	.title-area {
+		display: block;
+		overflow: visible;
+		white-space: normal;
+		flex: 1;
 	}
 
-	.cf-page-title {
-		margin: 0;
-		font-size: var(--text-4xl); // 28px
-		line-height: 36px;
-		font-weight: var(--font-weight-regular);
-		color: var(--cds-text-primary);
+	.navbar-breadcrumbs {
+		flex-wrap: wrap;
+		align-items: baseline;
+
+		> li:last-child {
+			flex: 0 0 100%;
+			margin-top: 2px;
+
+			// the "/" divider is for a trail, not for the heading below it
+			> a::before {
+				content: none;
+			}
+		}
+	}
+}
+
+// Heading-04. Beats _breadcrumbs.scss, which deliberately forces every crumb —
+// including these two — down to link size to keep the trail uniform; the LAST
+// crumb is the exception now that it is the page title.
+.page-title .navbar-breadcrumbs > li:last-child > a,
+.page-title .navbar-breadcrumbs > li:last-child > a.title-text,
+.page-title .navbar-breadcrumbs > li:last-child > a.title-text-form {
+	font-size: var(--text-4xl); // 28px
+	line-height: 36px;
+	font-weight: var(--font-weight-regular);
+	color: var(--cds-text-primary) !important;
+}
+
+// A renameable document keeps its affordance: frappe puts `editable-title` on
+// .title-area when the doc can be renamed, so the heading gets the pointer and
+// hover treatment that advertises it.
+.page-title .title-area.editable-title .navbar-breadcrumbs > li:last-child > a {
+	cursor: text;
+
+	&:hover {
+		text-decoration: underline;
+		text-underline-offset: 4px;
 	}
 }
 
