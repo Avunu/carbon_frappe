@@ -2,6 +2,41 @@
 
 A comprehensive [Carbon Design System](https://carbondesignsystem.com) (v11) theme for [Frappe](https://frappeframework.com) sites. Every surface — desk, website/portal, login, print, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
 
+## Screenshots
+
+Workspace — light and dark (`data-theme`, toggled from Settings → Toggle Theme) share the same tokens, so parity is automatic:
+
+<table>
+<tr>
+<td><img src="docs/images/desk-workspace-light.png" alt="Desk workspace, light theme"></td>
+<td><img src="docs/images/desk-workspace-dark.png" alt="Desk workspace, dark theme (g100)"></td>
+</tr>
+</table>
+
+List view — Carbon data-table header, square status tags, bottom-border filter fields:
+
+![List view](docs/images/desk-list-light.png)
+
+Document form — bottom-border fields, Carbon button ramp, sidebar, and the full-width tinted Comments/Activity panel:
+
+![Document form](docs/images/desk-form-light.png)
+
+Form Builder — the section/field nesting reads as distinct surfaces (canvas → card → field slot → input) instead of one flat gray block:
+
+![Form Builder](docs/images/desk-form-builder-light.png)
+
+Dashboard charts — `@carbon/charts` categorical palette via the `carbon_charts.bundle.js` wrapper, square stat tiles:
+
+![Dashboard charts](docs/images/desk-dashboard-light.png)
+
+Login — IBM Plex, square fields, Carbon Blue primary action:
+
+<img src="docs/images/login-light.png" alt="Login page" width="420">
+
+Print — the "Carbon" Print Style: square geometry, Carbon Blue accent bar, IBM Plex, forced onto ERPNext's own bundled print formats too (see [Print & email](#print--email)):
+
+![Print preview](docs/images/print-preview-light.png)
+
 ## How it works
 
 Frappe resolves every stylesheet through `sites/assets/assets.json`, keyed by bare bundle basename. This app **shadows** frappe's own bundles: it ships same-named entries (`desk.bundle.scss`, `website.bundle.scss`, `login.bundle.scss`, `email.bundle.scss`, `print.bundle.scss`) that _recompile frappe's SCSS sources_ with Carbon values injected at compile time, then layer Carbon tokens and component overrides on top. The server is thereby forced to serve the Carbon stylesheets **instead of** frappe's — one stylesheet per surface, no double download, no cascade fights.
