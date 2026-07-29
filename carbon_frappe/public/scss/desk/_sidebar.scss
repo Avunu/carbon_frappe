@@ -108,6 +108,42 @@
 	background: var(--sidebar-active-color);
 }
 
+// Collapsed rail. The expanded layout puts the icon 16px in with a 24px gap
+// before the label, which in a 48px rail pushes the icon 8px right of centre
+// (measured: icon centre 32px against a rail centre of 24px). With no label to
+// space from, the icon just centres.
+.body-sidebar-container:not(.expanded) .body-sidebar {
+	.standard-sidebar-item .item-anchor {
+		padding-inline: 0;
+		justify-content: center;
+
+		.sidebar-item-icon {
+			margin-inline-end: 0;
+		}
+
+		// The label and trailing control stay in flow when collapsed, so
+		// `justify-content: center` was centring all three children and pushing
+		// the icon left of the rail's centre. Only the icon belongs in a rail.
+		.sidebar-item-label,
+		.sidebar-item-suffix,
+		.sidebar-item-control {
+			display: none;
+		}
+	}
+
+	// the selection bar would eat 3 of the 48px and re-offset the icon
+	.standard-sidebar-item.active-sidebar .item-anchor {
+		border-inline-start-width: 0;
+		padding-inline-start: 0;
+		box-shadow: inset 3px 0 0 0 var(--cds-border-interactive);
+	}
+
+	// nested indents are meaningless in a rail
+	.nested-container .item-anchor {
+		padding-inline-start: 0;
+	}
+}
+
 // Nesting. frappe indents the CONTAINER (`.indent + .nested-container`), which
 // would push a nested item's selection bar off the panel edge. Move the indent
 // onto the item so every bar stays flush at x=0, as Carbon's sub-menu does.

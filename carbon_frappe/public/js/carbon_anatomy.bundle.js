@@ -7,6 +7,7 @@
 import { assertPatches } from "./anatomy/patch";
 import "./anatomy/datatable";
 import "./anatomy/page_header";
+import "./anatomy/form_actions";
 import "./anatomy/ui_shell";
 
 $(document).ready(assertPatches);

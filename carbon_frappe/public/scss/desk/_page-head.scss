@@ -11,6 +11,11 @@
 	display: flex;
 	align-items: center;
 	height: 48px;
+	// the shell bar owns the full width; utilities must reach the viewport edge
+	// ("aligned to the right of the header with no gaps between icons")
+	padding: 0;
+	margin: 0;
+	width: 100%;
 	background: #{c.$gray-100}; // g100 $background
 	border-bottom: 1px solid #{c.$gray-80}; // g100 $border-subtle
 	color: #{c.$gray-10}; // g100 $text-primary
@@ -64,35 +69,110 @@
 	}
 
 	// "Icons should always be aligned to the right of the header with no gaps
-	// between icons."
+	// between icons." Every utility is a 48x48 cell on the header's own grid.
 	.cf-shell-actions {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
 		height: 100%;
-	}
 
-	// the relocated account menu adopts the 48px rail
-	.dropdown-navbar-user {
-		display: flex;
-		align-items: center;
-		margin: 0;
-		padding-inline: 12px;
-		border-inline-start: 1px solid #{c.$gray-80};
-
-		&:hover {
-			background: #{c.$gray-80};
+		// The harvested nodes arrive with sidebar geometry — labels, keyboard
+		// hints, block layout, margins. Flatten them all to the icon rail.
+		.standard-items-sections,
+		.navbar-search-bar,
+		.standard-sidebar-item,
+		.desktop-notifications,
+		.desktop-search-wrapper,
+		.desktop-avatar,
+		.dropdown-navbar-user {
+			display: flex;
+			align-items: stretch;
+			margin: 0;
+			padding: 0;
+			background: none;
+			border: none;
+			width: auto;
 		}
 
-		// The sidebar rendered name + email beneath the avatar; a 48px header rail
-		// has no room for either, so the avatar carries it (the dropdown still
-		// names the user). frappe emits these as bootstrap .d-block utilities,
-		// which declare `display: block !important` — hence the !important here.
-		> a .d-block,
+		// the interactive cell itself. Widths carry !important because several of
+		// these arrive with bootstrap utilities (mt-3, flex) that would otherwise
+		// shrink-wrap them to the icon.
+		.item-anchor,
+		.desktop-notifications > *,
+		.desktop-search-wrapper > *,
+		> .desktop-avatar,
+		.dropdown-navbar-user > * {
+			display: grid !important;
+			place-items: center;
+			width: 48px !important;
+			min-width: 48px;
+			height: 48px !important;
+			padding: 0 !important;
+			margin: 0 !important;
+			color: #{c.$gray-10};
+			border-radius: 0;
+			text-decoration: none;
+
+			&:hover {
+				background: #{c.$gray-80};
+			}
+		}
+
+		// Labels, keyboard hints and the name/email block have no room on a 48px
+		// rail — the icon carries the affordance and the dropdown names it.
+		// frappe emits several of these as bootstrap utilities that declare
+		// `display: block !important`, hence the !important.
+		.sidebar-item-label,
+		.sidebar-item-suffix,
+		.sidebar-item-control,
+		.keyboard-shortcut,
+		.desktop-keyboard-shortcut,
 		.user-email,
 		.full-name,
-		.sidebar-item-label {
+		.d-block,
+		.search-bar-placeholder {
 			display: none !important;
+		}
+
+		// the notification/search dropdown PANELS are absolutely positioned
+		// content, not rail cells — they must not stretch the row
+		.dropdown-notifications,
+		.dropdown-menu,
+		.nested-container {
+			display: none;
+		}
+
+		.dropdown-notifications.show,
+		.dropdown-menu.show {
+			display: block;
+		}
+
+		.sidebar-item-icon {
+			margin: 0 !important;
+			padding: 0 !important;
+			flex: none;
+		}
+
+		svg,
+		.es-icon {
+			width: 20px;
+			height: 20px;
+			// Carbon: header action icons are $icon-secondary until hover
+			color: #{c.$gray-30};
+			stroke: #{c.$gray-30};
+		}
+
+		*:hover > svg,
+		*:hover > .es-icon {
+			color: #{c.$gray-10};
+			stroke: #{c.$gray-10};
+		}
+
+		// the avatar is the one utility that keeps its own fill
+		.avatar,
+		.avatar-frame {
+			width: 24px;
+			height: 24px;
 		}
 	}
 }
@@ -137,7 +217,11 @@
 body[data-route^="Form/"] {
 	.page-head .standard-actions {
 		position: fixed;
-		inset-inline: var(--sidebar-width) 0;
+		// Full-bleed edge to edge. Insetting by --sidebar-width was wrong twice
+		// over: it is the EXPANDED width, so the bar left a 256px gap whenever
+		// the side nav was collapsed to its 48px rail, and a bleed bar is
+		// supposed to reach the viewport edge anyway.
+		inset-inline: 0;
 		bottom: 0;
 		height: 64px;
 		display: flex;
@@ -181,6 +265,36 @@ body[data-route^="Form/"] {
 		// primary is the outermost right and takes the wider slot
 		.primary-action:not(.hide) {
 			min-width: 240px;
+		}
+	}
+
+	// .custom-actions (the doctype's own actions — Create, workflow
+	// transitions) is MOVED into .standard-actions by js/anatomy/form_actions.js
+	// rather than pinned separately, so the bar is one flex row.
+	.page-head .standard-actions .custom-actions {
+		display: flex;
+		align-items: stretch;
+		margin: 0;
+	}
+
+	// Carbon: "the primary button is positioned on the outside of the set."
+	// DOM order puts document navigation and the overflow menu wherever frappe
+	// built them, so the bar is ordered explicitly instead: navigation first,
+	// then the doctype's own actions, with whichever button is primary
+	// outermost right.
+	.page-head .standard-actions {
+		.page-icon-group,
+		.prev-doc,
+		.next-doc {
+			order: -1;
+		}
+
+		.custom-actions {
+			order: 1;
+		}
+
+		.primary-action {
+			order: 2;
 		}
 	}
 

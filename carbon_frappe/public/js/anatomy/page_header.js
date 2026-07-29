@@ -14,10 +14,21 @@ function decorate() {
 	const $container = $(".page-container:visible").first();
 	if (!$container.length) return false;
 
-	// set_title() writes into a.title-text (the last breadcrumb), which is the
-	// one place the current title is reliably readable — the page object is not
-	// exposed on every wrapper.
-	const title = $container.find(".title-area .title-text").first().text().trim();
+	// The LAST breadcrumb is the thing the page is about; the one before it is
+	// the context. That holds for both shapes:
+	//   list  Selling / Sales Order            -> "Sales Order", eyebrow "Selling"
+	//   form  Selling / Sales Order / Grant... -> "Grant...",     eyebrow "Sales Order"
+	// .title-text is NOT the right source — on a form it is the doctype crumb,
+	// so the heading read "Sales Order" on every record of that doctype.
+	const crumbs = $container
+		.find(".navbar-breadcrumbs li")
+		.map((_, li) => $(li).text().trim())
+		.get()
+		.filter(Boolean);
+	if (!crumbs.length) return false;
+
+	const title = crumbs[crumbs.length - 1];
+	const eyebrow = crumbs.length > 1 ? crumbs[crumbs.length - 2] : "";
 	if (!title) return false;
 
 	const $main = $container.find(".layout-main-section").first();
@@ -43,14 +54,6 @@ function decorate() {
 	}
 
 	$header.find(".cf-page-title").text(title);
-
-	// Eyebrow: the parent breadcrumb, i.e. the section this page sits under.
-	const crumbs = $container
-		.find(".navbar-breadcrumbs li")
-		.map((_, li) => $(li).text().trim())
-		.get()
-		.filter(Boolean);
-	const eyebrow = crumbs.length > 1 ? crumbs[crumbs.length - 2] : "";
 	$header.find(".cf-page-eyebrow").text(eyebrow).toggle(!!eyebrow);
 	return true;
 }
