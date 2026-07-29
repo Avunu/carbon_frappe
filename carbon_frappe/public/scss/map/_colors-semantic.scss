@@ -21,14 +21,18 @@
 .dark {
 	// Surfaces -> Carbon layering model
 	--surface-base: var(--cds-background);
-	--surface-white: var(--cds-background);
-	--ink-white: var(--cds-background);
+	// name says white: under g10 $background is #f4f4f4, so this is layer-01
+	--surface-white: var(--cds-layer-01);
+	// a TEXT role (ink), not a surface — Carbon's on-color text is white in
+	// every theme, which var(--cds-background) stopped being under g10
+	--ink-white: var(--cds-text-on-color);
 	--surface-gray-1: var(--cds-layer-01);
 	--surface-cards: var(--cds-layer-01);
 	--surface-modal: var(--cds-layer-01);
 	--surface-selected: var(--cds-layer-selected-01);
-	--surface-sidebar: var(--cds-background);
-	--surface-menu-bar: var(--cds-background); // g100 UI Shell header tone
+	// NOTE: --surface-sidebar / --surface-menu-bar are theme-SPLIT below; Carbon
+	// puts the side nav on $layer-01 in g10 (white, lifted off the gray canvas)
+	// but on $background in g100 (the UI Shell tone). No single token does both.
 
 	// Ink -> Carbon text roles
 	--ink-gray-9: var(--cds-text-primary);
@@ -62,6 +66,11 @@
 // alternate, so these need explicit ramp steps rather than layer tokens.
 :root,
 [data-theme="light"] {
+	// Side nav lifts off the gray canvas (frappe: .body-sidebar reads
+	// --surface-menu-bar; see frappe/public/scss/desk/sidebar.scss)
+	--surface-sidebar: var(--cds-layer-01);
+	--surface-menu-bar: var(--cds-layer-01);
+
 	--surface-gray-2: #{c.$gray-10};
 	--surface-gray-3: #{c.$gray-20};
 	--surface-gray-4: #{c.$gray-30};
@@ -122,6 +131,10 @@
 // -- Overloaded neutral ladder + chromatic status slots: dark (g100) --------
 [data-theme="dark"],
 .dark {
+	// Side nav shares the g100 UI Shell tone rather than lifting to layer-01
+	--surface-sidebar: var(--cds-background);
+	--surface-menu-bar: var(--cds-background);
+
 	--surface-gray-2: #{c.$gray-80};
 	--surface-gray-3: #{c.$gray-70};
 	--surface-gray-4: #{c.$gray-60};

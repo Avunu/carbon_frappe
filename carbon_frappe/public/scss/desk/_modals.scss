@@ -89,7 +89,10 @@
 // ---- Popovers / espresso panels --------------------------------------------
 .popover {
 	border-radius: 0;
-	border: none;
+	// --popover-bg is $layer-01 (Carbon's popover tone in every theme), which in
+	// g100 equals the card tone a popover typically floats over. The shadow alone
+	// doesn't separate them there, so keep a hairline edge.
+	border: 1px solid var(--carbon-border-subtle);
 	box-shadow: 0 2px 6px var(--cds-shadow);
 
 	.popover-body {

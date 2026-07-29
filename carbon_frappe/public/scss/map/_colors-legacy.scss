@@ -61,13 +61,20 @@
 	// dark mode has no elevation. The ramp can't separate them — pin the roles to
 	// the ascending Carbon layer ladder instead. Flips with data-theme, so one
 	// block covers both. These sit after frappe's desk/dark.scss in the cascade.
-	--bg-color: var(--cds-background); // page canvas: #ffffff / #161616
-	--fg-color: var(--cds-layer-01); // content surface: #f4f4f4 / #262626
+	--bg-color: var(--cds-background); // page canvas: #f4f4f4 / #161616
+	--fg-color: var(--cds-layer-01); // content surface: #ffffff / #262626
 	--card-bg: var(--cds-layer-01);
-	--btn-default-bg: var(--cds-layer-01);
-	--modal-bg: var(--cds-layer-02); // raised: #ffffff / #393939
-	--toast-bg: var(--cds-layer-02);
-	--popover-bg: var(--cds-layer-02);
+	// Carbon's default button is a GHOST (transparent) — see desk/_buttons.scss.
+	// Leaving this on a layer tone paints an invisible white-on-white button for
+	// any frappe consumer we don't explicitly override.
+	--btn-default-bg: transparent;
+	// Carbon's Modal/Popover/Toast all sit on $layer-01 in EVERY theme; $overlay
+	// and the drop shadow supply the separation, not a higher layer step. g10's
+	// ladder alternates (layer-02 == $background == #f4f4f4), so pinning these to
+	// layer-02 would paint a gray modal on a gray canvas.
+	--modal-bg: var(--cds-layer-01); // raised: #ffffff / #262626
+	--toast-bg: var(--cds-layer-01);
+	--popover-bg: var(--cds-layer-01);
 	--subtle-fg: var(--cds-layer-accent-01); // subtle fill: #e0e0e0 / #393939
 
 	// Text & border roles that failed WCAG AA in dark (all were driven off ramp
