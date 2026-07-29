@@ -43,12 +43,15 @@
 		box-shadow: none;
 	}
 
-	&:disabled,
-	&[readonly] {
+	// Disabled and read-only are DIFFERENT states in Carbon and must not share a
+	// treatment — see desk/_read-only.scss for the full rationale. Disabled:
+	// keeps the field fill, loses the bottom rule, text drops to $text-disabled.
+	&:disabled {
 		background-color: var(--cds-field-02);
 		border-bottom-color: transparent;
 		color: var(--cds-text-disabled);
 		-webkit-text-fill-color: var(--cds-text-disabled);
+		cursor: not-allowed;
 	}
 }
 
@@ -81,12 +84,9 @@ select.form-control,
 	}
 }
 
-// Read-only display fields: Carbon read-only field keeps a subtle bottom rule
+// Read-only display fields — see desk/_read-only.scss.
 .like-disabled-input {
-	background-color: var(--cds-field-02);
 	border-radius: 0;
-	border-bottom: 1px solid var(--carbon-border-subtle);
-	color: var(--cds-text-primary);
 }
 
 // Labels: Carbon label-01 (12px, $text-secondary, 8px gap)
