@@ -1,6 +1,5 @@
-// Typography remap: IBM Plex + a conservative snap of frappe's --text-* scale
-// toward Carbon's type scale. Body stays 14px (Carbon body-compact-01) and
-// --text-sm stays 13px in v1 to avoid global reflow; revisit after QA.
+// Typography remap: IBM Plex + frappe's --text-* scale snapped onto Carbon's
+// productive type scale. Body is 14px (Carbon body-compact-01).
 :root {
 	--font-stack: "IBM Plex Sans", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto",
 		"Helvetica Neue", "Arial", sans-serif;
@@ -22,6 +21,7 @@
 	// promoting it to a display size.
 	--text-tiny: 12px; // label-01 / caption-01 / helper-text-01 (was 11)
 	--text-2xs: 12px;
+	--text-sm: 14px; // body-compact-01 (was 13, not a Carbon step)
 	--text-xl: 16px; // body-02 / heading-02 (was 18)
 	--text-2xl: 20px; // heading-03
 	--text-3xl: 20px; // heading-03 (was 24)
