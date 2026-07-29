@@ -6,9 +6,11 @@
 // frappe-ui surface served with this CSS matches.
 
 :root {
-	// Carbon sm field height (32px). --checkbox-size: Carbon checkbox is 16px.
-	--input-height: 32px;
-	--btn-height: 32px;
+	// Carbon md: "Individual input fields default to a 40px height in product
+	// regardless of context" (patterns/forms-pattern). Buttons pair to the field
+	// size they sit beside, so --btn-height follows. --checkbox-size: 16px.
+	--input-height: 40px;
+	--btn-height: 40px;
 	--checkbox-size: 16px;
 }
 
@@ -100,11 +102,12 @@ select.form-control,
 	color: var(--cds-support-error);
 }
 
-// Helper text: Carbon helper-text-01
+// Helper text: Carbon helper-text-01, $spacing-02 below the field
 .help-box {
 	font-size: var(--text-xs);
 	color: var(--cds-text-helper);
 	letter-spacing: 0.32px;
+	margin-top: 4px;
 }
 
 // Checkbox: Carbon 16px, 1px radius, $icon-primary border, flat checked fill

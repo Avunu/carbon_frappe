@@ -134,10 +134,16 @@
 // indicator pills: the --bg-<c>/--text-on-<c> pairs already resolve to Carbon
 // tag colors (<c>-20 background / <c>-70 text) via the ramp remap; enforce the
 // tag silhouette (24px pill)
+// Carbon tag, md: 24px tall, 0 8px padding, 12px label — and a 16px radius at
+// every size (sm 18 / md 24 / lg 32). Not --border-radius-full: at 24px the two
+// render identically, but 16px is the spec value and the token would follow a
+// height change somewhere else.
 .indicator-pill,
 .indicator-pill-right {
-	border-radius: var(--border-radius-full);
+	border-radius: 16px;
 	height: 24px;
+	padding: 0 8px;
+	font-size: var(--text-tiny); // 12px
 	align-items: center;
 }
 

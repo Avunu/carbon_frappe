@@ -1,0 +1,105 @@
+// Form chrome: tabs and inline messages.
+@use "@carbon/colors" as c;
+
+// -- Tabs --------------------------------------------------------------------
+// Carbon line tabs: 40px tall, 16px inline padding, a 2px $border-interactive
+// underline on the selected tab. frappe uses `padding: 10px 0` with a 15px
+// side margin and a 1px $text-color underline, and compensates the active
+// state with `padding-bottom: 9px`.
+.form-tabs-list {
+	border-bottom: 1px solid var(--carbon-border-subtle);
+	border-radius: 0;
+	transition: none; // frappe animates `top` for 0.5s while sticky
+
+	.form-tabs .nav-item .nav-link {
+		height: 40px;
+		padding: 0 16px;
+		margin: 0;
+		color: var(--cds-text-secondary);
+		// reserve the underline so selecting a tab doesn't shift the row
+		border-bottom: 2px solid transparent;
+		border-radius: 0;
+
+		&:hover {
+			color: var(--cds-text-primary);
+			background-color: var(--cds-layer-hover-01);
+		}
+
+		&.active {
+			padding-bottom: 0;
+			font-weight: var(--font-weight-semibold);
+			color: var(--cds-text-primary);
+			border-bottom: 2px solid var(--cds-border-interactive);
+		}
+	}
+}
+
+// -- Inline messages ---------------------------------------------------------
+// Carbon's notification anatomy is a 3px $support-* left bar PLUS a
+// $notification-background-* tint PLUS a status icon. The reference ERP concept
+// used a bare left bar with no tint and no icon, but that leaves colour as the
+// only status signal, which the status-indicator pattern rules out: "status
+// indicators should rely on at least two of the following elements: colour,
+// shape, or symbol." So the tint stays and only frappe's full 1px border goes.
+//
+// frappe emits .form-message.<blue|green|yellow|orange|red> and styles them via
+// form-message-background(), which sets border, background and color together
+// from its own --<hue>-100/-800 ramp steps.
+// The notification tints are COMPONENT tokens in @carbon/styles, not theme
+// tokens (@carbon/themes has no $notification-background-*), so they are bound
+// here from the documented values: the hue's 10 step in light, and a flat
+// neutral layer in dark where Carbon tints every status the same and lets the
+// bar carry the meaning.
+:root,
+[data-theme="light"] {
+	--carbon-notify-info: #{c.$blue-10};
+	--carbon-notify-success: #{c.$green-10};
+	--carbon-notify-warning: #{c.$yellow-10};
+	--carbon-notify-error: #{c.$red-10};
+}
+
+[data-theme="dark"],
+.dark {
+	--carbon-notify-info: #{c.$gray-90};
+	--carbon-notify-success: #{c.$gray-90};
+	--carbon-notify-warning: #{c.$gray-90};
+	--carbon-notify-error: #{c.$gray-90};
+}
+
+.form-message {
+	padding: 16px;
+	border: none;
+	border-inline-start: 3px solid transparent;
+	font-size: var(--text-md);
+	color: var(--cds-text-primary);
+
+	&.blue {
+		border-inline-start-color: var(--cds-support-info);
+		background: var(--carbon-notify-info);
+	}
+
+	&.green {
+		border-inline-start-color: var(--cds-support-success);
+		background: var(--carbon-notify-success);
+	}
+
+	&.yellow,
+	&.orange {
+		border-inline-start-color: var(--cds-support-warning);
+		background: var(--carbon-notify-warning);
+	}
+
+	&.red {
+		border-inline-start-color: var(--cds-support-error);
+		background: var(--carbon-notify-error);
+	}
+}
+
+// -- Sections ----------------------------------------------------------------
+// Carbon's accordion makes the whole header the click target, not just the
+// chevron ("Users can trigger a state change by clicking on the chevron or
+// clicking anywhere in the header area").
+.form-section .section-head.collapsible {
+	cursor: pointer;
+	padding-block: 8px;
+}
