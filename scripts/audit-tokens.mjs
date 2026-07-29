@@ -75,6 +75,40 @@ if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {
 	process.exit(strict ? (failures ? 1 : 0) : 0);
 }
 
+// ---- Check 5: JS hooks the theme monkey-patches still exist ---------------
+// These are the only places this app reaches past CSS into frappe's runtime.
+// A rename upstream makes the patch a silent no-op — the theme keeps loading,
+// the styling just quietly stops applying — so assert the shapes we depend on.
+const jsHooks = [
+	{
+		file: "frappe/public/js/frappe/form/formatters.js",
+		tests: [
+			[/_right:\s*function/, "frappe.form.formatters._right (carbon_desk.bundle.js tags its output)"],
+			[/text-align:\s*right/, "_right's inline-style wrapper (the CSS fallback selector matches it literally)"],
+			[/\bDate:\s*function/, "frappe.form.formatters.Date (wrapped for mono dates)"],
+		],
+	},
+	{
+		file: "frappe/public/js/frappe/list/list_view.js",
+		tests: [[/is_numeric_field\(.*\)\s*\?\s*"text-right"/, ".list-row-col.text-right (numeric list cells)"]],
+	},
+	{
+		file: "frappe/public/js/frappe/ui/theme_switcher.js",
+		tests: [[/setAttribute\(\s*["']data-theme["']/, "data-theme attribute write (chart re-theme observer)"]],
+	},
+];
+for (const { file, tests } of jsHooks) {
+	const abs = path.join(frappeRoot, file);
+	if (!fs.existsSync(abs)) {
+		warn(`frappe js hook source missing: ${file} (frappe restructured?)`);
+		continue;
+	}
+	const text = fs.readFileSync(abs, "utf-8");
+	for (const [re, what] of tests) {
+		if (!re.test(text)) warn(`${file}: no longer matches ${re} — ${what} would silently stop applying`);
+	}
+}
+
 // ---- Check 1: --cds-* references exist in @carbon/themes ------------------
 const themes = require("@carbon/themes");
 const cdsTokens = new Set(Object.keys(themes.g10).map((k) => themes.formatTokenName(k)));

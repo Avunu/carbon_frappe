@@ -1,0 +1,66 @@
+// IBM Plex Mono on tabular data.
+//
+// NOTE: this is a project decision, not a Carbon rule. Carbon's docs are silent
+// on numeric font and alignment in data tables (and its data-viz reference
+// charts use Plex Sans throughout, which is why charts are deliberately NOT
+// covered here). Monospaced, tabular figures are standard practice for
+// financial data and are what the reference ERP concept uses.
+
+%carbon-num {
+	font-family: var(--font-family-mono);
+	// Plex Mono is inherently tabular, but the property also covers the cases
+	// below where mono is applied to a Plex Sans run.
+	font-variant-numeric: tabular-nums;
+}
+
+// Emitted by carbon_desk.bundle.js on formatter output — the one hook that
+// reaches frappe-datatable (report view, query reports, data import), which
+// carries no fieldtype or alignment class of its own.
+.carbon-num {
+	@extend %carbon-num;
+}
+
+// Belt-and-braces for formatter output rendered before the shim loads, or by a
+// caller that bypasses it. Matches the literal attribute string _right() writes.
+.frappe-list,
+.report-wrapper,
+.form-grid,
+.form-layout,
+.datatable {
+	div[style*="text-align: right"] {
+		@extend %carbon-num;
+	}
+}
+
+// List view: .text-right is appended by list_view.js wherever
+// frappe.model.is_numeric_field(df) is true — on the header AND the body cell.
+.list-row-col.text-right {
+	@extend %carbon-num;
+}
+
+// Child tables / grid rows and form controls both carry the fieldtype.
+// Date is included here (grid_row.js emits it) even though it is not numeric —
+// ISO-ish dates read as data, and the mockup sets them in mono throughout.
+.grid-static-col[data-fieldtype="Currency"],
+.grid-static-col[data-fieldtype="Float"],
+.grid-static-col[data-fieldtype="Int"],
+.grid-static-col[data-fieldtype="Percent"],
+.grid-static-col[data-fieldtype="Duration"],
+.grid-static-col[data-fieldtype="Date"],
+.grid-static-col[data-fieldtype="Datetime"],
+.frappe-control[data-fieldtype="Currency"] .control-value,
+.frappe-control[data-fieldtype="Float"] .control-value,
+.frappe-control[data-fieldtype="Int"] .control-value,
+.frappe-control[data-fieldtype="Percent"] .control-value,
+.frappe-control[data-fieldtype="Duration"] .control-value {
+	@extend %carbon-num;
+}
+
+// Numeric INPUTS get tabular figures so digits don't reflow while typing, but
+// stay in Plex Sans — a monospaced input reads as a code field.
+.frappe-control[data-fieldtype="Currency"] input,
+.frappe-control[data-fieldtype="Float"] input,
+.frappe-control[data-fieldtype="Int"] input,
+.frappe-control[data-fieldtype="Percent"] input {
+	font-variant-numeric: tabular-nums;
+}
