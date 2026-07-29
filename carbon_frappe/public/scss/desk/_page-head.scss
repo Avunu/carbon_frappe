@@ -281,7 +281,15 @@
 // A renameable document keeps its affordance: frappe puts `editable-title` on
 // .title-area when the doc can be renamed, so the heading gets the pointer and
 // hover treatment that advertises it.
-.page-title .title-area.editable-title .navbar-breadcrumbs > li:last-child > a {
+//
+// pointer-events is the load-bearing line. frappe marks the last crumb
+// `.disabled` on a form (it is the current page, so not a link) and kills
+// pointer events on it — which silently swallowed every click on the heading,
+// handler bound or not. Restored ONLY where frappe says the document is
+// renameable, so a non-renameable title stays inert as intended.
+.page-title .title-area.editable-title .navbar-breadcrumbs > li:last-child > a,
+.page-title .title-area.editable-title .navbar-breadcrumbs li.disabled > a {
+	pointer-events: auto;
 	cursor: text;
 
 	&:hover {
