@@ -61,6 +61,14 @@ if (!/--ink-[a-z0-9-]+\s*:\s*var\(--cds-/.test(allScssText)) {
 if (!/--radius-\d+\s*:/.test(allScssText)) {
 	warn("--radius-* is not declared — frappe-ui SPA rounding would not be squared");
 }
+// (3) the light theme must be g10, not White. Their token KEY sets are
+// identical, so check 1 cannot tell them apart — but their values invert the
+// background/layer ladder, which every surface rule in scss/desk and scss/web
+// is written against. Pin the premise here so the SCSS and this script can't
+// drift apart silently.
+if (!/@include\s+theme\.theme\(\s*themes\.\$g10\s*\)/.test(allScssText)) {
+	warn("light theme is not themes.$g10 — the background/layer ladder assumed by scss/desk would be inverted");
+}
 
 if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {
 	console.log(`[audit] frappe not found at ${frappeRoot} — skipping frappe-drift checks (set FRAPPE_PATH)`);
@@ -69,7 +77,7 @@ if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {
 
 // ---- Check 1: --cds-* references exist in @carbon/themes ------------------
 const themes = require("@carbon/themes");
-const cdsTokens = new Set(Object.keys(themes.white).map((k) => themes.formatTokenName(k)));
+const cdsTokens = new Set(Object.keys(themes.g10).map((k) => themes.formatTokenName(k)));
 for (const { file, text } of ourScss) {
 	// var(--cds-name) without a fallback (a fallback makes missing tokens safe)
 	for (const m of text.matchAll(/var\(--cds-([a-z0-9-]+)\)/g)) {

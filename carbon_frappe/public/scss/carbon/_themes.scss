@@ -1,14 +1,22 @@
 // Emit Carbon Design System v11 tokens as --cds-* custom properties.
-// Light = White theme, Dark = Gray 100, mirroring frappe's theme selectors
+// Light = Gray 10, Dark = Gray 100, mirroring frappe's theme selectors
 // (frappe sets data-theme on <html>; frappe-ui/espresso also honor `.dark`).
 // This is the only place Carbon's theme() mixin runs; everything else
 // references the emitted variables.
+//
+// g10 (not White) is deliberate: Carbon's product UIs put the page canvas on
+// $background and lift cards/tiles/side-nav to $layer-01. White inverts that
+// ladder ($background #ffffff / $layer-01 #f4f4f4), which reads as a white page
+// with gray cards. g10 gives #f4f4f4 / #ffffff -- a gray canvas with white
+// cards, which is what every Carbon reference product looks like. The two
+// themes differ in only 17 of 306 tokens, all in the background/layer/field/
+// border-subtle family; everything else is byte-identical.
 @use "@carbon/styles/scss/theme";
 @use "@carbon/styles/scss/themes";
 
 :root,
 [data-theme="light"] {
-	@include theme.theme(themes.$white);
+	@include theme.theme(themes.$g10);
 }
 
 [data-theme="dark"],
