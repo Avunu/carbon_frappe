@@ -88,6 +88,12 @@
 
 		// The harvested nodes arrive with sidebar geometry — labels, keyboard
 		// hints, block layout, margins. Flatten them all to the icon rail.
+		//
+		// margin is !important because these carry bootstrap spacing utilities:
+		// the account menu ships .mt-3, i.e. `margin-top: 1rem !important`, which
+		// pushed it 16px down the 48px rail and left it measuring 48x33. Height
+		// is pinned for the same reason — the wrapper shrink-wraps its avatar
+		// unless told to fill the rail.
 		.standard-items-sections,
 		.navbar-search-bar,
 		.standard-sidebar-item,
@@ -97,8 +103,9 @@
 		.dropdown-navbar-user {
 			display: flex;
 			align-items: stretch;
-			margin: 0;
-			padding: 0;
+			height: 48px;
+			margin: 0 !important;
+			padding: 0 !important;
 			background: none;
 			border: none;
 			width: auto;
