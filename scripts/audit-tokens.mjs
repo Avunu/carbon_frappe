@@ -100,6 +100,11 @@ const frappeVarFiles = [
 	"frappe/public/scss/desk/css_variables.scss",
 	"frappe/public/scss/desk/sidebar.scss",
 	"frappe/public/scss/desk/dark.scss",
+	// --charts-* are owned by the vendored frappe-charts package, not by frappe:
+	// frappe's own scss re-declares only the 10 it overrides in dark mode, so
+	// reading it alone would flag every other --charts-* var as nonexistent.
+	// The dist CSS is the real authority and is what desk.bundle.scss imports.
+	"node_modules/frappe-charts/dist/frappe-charts.min.css",
 ].map((f) => path.join(frappeRoot, f));
 
 // emitted by compiled Bootstrap ($theme-colors -> :root), not present in

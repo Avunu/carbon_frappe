@@ -3,8 +3,17 @@
 // carbon_charts.bundle.js shim and available to custom dashboards).
 @use "../generated/chart-palettes" as palettes;
 
-.chart-container {
-	// Carbon data-viz chrome: secondary labels, subtle axes, inverse tooltip
+// The theme-qualified selectors are load-bearing, not redundant. frappe ships
+// [data-theme="dark"] .chart-container (desk/dark.scss) which forces a 5px
+// stroke width, a #ffffff dataset-circle stroke and its own tooltip colors.
+// That selector is (0,2,0); a bare .chart-container is (0,1,0) and loses to it
+// no matter how late we load. Matching its specificity — and loading after —
+// is what lets these values reach dark mode at all.
+.chart-container,
+[data-theme="light"] .chart-container,
+[data-theme="dark"] .chart-container,
+.dark .chart-container {
+	// Carbon data-viz chrome: secondary labels, subtle grid, inverse tooltip
 	--charts-label-color: var(--cds-text-secondary);
 	--charts-axis-line-color: var(--carbon-border-subtle);
 	--charts-stroke-width: 2px;
@@ -15,6 +24,76 @@
 	--charts-tooltip-value: var(--cds-text-inverse);
 	--charts-tooltip-bg: var(--cds-background-inverse);
 	--charts-legend-label: var(--cds-text-secondary);
+	// frappe-charts declares this at :root as var(--charts-label-color), which
+	// resolves there against its own stock default and inherits down as that
+	// literal — our .chart-container override of the label color cannot reach
+	// it retroactively, so it needs its own value.
+	--charts-legend-value: var(--cds-text-primary);
+
+	// frappe-charts hardcodes a system font stack on .chart-container at the
+	// same specificity; we load later, so this wins and IBM Plex finally
+	// reaches axis labels, legends and tooltips.
+	font-family: var(--font-stack);
+}
+
+// -- Axes -------------------------------------------------------------------
+// Carbon treats the grid as comprehension anatomy, not decoration: "Axes,
+// ticks, and the grid should help the reader understand the proportions and
+// scale of the data" — so gridlines stay. What Carbon's reference charts do
+// NOT have is protruding tick marks; tick LABELS sit against the gridlines.
+//
+// frappe-charts emits both from one token, distinguished only by class:
+//   .line-horizontal — full-plot-width y gridlines (keep)
+//   .line-vertical   — 6px nubs protruding below the x axis (drop)
+.chart-container {
+	.axis text {
+		font-size: 12px; // beats the SVG font-size="10px" presentation attribute
+	}
+
+	.axis .line-vertical {
+		stroke: transparent;
+	}
+
+	// The zero line reads as the axis rather than another gridline. Group order
+	// is ascending by value, and the transform puts index 0 at the bottom of the
+	// plot — for the all-positive data typical of frappe dashboards that is the
+	// zero line. (With negative values it lands on the plot floor instead, which
+	// still reads as an axis.)
+	.axis.y > g:first-child .line-horizontal {
+		stroke: var(--cds-border-strong-01);
+	}
+}
+
+// -- Tooltip / legend -------------------------------------------------------
+// frappe-charts ships 6px/2px radii and a three-layer rgba shadow as literals.
+.graph-svg-tip {
+	border-radius: 0;
+	box-shadow: none;
+	font-family: var(--font-stack);
+
+	.svg-pointer {
+		border-radius: 0;
+	}
+
+	&.comparison li .tooltip-legend {
+		border-radius: 0;
+	}
+}
+
+.chart-container {
+	// legendDot() hardcodes rx="3" and font-size as SVG attributes; CSS wins
+	.legend-dot {
+		rx: 0;
+	}
+
+	.legend-dataset-label {
+		font-size: 12px;
+		font-weight: var(--font-weight-regular);
+	}
+
+	.legend-dataset-value {
+		font-size: 12px;
+	}
 }
 
 :root,
