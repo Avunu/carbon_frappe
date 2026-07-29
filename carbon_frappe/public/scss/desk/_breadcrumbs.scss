@@ -73,9 +73,12 @@
 // (16px) on Form routes by frappe's own rules. Force every breadcrumb item back
 // to the uniform link size/weight. The `.page-title ... li a.<class>` selector
 // (specificity 0,3,2) outranks both offenders, and carbon loads last.
-.page-title .navbar-breadcrumbs li a.title-text,
-.page-title .navbar-breadcrumbs li a.title-text-form,
-.page-title .navbar-breadcrumbs li a.worksapce-breadcrumb {
+// :not(:last-child) throughout — the LAST crumb is the Carbon page heading
+// (desk/_page-head.scss sizes it heading-04), so it is deliberately exempt from
+// the uniform trail sizing below.
+.page-title .navbar-breadcrumbs li:not(:last-child) a.title-text,
+.page-title .navbar-breadcrumbs li:not(:last-child) a.title-text-form,
+.page-title .navbar-breadcrumbs li:not(:last-child) a.worksapce-breadcrumb {
 	font-size: var(--text-md);
 	font-weight: var(--font-weight-regular);
 	color: var(--cds-link-primary);
@@ -87,9 +90,13 @@
 .page-title .navbar-breadcrumbs li:last-child > a,
 .page-title .navbar-breadcrumbs li.disabled > a {
 	color: var(--cds-text-primary) !important;
-	font-size: var(--text-md);
 	font-weight: var(--font-weight-regular);
 
+	// NO font-size here. This rule ties the specificity of the heading rule in
+	// desk/_page-head.scss and loads later (breadcrumbs is imported after
+	// page-head), so setting a size here silently won and knocked the page title
+	// back to 14px — visibly on workspace pages, whose last crumb carries no
+	// class for the heading rule to qualify against.
 	&:hover {
 		color: var(--cds-text-primary) !important;
 		text-decoration: none;
