@@ -1,5 +1,5 @@
-// Carbon UI Shell header, page header, and the form action bar.
-// Markup for the first two is mounted by js/anatomy/*.js.
+// Carbon UI Shell header, page header, and page actions.
+// Markup for the UI Shell header is mounted by js/anatomy/ui_shell.js.
 @use "@carbon/colors" as c;
 
 // The landing page ships its own header. js/anatomy/ui_shell.js harvests its
@@ -231,10 +231,13 @@
 .page-head {
 	height: auto;
 
+	// Carbon puts a page's actions on the TITLE line, not on the breadcrumb
+	// eyebrow above it (Products PageHeader). The head is a flex row whose left
+	// cell is now two lines tall, so the action cell rides its bottom edge.
 	.page-head-content {
 		height: auto;
 		min-height: 48px;
-		align-items: flex-start;
+		align-items: flex-end;
 		padding-block: 12px;
 	}
 }
@@ -242,15 +245,25 @@
 .page-title {
 	flex: 1;
 
-	// frappe truncates the whole trail to one line; the heading needs to wrap
+	// The trail and the document's status pill sit side by side, with the pill
+	// on the heading's line: Carbon puts a status tag beside a page title, and
+	// it is what keeps the head two rows tall instead of three.
 	.title-area {
-		display: block;
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
 		overflow: visible;
 		white-space: normal;
 		flex: 1;
 	}
 
+	// frappe truncates the whole trail to one line; the heading needs to wrap.
+	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs so the
+	// pill stays next to the heading, while still letting a long title shrink
+	// and wrap rather than push the pill off the row.
 	.navbar-breadcrumbs {
+		flex: 0 1 auto;
+		min-width: 0;
 		flex-wrap: wrap;
 		align-items: baseline;
 
@@ -263,6 +276,12 @@
 				content: none;
 			}
 		}
+	}
+
+	// bottom-aligned lands the pill on the heading's descender space; the small
+	// lift optically centres it against the 28px cap height
+	.page-indicator-pill {
+		margin-bottom: 4px;
 	}
 }
 
@@ -298,174 +317,62 @@
 	}
 }
 
-// -- Form action bar ---------------------------------------------------------
-// Carbon's full-bleed action bar, pinned to the bottom of a document form.
+// -- Page actions ------------------------------------------------------------
+// frappe's own toolbar, styled where frappe puts it: the right-hand cell of the
+// page head.
 //
-// DEVIATION, recorded deliberately: core Carbon scopes full-bleed 64px bars to
-// "modals, side panels and narrow tearsheets" and prescribes left-aligned,
-// non-bleeding 48px buttons with the primary FIRST for in-page forms. It also
-// defers pinned bars explicitly — "If we feel it's necessary to pursue pinned
-// actions in the future, we should look into a pinned footer or tray." A pinned
-// bar is an IBM Products extension (their Fixed button bars pattern), chosen
-// here for a dense ERP. Since it IS full-bleed, it follows dialog grammar
-// consistently: destructive/secondary outermost left, primary outermost right,
-// equal widths, separated by $button-separator hairlines.
+// This used to be a pinned, full-bleed 64px bar across the bottom of the
+// viewport (IBM Products' "Fixed button bars"), with js/anatomy/form_actions.js
+// moving .custom-actions into .standard-actions so a form's actions were not
+// split across two containers. Both are gone. The bar had to re-collect those
+// containers on every route change and doc-state re-render, which made it
+// inconsistent in practice, and it emptied the whole right half of the page
+// head to fill a strip at the bottom of the screen.
 //
-// position:fixed rather than a JS relocation: it keeps .standard-actions in the
-// DOM tree, so every jQuery reference frappe holds (btn_primary,
-// actions_btn_group) and every set_action() re-render keep working untouched.
-// Verified there is no transformed ancestor to break the containing block.
-body[data-route^="Form/"] {
-	.page-head .standard-actions {
-		position: fixed;
-		// Full-bleed edge to edge. Insetting by --sidebar-width was wrong twice
-		// over: it is the EXPANDED width, so the bar left a 256px gap whenever
-		// the side nav was collapsed to its 48px rail, and a bleed bar is
-		// supposed to reach the viewport edge anyway.
-		inset-inline: 0;
-		bottom: 0;
-		height: 64px;
-		display: flex;
-		justify-content: flex-end;
-		align-items: stretch;
-		gap: 0;
-		background: var(--cds-layer-01);
-		border-top: 1px solid var(--carbon-border-subtle);
-		z-index: 7;
-
-		.btn {
-			height: 64px;
-			margin: 0;
-			padding: 0 16px;
-			border-radius: 0;
-			// Carbon's bleed bar left-aligns labels within each button
-			justify-content: flex-start;
-			text-align: start;
-			// $button-separator hairline, not a transparent gap: the 1px must
-			// carry 3:1 separation, which a gap showing the bar behind cannot.
-			border-inline-start: 1px solid var(--carbon-border-subtle);
-		}
-
-		// Equal widths for the LABELLED actions — Carbon: "Do apply the same
-		// width to all buttons in a group". Icon-only buttons (prev/next doc,
-		// overflow menu) are navigation, not form actions, so they stay square
-		// on the bar's own height rather than being padded to 200px.
-		.btn:not(.icon-btn):not(.prev-doc):not(.next-doc) {
-			min-width: 200px;
-		}
-
-		.icon-btn,
-		.prev-doc,
-		.next-doc {
-			width: 64px;
-			min-width: 64px;
-			padding: 0;
-			justify-content: center;
-		}
-
-		// primary is the outermost right and takes the wider slot
-		.primary-action:not(.hide) {
-			min-width: 240px;
-		}
-	}
-
-	// .custom-actions (the doctype's own actions — Create, workflow
-	// transitions) is MOVED into .standard-actions by js/anatomy/form_actions.js
-	// rather than pinned separately, so the bar is one flex row.
-	.page-head .standard-actions .custom-actions {
-		display: flex;
-		align-items: stretch;
-		margin: 0;
-	}
-
-	// Carbon: "the primary button is positioned on the outside of the set."
-	// DOM order puts document navigation and the overflow menu wherever frappe
-	// built them, so the bar is ordered explicitly instead: navigation first,
-	// then the doctype's own actions, with whichever button is primary
-	// outermost right.
-	.page-head .standard-actions {
-		.page-icon-group,
-		.prev-doc,
-		.next-doc {
-			order: -1;
-		}
-
-		.custom-actions {
-			order: 1;
-		}
-
-		.primary-action {
-			order: 2;
-		}
-	}
-
-	// Menus opening off the bar should read as an extension of the button that
-	// opened them, not as a floating card.
+// Core Carbon prescribes what frappe already does anyway: full-bleed bars are
+// scoped to "modals, side panels and narrow tearsheets", in-page forms get
+// non-bleeding buttons in the layout, and pinned bars are deferred explicitly
+// ("If we feel it's necessary to pursue pinned actions in the future, we should
+// look into a pinned footer or tray"). frappe's page head is `position: sticky`,
+// so actions stay on screen as a long form scrolls — the one thing the pinned
+// bar bought.
+//
+// Applies to every route, not just Form/: list, report and workspace toolbars
+// live in the same container and get the same button grammar.
+// (The cell's own vertical placement — level with the heading rather than the
+// breadcrumb eyebrow — comes from .page-head-content's `align-items: flex-end`
+// above.)
+.page-head .page-actions {
+	// Carbon: "buttons in a set are placed adjacent to one another with no space
+	// between them", with the primary at the outside of the set — which is where
+	// frappe's DOM order already puts .primary-action. frappe spaces its toolbar
+	// buttons 8px apart and insets labels by 8px; restated here at equal
+	// specificity (this bundle @imports frappe's first, so it wins on order).
 	//
-	// Popper positions these with a transform that lands ~15px off the trigger's
-	// edge. Overriding it is safe HERE specifically: the bar is pinned to the
-	// bottom and its triggers are always on screen, so the collision handling
-	// popper is doing has nothing to solve. The menu is pinned above its own
-	// button instead, which needs the wrapper to be the positioning context.
-	.page-head .standard-actions .dropdown,
-	.page-head .standard-actions .btn-group,
-	.page-head .standard-actions .inner-group-button {
-		position: relative;
+	// No $button-separator hairlines between them: that is a solid-fill ButtonSet
+	// affordance, and these are ghost buttons on the head's own background, where
+	// Carbon's own toolbars (data table toolbar, Products page-header action bar)
+	// run flush and let the hover fill do the separating.
+	.btn {
+		margin-left: 0;
+		// $spacing-05 label inset, so adjacent labels read 32px apart
+		padding: 0 16px;
 	}
 
-	.page-head .standard-actions .dropdown-menu {
-		position: absolute !important;
-		transform: none !important;
-		inset: auto auto 100% 0 !important;
-		// a downward drop shadow under an upward-opening menu reads as a
-		// detached card and lights the wrong edge; the hairline does the work
-		box-shadow: none;
-		border: 1px solid var(--carbon-border-subtle);
-		border-radius: 0;
-		// Carbon menus have no outer padding — the items reach the edges
+	// Icon-only actions (document navigation, the overflow menu) already come
+	// out square at --btn-height from frappe's own .icon-btn rule.
+	.btn.icon-btn {
 		padding: 0;
-		margin: 0;
-		background: var(--cds-layer-01);
-		// frappe declares `.dropdown-item { padding: var(--dropdown-padding)
-		// !important }`, which no amount of specificity beats. Retarget the
-		// variable it reads instead of starting an !important war.
-		--dropdown-padding: 0 16px;
-
-		.dropdown-item,
-		li > a {
-			// Carbon menu item, and the 16px inset lines the labels up with the
-			// bar button above them
-			height: 40px;
-			display: flex;
-			align-items: center;
-			padding: 0 16px;
-			font-size: var(--text-md);
-			color: var(--cds-text-primary);
-			border-radius: 0;
-
-			&:hover,
-			&:focus {
-				background: var(--cds-layer-hover-01);
-				color: var(--cds-text-primary);
-			}
-		}
 	}
 
 	// An open trigger takes Carbon's selected-ghost tone instead of bootstrap's
-	// gray, so it stays in the bar's language while its menu is up.
-	.page-head .standard-actions {
-		.dropdown.show > .btn,
-		.btn-group.show > .btn,
-		.show > .btn.dropdown-toggle {
-			&:not(.btn-primary) {
-				background: var(--cds-layer-selected-01);
-				color: var(--cds-text-primary);
-			}
+	// gray, so it stays in the theme's language while its menu is up.
+	.dropdown.show > .btn,
+	.btn-group.show > .btn,
+	.show > .btn.dropdown-toggle {
+		&:not(.btn-primary) {
+			background: var(--cds-layer-selected-01);
+			color: var(--cds-text-primary);
 		}
-	}
-
-	// keep the last form content clear of the bar
-	.layout-main-section-wrapper {
-		padding-bottom: 64px;
 	}
 }

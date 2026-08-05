@@ -22,8 +22,10 @@ export const SELECTORS = [
 	["standard-sidebar-item", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
 	["nested-container", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
 	// page chrome
-	["standard-actions", "frappe/public/js/frappe/ui/page.html"],
+	["page-actions", "frappe/public/js/frappe/ui/page.html"],
 	["page-head-content", "frappe/public/js/frappe/ui/page.html"],
+	["title-area", "frappe/public/js/frappe/ui/page.html"],
+	["page-indicator-pill", "frappe/public/js/frappe/ui/page.html"],
 	["title-text", "frappe/public/js/frappe/ui/page.js"],
 	// form
 	["like-disabled-input", "frappe/public/js/frappe/form/controls/base_input.js"],
@@ -54,7 +56,7 @@ export const PATCH_TARGETS = [
 		/"editable-title"/,
 	],
 	[
-		"frappe.router event emitter (form action collection)",
+		"frappe.router event emitter (editable title, UI Shell re-mount)",
 		"frappe/public/js/frappe/router.js",
 		/make_event_emitter\(frappe\.router\)/,
 	],

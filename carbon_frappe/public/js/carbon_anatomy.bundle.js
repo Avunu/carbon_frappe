@@ -6,7 +6,6 @@
 // targets statically at build time.
 import { assertPatches } from "./anatomy/patch";
 import "./anatomy/datatable";
-import "./anatomy/form_actions";
 import "./anatomy/editable_title";
 import "./anatomy/ui_shell";
 
