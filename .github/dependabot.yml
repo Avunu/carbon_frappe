@@ -1,0 +1,23 @@
+version: 2
+
+# Keeps the JS dependencies current. PRs auto-merge once the required checks go green —
+# see .github/workflows/dependabot-auto-merge.yml.
+#
+# NOTE: the ecosystem key is `npm`, not `yarn`. Dependabot has no `yarn` ecosystem; the
+# npm updater reads yarn.lock (v1 here) and resolves with yarn.
+#
+# No Tailwind cap here, unlike the frappe-ui apps: this theme is built on the Carbon
+# Design System (@carbon/styles, @carbon/charts, @ibm/plex-*, sass) and has zero
+# frappe-ui and zero tailwindcss in either package.json or yarn.lock, so the
+# "frappe-ui pins Tailwind 3" constraint does not reach it. If frappe-ui is ever added,
+# copy the tailwindcss `ignore` block from erpnext_taskview or frappe_editor.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: chore
+    groups:
+      npm:
+        patterns: ["*"]

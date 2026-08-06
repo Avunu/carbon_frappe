@@ -1,0 +1,34 @@
+name: check
+
+# CI gate for this repo. Auto-merge is only as safe as what runs here, so this is what
+# you mark required on `version-16`.
+#
+# This gate is weaker than the other apps' by necessity. `yarn build` runs the three
+# scripts with --warn-only, and both audit-tokens.mjs and dev-compile.mjs resolve a
+# frappe checkout (FRAPPE_PATH or ../frappe) that CI does not have — audit-tokens exits
+# early without it. So this catches what a dependency bump most often breaks (a module
+# that no longer resolves, or a @carbon/sass API that changed under the scripts) but it
+# does not run the strict token/markup audits.
+#
+# To make it a real gate, check out frappe/frappe at the matching branch and run
+# `yarn audit` with FRAPPE_PATH pointed at it.
+
+on:
+  push:
+    branches: [version-16]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn build
