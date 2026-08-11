@@ -30,6 +30,12 @@ export const SELECTORS = [
 	// form
 	["like-disabled-input", "frappe/public/js/frappe/form/controls/base_input.js"],
 	["form-message", "frappe/public/js/frappe/form/layout.js"],
+	// trailing field icons — the wrapper whose --control-bg plate we clear
+	["link-btn", "frappe/public/js/frappe/form/controls/link.js"],
+	// awesomebar search field: the row carries the Carbon field, the icon its
+	// leading inset (desk/_modals.scss)
+	["awesomebar-input-row", "frappe/public/js/frappe/ui/toolbar/awesome_bar.js"],
+	["awesomebar-search-icon", "frappe/public/js/frappe/ui/toolbar/awesome_bar.js"],
 	// widgets
 	["percentage-stat-area", "frappe/public/js/frappe/widgets/number_card_widget.js"],
 	["number-widget-box", "frappe/public/js/frappe/widgets/number_card_widget.js"],
@@ -89,6 +95,10 @@ export const MIRRORED_LITERALS = [
 	// the static 35px rule that setCellHeight() cannot beat — see
 	// js/anatomy/datatable.js
 	[".dt-row", "frappe/public/scss/desk/frappe_datatable.scss"],
+	// the awesomebar rule pinned to `top: 40px` — an offset measured against
+	// frappe's 28px input, which crossed Carbon's 40px field. desk/_modals.scss
+	// hides it; if frappe reworks it, that suppression wants revisiting.
+	["modal-divider", "frappe/public/scss/desk/navbar.scss"],
 ];
 
 /** assets.json keys this app shadows; all must point at carbon_frappe. */

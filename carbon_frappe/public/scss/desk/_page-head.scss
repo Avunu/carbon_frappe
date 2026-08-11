@@ -298,8 +298,18 @@
 }
 
 // A renameable document keeps its affordance: frappe puts `editable-title` on
-// .title-area when the doc can be renamed, so the heading gets the pointer and
-// hover treatment that advertises it.
+// .title-area when the doc can be renamed, and js/anatomy/editable_title.js
+// binds frappe's own rename dialog to the heading.
+//
+// The affordance is Carbon's Editable text (InlineEdit): undecorated at rest, a
+// $field-hover wash plus a revealed edit glyph on hover/focus, 2px $focus ring
+// on keyboard focus. This used to be an underline and `cursor: text` — both
+// wrong twice over. An underline is Carbon's LINK hover, and this heading
+// navigates nowhere; a text cursor promises a caret in the heading, and the
+// click opens a dialog. The glyph is what actually names the action, so it
+// replaces the underline rather than joining it. It is appended by
+// editable_title.js from frappe's icon sprite (CSS cannot reach a sprite, and
+// this repo takes its Carbon assets from the @carbon packages or not at all).
 //
 // pointer-events is the load-bearing line. frappe marks the last crumb
 // `.disabled` on a form (it is the current page, so not a link) and kills
@@ -309,11 +319,40 @@
 .page-title .title-area.editable-title .navbar-breadcrumbs > li:last-child > a,
 .page-title .title-area.editable-title .navbar-breadcrumbs li.disabled > a {
 	pointer-events: auto;
-	cursor: text;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	// the wash needs to clear the glyphs without shifting the heading off the
+	// eyebrow's left edge, so the inset is paid back as a negative start margin
+	padding-inline: 8px;
+	margin-inline-start: -8px;
+	text-decoration: none;
+	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 
 	&:hover {
-		text-decoration: underline;
-		text-underline-offset: 4px;
+		background-color: var(--cds-field-hover-01);
+		text-decoration: none;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+	}
+
+	.cf-title-edit {
+		display: inline-flex;
+		align-items: center;
+		flex: none;
+		color: var(--cds-icon-primary);
+		--icon-stroke: var(--cds-icon-primary);
+		opacity: 0;
+		transition: opacity var(--carbon-duration-fast-01) var(--carbon-easing-standard);
+	}
+
+	&:hover .cf-title-edit,
+	&:focus-visible .cf-title-edit {
+		opacity: 1;
 	}
 }
 

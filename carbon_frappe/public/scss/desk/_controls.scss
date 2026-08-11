@@ -84,6 +84,54 @@ select.form-control,
 	}
 }
 
+// ---- Trailing field icons (link open/clear, URL, barcode scan) -------------
+// frappe floats .link-btn over the field's trailing edge and paints it with the
+// field's RESTING fill — var(--control-bg) = $field-02, or var(--bg-color)
+// inside a grid row. That only disappears while the field is at rest: the
+// moment the field takes its Carbon hover tone ($field-hover-02, a step DARKER)
+// the plate stays at $field and reads as a translucent panel laid over the
+// input, with a sliver of the darker field showing past its right edge where
+// frappe's `right: 4px` float leaves it.
+//
+// Carbon never plates a field's trailing icon. text-input, combo-box, number
+// input and search all put the icon directly ON the field in $icon-primary,
+// inset from the trailing edge by the same amount as the value text. Drop the
+// fill and the plate cannot desync from the field again in ANY state —
+// including the read-only and disabled tones desk/_read-only.scss sets, which
+// it was covering just as wrongly.
+//
+// Selector list, not one rule: frappe's grid variant is (0,3,0) and would
+// otherwise keep its own --bg-color plate in child tables.
+.frappe-control .link-btn,
+.grid-body .editable-row .link-btn,
+.datatable .link-btn {
+	background-color: transparent;
+	// flush to the field edge; the icons are inset by padding instead, so they
+	// land on the same 8px inline inset the value text uses
+	right: 0;
+	padding: 0 8px;
+	gap: 4px;
+
+	.btn-open,
+	.btn-clear {
+		color: var(--cds-icon-primary);
+	}
+
+	// with no plate to sit on, the interactive step is the icon itself
+	.btn-open:hover {
+		color: var(--cds-link-primary);
+	}
+}
+
+// The plate used to hide an overlong value behind an opaque box; with the field
+// showing through, reserve the icon rail instead so the two never collide —
+// which is what Carbon's combo-box does with its own trailing slot. Descendant,
+// not child: awesomplete wraps a Link's <input> in its own .awesomplete div.
+.link-field input.form-control,
+.control-input:has(> .link-btn) input.form-control {
+	padding-inline-end: 44px;
+}
+
 // Read-only display fields — see desk/_read-only.scss.
 .like-disabled-input {
 	border-radius: 0;

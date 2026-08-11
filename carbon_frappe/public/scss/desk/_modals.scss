@@ -213,18 +213,85 @@
 		box-shadow: 0 2px 6px var(--cds-shadow);
 	}
 
-	// NOTE: layout is left entirely alone here. frappe renders the magnifier and
+	// NOTE: the DOM is left entirely alone here. frappe renders the magnifier and
 	// input inside .modal-body (not .modal-header, which is empty), and the
 	// results <ul> is absolutely positioned by awesomplete — restructuring the
-	// rows collapses the panel. Only tone, type and item metrics are set.
+	// rows collapses the panel.
 
-	// the search field: Carbon field tone with a strong bottom rule, square.
-	// Its 2px focus ring comes from desk/_controls.scss and is correct here.
+	// frappe insets the field's wrapper with a `p-2` utility, which framed it 7px
+	// inside a panel whose result rows and footer both run to the panel edges.
+	// Carbon's search-over-a-menu is full-bleed — the field's own inline padding
+	// is the inset — so the three stack on one set of edges. !important because
+	// bootstrap's spacing utilities carry it.
+	.navbar-modal-wrapper {
+		padding: 0 !important;
+	}
+
+	// ---- the search field -> Carbon Search ---------------------------------
+	// frappe builds it as three siblings inside .navbar-modal-wrapper: a
+	// magnifier <span>, the <input>, and a .modal-divider absolutely pinned at
+	// `top: 40px` (desk/navbar.scss) — an offset measured against frappe's own
+	// 28px input. Carbon's field is 40px (desk/_controls.scss sets
+	// --input-height), so that hardcoded divider now lands 7px ABOVE the field's
+	// bottom edge and rules a line straight through the input. The other half of
+	// the clash is the focus ring: put on the <input> alone it encircles only the
+	// input, cutting the magnifier out of the field it belongs to.
+	//
+	// Carbon's Search is ONE control: $field fill, magnifier inset $spacing-05
+	// from the leading edge, value text at $spacing-09, a $border-strong bottom
+	// rule, and a single 2px $focus ring around the whole thing. So the field
+	// treatment moves up from the <input> to the row that holds both, and the
+	// input goes chrome-less inside it. No DOM changes — only which of frappe's
+	// existing elements carries the field.
+	.awesomebar-input-row {
+		height: 40px;
+		background-color: var(--control-bg);
+		border-bottom: 1px solid var(--cds-border-strong-01);
+
+		&:hover:not(:focus-within) {
+			background-color: var(--cds-field-hover-02);
+		}
+
+		&:focus-within {
+			outline: 2px solid var(--cds-focus);
+			outline-offset: -2px;
+			border-bottom-color: transparent;
+		}
+	}
+
+	// $spacing-05 leading inset; 16px glyph + this padding puts the value text at
+	// $spacing-09 (48px), which is Carbon's Search measurement exactly.
+	.awesomebar-search-icon {
+		padding-inline: 16px 0;
+		color: var(--cds-icon-secondary);
+	}
+
 	.awesomebar-input-row input.form-control,
 	input.form-control {
 		height: 40px;
 		border-radius: 0;
 		font-size: var(--text-md);
+		padding-inline-start: 16px;
+		// the row is the field now — the input must not draw a second one
+		background-color: transparent;
+		border-bottom: none;
+
+		// specificity has to clear .form-control:hover:not(:disabled):not([readonly])
+		// in desk/_controls.scss, which would otherwise repaint the input's own box
+		// on hover and leave a lighter panel inside the field.
+		&:hover,
+		&:focus {
+			background-color: transparent;
+			outline: none;
+			border-bottom: none;
+		}
+	}
+
+	// The divider duplicated the field's own bottom rule and is what was crossing
+	// it. Hidden rather than repositioned: any `top` we pick is the same
+	// hardcoded-offset bug one --input-height change away from returning.
+	.modal-divider {
+		display: none;
 	}
 
 	// Carbon menu items: 40px, 16px inset, hover/selected on the layer ladder.
