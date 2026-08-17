@@ -22,7 +22,7 @@
   "type": "module",
   "dependencies": {
     "@carbon/charts": "1.27.18",
-    "@carbon/styles": "1.112.0"
+    "@carbon/styles": "1.113.0"
   },
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
