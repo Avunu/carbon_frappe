@@ -26,6 +26,9 @@ export const SELECTORS = [
 	["main-section", "frappe/www/desk.html"],
 	["standard-items-sections", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	["dropdown-navbar-user", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	// the account cell's name/email label. The rail must hide it: left visible it
+	// takes a grid row of its own and pushes the avatar off the vertical centre.
+	["avatar-name-email", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	// the landing page's own navbar, which the shell harvests and then removes.
 	// .desktop-wrapper is the template root, watched to catch the re-render.
 	["desktop-wrapper", "frappe/desk/page/desktop/desktop.html"],

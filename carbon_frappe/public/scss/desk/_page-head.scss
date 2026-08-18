@@ -178,15 +178,22 @@ body.cf-has-shell {
 		// rail — the icon carries the affordance and the dropdown names it.
 		// frappe emits several of these as bootstrap utilities that declare
 		// `display: block !important`, hence the !important.
+		//
+		// .avatar-name-email is the name/email block's CURRENT class. It used to
+		// be .user-email/.full-name, and when those stopped being emitted this
+		// list quietly stopped hiding anything: the account cell is a grid, so a
+		// zero-height-but-present label still claimed a row of its own
+		// (grid-template-rows: 36px 12px) and the avatar centred in the 36px
+		// remainder — 6px above the rail's true centre, while the search and
+		// bell icons sat correctly. sidebar.js drives it with jQuery .show(),
+		// which writes an inline `display: block`, so !important is load-bearing.
 		.sidebar-item-label,
 		.sidebar-item-suffix,
 		.sidebar-item-control,
 		.keyboard-shortcut,
 		.desktop-keyboard-shortcut,
-		.user-email,
-		.full-name,
-		.d-block,
-		.search-bar-placeholder {
+		.avatar-name-email,
+		.d-block {
 			display: none !important;
 		}
 
@@ -228,7 +235,16 @@ body.cf-has-shell {
 			color: var(--text-color);
 		}
 
+		// Centre the glyph in its cell. Without the flex box the icon is an
+		// inline-block sitting on the item's 21px text baseline, which drops it
+		// ~0.7px below centre — the bell escapes it only because frappe gives
+		// that one icon an extra class that already makes it a flex box.
+		// Height stays auto so the box shrink-wraps the glyph and the grid cell
+		// above can centre it.
 		.sidebar-item-icon {
+			display: flex;
+			align-items: center;
+			justify-content: center;
 			margin: 0 !important;
 			padding: 0 !important;
 			flex: none;
