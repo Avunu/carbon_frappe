@@ -28,6 +28,11 @@
 import { record } from "./patch";
 
 const MOUNTED = "cf-shell-mounted";
+// Set on <body> only when the header actually mounts, because the CSS that
+// compensates for a FIXED header (reserving its row, re-cutting the two
+// full-height columns) must not fire in the four cases where frappe fills
+// <header> itself — read_only, impersonation, announcement, mobile.
+const SHELL_ON = "cf-has-shell";
 
 function productName() {
 	const boot = (window.frappe && frappe.boot) || {};
@@ -88,6 +93,36 @@ function harvestUtilities(slot) {
 	// account menu — adopted last so it sits furthest right, per Carbon's
 	// ordering (search leftmost, account second from the right)
 	adopt(document.querySelector(".body-sidebar .dropdown-navbar-user"), ".dropdown-navbar-user");
+
+	bindNotifications(slot);
+}
+
+/**
+ * Re-arm the notification bell after the move.
+ *
+ * frappe wires the bell to `this.wrapper.find(".dropdown-notifications")`
+ * (ui/sidebar/sidebar.js), and that wrapper is the SIDEBAR container. Harvesting
+ * the utilities moves the panel into <header>, so the lookup returns an empty
+ * set from then on and the click toggles nothing — adopting the bell is what
+ * kills it. Redo the toggle against where the panel actually lives now.
+ *
+ * frappe's own handler still runs and still no-ops on its empty set, so this
+ * adds the missing toggle rather than racing a working one.
+ */
+function bindNotifications(slot) {
+	const bell = slot.querySelector(".sidebar-notification");
+	const panel = slot.querySelector(".dropdown-notifications");
+	// harvest re-runs on every route change; the listener must not stack up
+	if (!bell || !panel || bell.dataset.cfBell) return;
+	bell.dataset.cfBell = "1";
+
+	bell.addEventListener("click", () => {
+		panel.classList.toggle("hidden");
+		// what frappe fires on open, so the panel refreshes its counts
+		if (!panel.classList.contains("hidden") && window.jQuery) {
+			jQuery(panel).trigger("show.bs.dropdown");
+		}
+	});
 }
 
 function dropDesktopNavbar() {
@@ -105,6 +140,7 @@ function mount() {
 	const esc = (s) => frappe.utils.escape_html(s);
 
 	header.classList.add(MOUNTED, "cf-shell-header");
+	document.body.classList.add(SHELL_ON);
 	header.innerHTML = `
 		<button class="cf-shell-menu" aria-label="Open navigation" type="button">
 			<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
