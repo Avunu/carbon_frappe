@@ -16,6 +16,19 @@ export const SELECTORS = [
 	["list-row-checkbox", "frappe/public/js/frappe/list/list_view.js"],
 	["checkbox-actions", "frappe/public/js/frappe/list/list_view.js"],
 	["text-right", "frappe/public/js/frappe/list/list_view.js"],
+	// UI Shell header — the utilities js/anatomy/ui_shell.js MOVES into <header>.
+	// A rename here does not break the header, it silently leaves search /
+	// notifications / account behind in the side nav or the landing page navbar.
+	["body-sidebar", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	["standard-items-sections", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	["dropdown-navbar-user", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	// the landing page's own navbar, which the shell harvests and then removes.
+	// .desktop-wrapper is the template root, watched to catch the re-render.
+	["desktop-wrapper", "frappe/desk/page/desktop/desktop.html"],
+	["desktop-navbar", "frappe/desk/page/desktop/desktop.html"],
+	["desktop-search-wrapper", "frappe/desk/page/desktop/desktop.html"],
+	["desktop-notifications", "frappe/desk/page/desktop/desktop.html"],
+	["desktop-avatar", "frappe/desk/page/desktop/desktop.html"],
 	// side nav
 	["item-anchor", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
 	["section-break", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],

@@ -40,34 +40,59 @@ function productName() {
  * Move the system-level utilities into the header's right rail.
  *
  * Two sources, because the desk has two shapes: workspace pages keep search and
- * notifications as the first entries of the side nav, while the /app landing
- * page has its own .desktop-navbar carrying the same three affordances. Taking
+ * notifications as the first entries of the side nav, while the landing page
+ * has its own .desktop-navbar carrying the same three affordances. Taking
  * whichever exists is also what removes the duplicate header the landing page
  * would otherwise show.
+ *
+ * Runs again on every route change, so it must be idempotent. The decision has
+ * to be driven by what the slot ALREADY HOLDS, not by where the sidebar's node
+ * currently lives: after the first harvest that node sits in the slot, so the
+ * `.body-sidebar .standard-items-sections` lookup goes permanently null. Keying
+ * off that lookup alone hands every later call to the .desktop-navbar branch,
+ * and the landing page re-renders a fresh navbar on each visit — which is how a
+ * second search / bell / avatar used to stack up beside the first.
  */
 function harvestUtilities(slot) {
-	const sidebarUtilities = document.querySelector(".body-sidebar .standard-items-sections");
-	const desktopNav = document.querySelector(".desktop-navbar");
+	// Move `node` in, evicting whatever it replaces. Re-appending a node the
+	// slot already owns just moves it to the end, which is how ordering stays
+	// stable across re-harvests.
+	const adopt = (node, sel) => {
+		const stale = slot.querySelector(sel);
+		if (node && stale && stale !== node) stale.remove();
+		const live = node || stale;
+		if (live) slot.appendChild(live);
+	};
 
 	// EXACTLY ONE source, or the header shows two search icons and two bells.
-	// The side nav's copy is preferred because it exists on every route; the
-	// landing page's navbar is then redundant chrome and goes wholesale, which
-	// is also what removes the second header that page used to stack under ours.
-	if (sidebarUtilities) {
-		slot.appendChild(sidebarUtilities);
-		if (desktopNav) desktopNav.remove();
-	} else if (desktopNav) {
+	// The side nav's copy is preferred because it exists on every route.
+	const sidebarUtilities = document.querySelector(".body-sidebar .standard-items-sections");
+	const alreadyHeld = slot.querySelector(".standard-items-sections, .desktop-search-wrapper");
+
+	if (sidebarUtilities || alreadyHeld) {
+		adopt(sidebarUtilities, ".standard-items-sections");
+	} else {
+		const desktopNav = document.querySelector(".desktop-navbar");
 		for (const sel of [".desktop-search-wrapper", ".desktop-notifications", ".desktop-avatar"]) {
-			const el = desktopNav.querySelector(sel);
+			const el = desktopNav && desktopNav.querySelector(sel);
 			if (el) slot.appendChild(el);
 		}
-		desktopNav.remove();
 	}
 
-	// account menu — appended last so it sits furthest right, per Carbon's
+	// Once we own the header, the landing page's navbar is redundant chrome —
+	// whether we just emptied it or the side nav had already supplied the
+	// utilities. Dropping it unconditionally is also what stops it stacking a
+	// second header under ours.
+	dropDesktopNavbar();
+
+	// account menu — adopted last so it sits furthest right, per Carbon's
 	// ordering (search leftmost, account second from the right)
-	const user = document.querySelector(".body-sidebar .dropdown-navbar-user");
-	if (user) slot.appendChild(user);
+	adopt(document.querySelector(".body-sidebar .dropdown-navbar-user"), ".dropdown-navbar-user");
+}
+
+function dropDesktopNavbar() {
+	const nav = document.querySelector(".desktop-navbar");
+	if (nav) nav.remove();
 }
 
 function mount() {
@@ -114,11 +139,36 @@ const timer = setInterval(() => {
 	}
 }, 100);
 
+const actionSlot = () => document.querySelector(".cf-shell-header .cf-shell-actions");
+
 // Route changes re-render the side nav, which can re-create the utilities we
 // moved. Re-harvest so they do not reappear in the sidebar.
 if (window.frappe && frappe.router && typeof frappe.router.on === "function") {
 	frappe.router.on("change", () => {
-		const slot = document.querySelector(".cf-shell-header .cf-shell-actions");
+		const slot = actionSlot();
 		if (slot) setTimeout(() => harvestUtilities(slot), 200);
 	});
+}
+
+// The landing page rebuilds .desktop-navbar on every visit, and it does so from
+// a server round-trip's callback (desk/page/desktop/desktop.js make()), so the
+// fixed delay above races it — too early and the navbar lands afterwards, alone
+// and unstyled, under our header. Watch for it instead of guessing.
+//
+// Scoped to the template's own root so this stays O(added nodes) and never
+// walks a freshly rendered datatable subtree.
+if (typeof MutationObserver === "function") {
+	const observer = new MutationObserver((records) => {
+		for (const rec of records) {
+			for (const node of rec.addedNodes) {
+				if (node.nodeType !== 1 || !node.matches(".desktop-wrapper, .desktop-navbar")) continue;
+				const slot = actionSlot();
+				if (slot) harvestUtilities(slot);
+				else dropDesktopNavbar();
+				return;
+			}
+		}
+	});
+	observer.observe(document.body, { childList: true, subtree: true });
+	record("Carbon UI Shell header (.desktop-navbar observer)", true);
 }
