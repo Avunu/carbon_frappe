@@ -2,6 +2,8 @@
 // Markup for the UI Shell header is mounted by js/anatomy/ui_shell.js.
 @use "@carbon/colors" as c;
 
+$shell-height: 48px;
+
 // The landing page ships its own header. js/anatomy/ui_shell.js harvests its
 // utilities and removes it, but that is a one-shot at mount time and the
 // desktop page can finish rendering AFTER the mount — which put a second black
@@ -12,6 +14,34 @@
 	display: none !important;
 }
 
+// Taking the header out of flow means its row has to be reserved, and the two
+// full-height columns re-cut to what is left. Gated on .cf-has-shell (set by
+// js/anatomy/ui_shell.js only on a successful mount) so the cases where frappe
+// fills <header> itself — read_only, impersonation, announcement, mobile —
+// keep stock frappe's layout untouched.
+body.cf-has-shell {
+	// The row is reserved on body's two flex CHILDREN, not on body itself:
+	// desk/mobile.scss pins `body { padding: 0 !important }` and says why —
+	// "the html and body elements cannot have any padding or margin", because
+	// the desk measures its columns against the raw viewport. Indenting the
+	// children respects that instead of winning an !important fight with it.
+	//
+	// .body-sidebar is absolutely positioned with `top: auto`, so it resolves to
+	// its own static position and rides along inside its container.
+	> .body-sidebar-container,
+	> .main-section {
+		margin-block-start: $shell-height;
+	}
+
+	// ...and frappe pins both columns to the WHOLE viewport, which they now
+	// share with the header.
+	.main-section,
+	.body-sidebar,
+	.body-sidebar-placeholder {
+		height: calc(100vh - #{$shell-height});
+	}
+}
+
 // -- UI Shell header ---------------------------------------------------------
 // Carbon: 48px tall, 48x48 action cells with NO gaps between them, a
 // $border-subtle bottom rule. The zone runs the g100 theme, so its tones come
@@ -20,7 +50,7 @@
 .cf-shell-header {
 	display: flex;
 	align-items: center;
-	height: 48px;
+	height: $shell-height;
 	// the shell bar owns the full width; utilities must reach the viewport edge
 	// ("aligned to the right of the header with no gaps between icons")
 	padding: 0;
@@ -30,7 +60,16 @@
 	border-bottom: 1px solid #{c.$gray-80}; // g100 $border-subtle
 	color: #{c.$gray-10}; // g100 $text-primary
 	font-size: var(--text-md);
-	position: relative;
+	// Carbon fixes the header to the top of the WINDOW and spans it edge to
+	// edge, with the left panel starting underneath. Frappe mounts <header>
+	// inside .main-section — the desk's scroll container — so left in flow the
+	// bar is boxed into the content column and scrolls away with the page.
+	position: fixed;
+	inset-block-start: 0;
+	inset-inline: 0;
+	width: 100%;
+	// above .body-sidebar (1020) and frappe's .sticky-top (1019); below
+	// bootstrap's modal backdrop (1040), which must still cover the header
 	z-index: 1030;
 
 	.cf-shell-menu {
@@ -159,9 +198,34 @@
 			display: none;
 		}
 
-		.dropdown-notifications.show,
+		// The account menu is a bootstrap dropdown and opens with .show. The
+		// notification panel is NOT: sidebar.js toggles `hidden` on it directly
+		// (`$dropdown.toggleClass("hidden")`), so gating it on .show — a class
+		// nothing ever adds — pinned it to display:none no matter what the bell
+		// did. Key it off the class frappe actually drives.
 		.dropdown-menu.show {
 			display: block;
+		}
+
+		.dropdown-notifications:not(.hidden) {
+			display: block;
+		}
+
+		// desk/notification.scss builds the panel as a full-height flyout for
+		// the SIDE NAV (absolute, top 0, 100vh, 360px). The bell lives up here
+		// now, so re-anchor it under the header's right edge — Carbon's header
+		// panel. Fixed, because the rail cell it hangs off is 48px tall and its
+		// own width collapsed to 0 as a flex child.
+		//
+		// The color reset matters: this zone runs g100, so the panel would
+		// otherwise inherit near-white body text onto its light surface.
+		.notifications-list {
+			position: fixed;
+			inset-block-start: $shell-height;
+			inset-inline-end: 0;
+			height: calc(100vh - #{$shell-height});
+			min-height: 0;
+			color: var(--text-color);
 		}
 
 		.sidebar-item-icon {

@@ -20,6 +20,10 @@ export const SELECTORS = [
 	// A rename here does not break the header, it silently leaves search /
 	// notifications / account behind in the side nav or the landing page navbar.
 	["body-sidebar", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	// the two columns the fixed header is indented past (desk/_page-head.scss);
+	// a rename here silently drops the header's reserved row on top of them
+	["body-sidebar-container", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	["main-section", "frappe/www/desk.html"],
 	["standard-items-sections", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	["dropdown-navbar-user", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	// the landing page's own navbar, which the shell harvests and then removes.
