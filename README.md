@@ -4,7 +4,7 @@ A comprehensive [Carbon Design System](https://carbondesignsystem.com) (v11) the
 
 ## Screenshots
 
-Workspace — light and dark (`data-theme`, toggled from Settings → Toggle Theme) share the same tokens, so parity is automatic:
+Workspace — the g100 UI Shell header sits above both themes; light and dark (`data-theme`, toggled from Settings → Toggle Theme) share the same tokens, so parity is automatic:
 
 <table>
 <tr>
@@ -13,23 +13,23 @@ Workspace — light and dark (`data-theme`, toggled from Settings → Toggle The
 </tr>
 </table>
 
-List view — Carbon data-table header, square status tags, bottom-border filter fields:
+List view — Carbon data-table header, status tags on the 24px Carbon tag silhouette, bottom-border filter fields:
 
 ![List view](docs/images/desk-list-light.png)
 
-Document form — bottom-border fields, Carbon button ramp, sidebar, and the full-width tinted Comments/Activity panel:
+Document form — bottom-border fields, the Carbon button ramp in the page head, and the document sidebar:
 
 ![Document form](docs/images/desk-form-light.png)
 
-Form Builder — the section/field nesting reads as distinct surfaces (canvas → card → field slot → input) instead of one flat gray block:
+Form Builder — the section/field nesting reads as distinct surfaces (canvas → card → field slot → input) instead of one flat gray block, with the field properties panel on the same field ramp:
 
 ![Form Builder](docs/images/desk-form-builder-light.png)
 
-Dashboard charts — `@carbon/charts` categorical palette via the `carbon_charts.bundle.js` wrapper, square stat tiles:
+Dashboard — square stat tiles, and charts rendered through the `carbon_charts.bundle.js` wrapper so series colors come from `@carbon/charts` categorical palettes (charts carrying an explicit per-chart color keep it):
 
 ![Dashboard charts](docs/images/desk-dashboard-light.png)
 
-Login — IBM Plex, square fields, Carbon Blue primary action:
+Login — IBM Plex, square fields with the 2px Carbon focus ring, full-width 48px action:
 
 <img src="docs/images/login-light.png" alt="Login page" width="420">
 
