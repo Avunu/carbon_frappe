@@ -27,7 +27,7 @@
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
-    "sass": "1.102.0"
+    "sass": "1.103.1"
   },
   "scripts": {
     "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only && node scripts/audit-markup.mjs --warn-only",
