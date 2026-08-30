@@ -55,11 +55,37 @@ Charts get `--charts-*` theming plus `carbon_charts.bundle.js`, which wraps `fra
 
 ### Beyond CSS
 
-Three small JS bundles cover what stylesheets cannot reach. Every patch delegates to the original, never throws and never half-applies — a missing target degrades to stock frappe styling and reports itself, rather than throwing inside `desk.bundle.js`.
+Small JS bundles cover what stylesheets cannot reach. Every theme patch delegates to the original, never throws and never half-applies — a missing target degrades to stock frappe styling and reports itself, rather than throwing inside `desk.bundle.js`.
 
--   **`carbon_desk.bundle.js`** — tags formatter output with `carbon-num` so numerics and dates get IBM Plex Mono. This is the only hook that reaches frappe-datatable, which emits no fieldtype or alignment class.
--   **`carbon_anatomy.bundle.js`** — the Carbon UI Shell header (mounted into the empty `<header>` frappe leaves in `www/desk.html`), the page header (eyebrow + `heading-04` title, which has no host element in frappe), and 48px report-view rows.
+-   **`carbon_desk.bundle.js`** — tags formatter output with `carbon-num` so numerics and dates get IBM Plex Mono.
+-   **`carbon_anatomy.bundle.js`** — the Carbon UI Shell header (mounted into the empty `<header>` frappe leaves in `www/desk.html`) and the page header (eyebrow + `heading-04` title, which has no host element in frappe).
+-   **`carbon_tables.bundle.js`** — not a theme patch but a functional replacement: one Carbon-styled, TanStack-driven table engine behind frappe's child-table Grid, List view and Report/Query views. See _Tables_ below.
 -   **`scripts/audit-markup.mjs`** — guards every selector, runtime shape and asset-shadow assumption the above depends on. See _Caveats_.
+
+## Tables
+
+`carbon_tables.bundle.js` replaces frappe's three unrelated table renderers — a Bootstrap 12-column grid, hand-built flex-div list rows, and the separate **frappe-datatable** library — with a single engine built on [TanStack Table](https://tanstack.com/table) v9 and rendered as Carbon's light-DOM `cds--data-table`.
+
+**What it unlocks**
+
+-   **Child-table grids past 10 columns.** frappe sizes grid fields as Bootstrap spans and stops redistributing once the total passes 10 (`grid.js:1357-1380`), then latches `.column-limit-reached` and swaps in a hand-rolled horizontal-scroll hack driven by a px map duplicated in JS and SCSS. Columns now carry real pixel widths owned by TanStack's column-sizing feature, the table scrolls horizontally like any table, and `df.sticky` becomes real column pinning. There is no cap.
+-   **Virtualized report rows.** A 742-row report keeps ~32 rows in the DOM; the engine measured 50 000 rows rendering in ~400 ms.
+-   **Column resizing, reordering, pinning and Carbon sort headers** on every surface, plus a spreadsheet-style cell-selection primitive (`cellSelectionFeature`) that frappe-datatable had and Carbon's own Datagrid does not.
+-   **One row-size vocabulary.** Carbon has five row sizes and one rule — the header row matches the body row — so an arbitrary `cellHeight` (frappe asks for 33 and 35) snaps to the nearest and the header follows.
+
+**What does not change**
+
+Compatibility is the point. Nothing here alters a public frappe API:
+
+-   **Grid** — `CarbonGrid extends Grid` and `CarbonGridRow extends GridRow`, overriding only the methods that produce or size DOM. `refresh()`, `add_new_row()`, `update_docfield_property()`, `get_field()`, bulk edit, CSV upload, Sortable row dragging, the Configure Columns dialog and the expanded row form are all frappe's own implementations running against new DOM. Cells are still the `div.grid-static-col` elements `GridRow.make_column()` builds, complete with their `.static-area` / `.field-area` pair and their mounted controls — the engine positions them, it never rebuilds them.
+-   **Report and Query views** — `window.DataTable` and `frappe.DataTable` become a frappe-datatable-compatible facade. The option surface, the `getEditor` protocol, `events`, `hooks.columnTotal`, and the `datamanager` / `rowmanager` / `columnmanager` / `cellmanager` / `bodyRenderer` / `style` sub-managers are reproduced against measured call sites — including `style.setStyle()`, which 13 places across frappe, ERPNext and app reports use to paint individual cells.
+-   **List view** — `get_column_html()` and `get_meta_html()` are reused verbatim as the cell renderers, so `listview_settings` (`formatters`, `get_indicator`, `button`, `dropdown_button`, `hide_name_column`) behaves exactly as before.
+-   **The legacy DOM contract is re-emitted alongside Carbon's.** Every row and cell carries its `dt-*`, `grid-*` or `list-row-*` class as well, so existing app CSS, jQuery and `setStyle` selectors keep resolving. The mapping lives in one file per adapter (`tables/*/classes.js`).
+
+**Known limits**
+
+-   `frappe/data_import/import_preview.js` and `system_console.js` hold module-local `frappe-datatable` imports that a global reassignment cannot reach. They keep using the stock library, which remains installed and themed.
+-   List-view rows are not virtualized: the list scrolls the page rather than an inner box, which is what frappe's paging buttons and `.disable-scrolling` assume. `page_length` (20/100/500/2500) remains the bound on row count.
 
 ## Install
 
@@ -98,6 +124,7 @@ These exist because all of these failures are silent: the theme keeps loading an
 Recorded rather than claimed as conformance:
 
 -   **IBM Plex Mono on tabular data.** Carbon is silent on numeric font and alignment in data tables. Monospaced tabular figures are a project choice for financial data; charts deliberately stay Plex Sans, matching Carbon's data-viz references.
+-   **Light-DOM tables rather than `@carbon/web-components`.** Carbon's own TanStack transition ships React and Web Component examples, and the Web Component set would have been the closer fit for an app that uses no framework. It was rejected for three reasons: `@tanstack/lit-table` is pinned to TanStack v8, which has no `cellSelectionFeature` (the primitive that reproduces frappe-datatable's range selection and `ctrl+C`); `@carbon/web-components` compiles its own copy of Carbon's SCSS into each component's shadow root, which is a second Carbon delivery channel alongside the pinned `@carbon/styles`; and shadow roots would put row and cell internals out of reach of `datatable.style.setStyle()` and of every third-party report stylesheet. `@carbon/styles/scss/components/data-table` gives the identical appearance in the light DOM — it is what `@carbon/react` renders.
 
 ## frappe-ui SPA apps
 
@@ -110,10 +137,26 @@ Apps that build their own bundles (CRM, Helpdesk, custom portals) can't be reach
 ## Development
 
 ```sh
-yarn run compile   # compile all bundles against a sibling ../frappe checkout (.dev-dist/)
-yarn run codegen   # refresh vendored IBM Plex fonts + @carbon/charts palettes
-yarn run audit     # strict drift audit (CI)
+yarn run compile      # compile all bundles against a sibling ../frappe checkout (.dev-dist/)
+yarn run codegen      # refresh vendored IBM Plex fonts + @carbon/charts palettes
+yarn run audit        # strict drift audit (CI)
+yarn run test:tables  # browser tests for the table engine and its adapters
+node scripts/dev-table.mjs --serve   # the engine alone, on :8123, with no bench
 ```
+
+`scripts/test-tables.mjs` drives headless Chromium over the DevTools Protocol (no
+dependencies beyond Node 22+ and `chromium` on PATH) against a running bench. It
+covers the engine in isolation, then each adapter's frappe contract: the `dt-*`
+selectors, `style.setStyle`, `rowmanager.getCheckedRows`, a report script's
+`get_datatable_options` / `formatter` / `after_datatable_render` / `getEditor`
+hooks, the Grid's inherited API and its >10-column layout, the List view's bulk
+actions, and g100 parity. Most of those assertions exist because that exact thing
+regressed once — several are specificity guards against frappe-datatable's,
+Bootstrap's or Carbon's own stylesheet quietly winning.
+
+`scripts/dev-table.mjs` builds the engine and a fixture page into `.dev-dist/`
+with no frappe present at all, which is where engine behaviour is verified before
+any adapter is involved.
 
 `scripts/dev-compile.mjs` replicates frappe's exact sass pipeline (legacy API, `includePaths` = app roots + node\_modules, `~` importer), so bundles can be smoke-tested without a bench. Set `FRAPPE_PATH` if frappe isn't at `../frappe`.
 

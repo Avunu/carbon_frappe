@@ -112,11 +112,15 @@
 	color: var(--cds-link-primary);
 }
 
-// Carbon lg row (48px), matching the list view so a doctype reads the same in
-// either view. frappe pins 35px here as a static rule, which beats the
-// stylesheet frappe-datatable injects — so the override has to live in CSS.
-// js/anatomy/datatable.js sets the matching options.cellHeight; without it the
-// virtual scroller keeps striding 35px and rows overlap.
-.datatable .dt-row {
+// Carbon lg row (48px) for the STOCK frappe-datatable instances that remain
+// (Data Import preview, System Console). frappe pins 35px as a static rule,
+// which beats the stylesheet frappe-datatable injects, so the override has to
+// live in CSS.
+//
+// Excluded from the Carbon engine (`.cf-table`), which emits `.dt-row` too but
+// sizes rows from its own Carbon row size — a fixed 48px here would override
+// `--xs`/`--sm`/`--md` tables and silently ignore a report that asked for a
+// smaller `cellHeight` through `get_datatable_options`.
+.datatable:not(.cf-table) .dt-row {
 	height: 48px;
 }

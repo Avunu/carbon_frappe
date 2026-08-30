@@ -10,6 +10,23 @@
 
 /** Classes frappe must still emit for our stylesheet to reach anything. */
 export const SELECTORS = [
+	// Legacy classes the Carbon table engine RE-EMITS so that app code can keep
+	// targeting our cells. If frappe stops emitting one, our re-emission is
+	// merely redundant — but if frappe RENAMES one, third-party CSS and jQuery
+	// written against it break, and we would want to follow the rename.
+	["dt-row", "frappe/public/js/frappe/views/reports/report_view.js"],
+	["dt-cell__content", "frappe/public/js/frappe/views/reports/report_view.js"],
+	["dt-filter", "frappe/public/js/frappe/views/reports/report_view.js"],
+	["grid-static-col", "frappe/public/js/frappe/form/grid_row.js"],
+	["grid-row-check", "frappe/public/js/frappe/form/grid.js"],
+	["static-area", "frappe/public/js/frappe/form/grid_row.js"],
+	["field-area", "frappe/public/js/frappe/form/grid_row.js"],
+	["sortable-handle", "frappe/public/js/frappe/form/grid_row.js"],
+	["column-limit-reached", "frappe/public/js/frappe/form/grid_row.js"],
+	["list-row-col", "frappe/public/js/frappe/list/list_view.js"],
+	["list-header-subject", "frappe/public/js/frappe/list/list_view.js"],
+	["list-row-checkbox", "frappe/public/js/frappe/list/list_view.js"],
+
 	// list view / data table
 	["list-row-head", "frappe/public/js/frappe/list/list_view.js"],
 	["list-row-container", "frappe/public/js/frappe/list/list_view.js"],
@@ -66,10 +83,70 @@ export const SELECTORS = [
  * If the regex stops matching, the patch silently stops applying.
  */
 export const PATCH_TARGETS = [
+	// --- carbon_tables.bundle.js -------------------------------------------
+	// The table engine REPLACES these implementations rather than wrapping
+	// them, so a rename upstream is not a cosmetic regression here: the
+	// surface silently reverts to stock frappe rendering (frappe-datatable,
+	// the Bootstrap 12-column grid, or div list rows).
 	[
-		"ReportView.setup_datatable (48px report rows)",
+		"ReportView.setup_datatable (CarbonDataTable replaces frappe-datatable)",
 		"frappe/public/js/frappe/views/reports/report_view.js",
 		/setup_datatable\s*\(/,
+	],
+	[
+		"ControlTable.make (constructs the Grid we swap for CarbonGrid)",
+		"frappe/public/js/frappe/form/controls/table.js",
+		/this\.grid = new Grid\(/,
+	],
+	[
+		"Grid is an ES module default export (imported directly by tables/grid)",
+		"frappe/public/js/frappe/form/grid.js",
+		/export default class Grid/,
+	],
+	[
+		"GridRow is an ES module default export (subclassed by CarbonGridRow)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/export default class GridRow/,
+	],
+	[
+		"GridRow.make_column builds the .grid-static-col cell we reuse verbatim",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/make_column\(df, colsize, txt, ci\)/,
+	],
+	[
+		"query_report constructs from window.DataTable (reassignment reaches it)",
+		"frappe/public/js/frappe/views/reports/query_report.js",
+		/new window\.DataTable\(/,
+	],
+	[
+		"frappe.DataTable global (ui/datatable.js is the only assignment)",
+		"frappe/public/js/frappe/ui/datatable.js",
+		/frappe\.DataTable = DataTable/,
+	],
+	[
+		"ListView.render_list (replaced by the Carbon table renderer)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/render_list\(\)\s*\{/,
+	],
+	[
+		"ListView.get_column_html (reused verbatim as the cell renderer)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/get_column_html\(col, doc, show_in_mobile\)/,
+	],
+	[
+		"ListView.get_meta_html (reused verbatim for the meta rail column)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/get_meta_html\(doc\)/,
+	],
+	[
+		"ListView.apply_column_widths (neutralised; TanStack owns widths)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/apply_column_widths\(\)/,
+	],
+	[
+		"on_row_checked resolves its handles lazily (we pre-assign $list_head_subject)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/this\.\$list_head_subject =\s*\n?\s*this\.\$list_head_subject \|\|/,
 	],
 	[
 		"toolbar.setup_editable_title_click_event (clickable page title)",
@@ -112,9 +189,16 @@ export const MIRRORED_LITERALS = [
 	["--list-row-height", "frappe/public/scss/desk/css_variables.scss"],
 	["--list-checkbox-padding", "frappe/public/scss/desk/css_variables.scss"],
 	["--sidebar-width", "frappe/public/scss/desk/sidebar.scss"],
-	// the static 35px rule that setCellHeight() cannot beat — see
-	// js/anatomy/datatable.js
+	// frappe-datatable's own stylesheet, which report.bundle.css pulls in and
+	// which desk/_carbon-table.scss must neutralise: it lays `dt-*` out as divs
+	// (`.dt-row { display: flex }`, `.dt-scrollable { height: 40vw }`), and the
+	// engine emits those same class names on a real <table>.
 	[".dt-row", "frappe/public/scss/desk/frappe_datatable.scss"],
+	["frappe-datatable/dist/frappe-datatable", "frappe/public/scss/report.bundle.scss"],
+	// the px map behind `col-xs-N` in `.column-limit-reached` mode — the
+	// overflow hack CarbonGrid replaces with real horizontal scroll, and the
+	// source of the Bootstrap-span -> pixel translation in tables/grid/grid.js
+	[".column-limit-reached", "frappe/public/scss/common/grid.scss"],
 	// the awesomebar rule pinned to `top: 40px` — an offset measured against
 	// frappe's 28px input, which crossed Carbon's 40px field. desk/_modals.scss
 	// hides it; if frappe reworks it, that suppression wants revisiting.

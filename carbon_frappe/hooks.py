@@ -17,13 +17,20 @@ app_license = "MIT"
 # carbon_desk: tags formatted numeric/date output with `carbon-num` so the
 #   stylesheet can set IBM Plex Mono on it (reaches frappe-datatable, which
 #   emits no fieldtype or alignment class of its own).
-# carbon_anatomy: the only places the theme reaches past CSS — 48px datatable
-#   rows, the Carbon page header, and the UI Shell header. Every patch
-#   delegates to the original and fails soft; see js/anatomy/patch.js.
+# carbon_anatomy: the places the theme reaches past CSS for chrome — the Carbon
+#   page header and the UI Shell header. Every patch delegates to the original
+#   and fails soft; see js/anatomy/patch.js.
+# carbon_tables: the TanStack + Carbon table engine that REPLACES frappe's Grid,
+#   List view rows and frappe-datatable. Not a theme patch — a functional
+#   swap — but it keeps frappe's public JS API and re-emits the legacy DOM
+#   contract so third-party reports and doctype scripts are unaffected.
+#   Must load after frappe's own bundles, which it does: app_include_js from
+#   installed apps is appended after frappe's.
 app_include_js = [
     "carbon_charts.bundle.js",
     "carbon_desk.bundle.js",
     "carbon_anatomy.bundle.js",
+    "carbon_tables.bundle.js",
 ]
 
 # frappe-ui / Vite SPA pages (CRM, Helpdesk, Banking, Builder, Insights, Wiki,

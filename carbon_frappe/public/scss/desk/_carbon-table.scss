@@ -1,0 +1,781 @@
+// WP11 — Carbon Tables engine (carbon_tables.bundle.js).
+//
+// The light-DOM Carbon data table the engine renders for the Grid, List view
+// and Report/Query views. Carbon's component styles are pulled in as MIXINS
+// rather than through `@carbon/styles/scss/components/index`, so this emits
+// exactly the families the engine uses — no reset, no unrelated components, and
+// no second copy of anything the desk bundle already carries.
+//
+// Why light DOM at all: `@carbon/web-components` would give the same visuals,
+// but its shadow roots put row and cell internals out of reach of
+// `datatable.style.setStyle()` (13 call sites across frappe/erpnext/avunu) and
+// of every third-party report stylesheet. The engine therefore renders plain
+// `cds--data-table` markup, exactly as @carbon/react does.
+@use "@carbon/styles/scss/components/data-table/data-table";
+@use "@carbon/styles/scss/components/data-table/sort/data-table-sort";
+@use "@carbon/styles/scss/components/data-table/action/data-table-action";
+@use "@carbon/styles/scss/components/data-table/expandable/data-table-expandable";
+@use "@carbon/styles/scss/components/data-table/skeleton/data-table-skeleton";
+@use "@carbon/styles/scss/components/pagination/pagination";
+
+@include data-table.data-table;
+@include data-table-sort.data-table-sort;
+@include data-table-action.data-table-action;
+@include data-table-expandable.data-table-expandable;
+@include data-table-skeleton.data-table-skeleton;
+@include pagination.pagination;
+
+// ---------------------------------------------------------------------------
+// Engine anatomy — everything Carbon's component CSS does not cover because it
+// assumes a static, fully-rendered, 100%-width table.
+// ---------------------------------------------------------------------------
+
+.cf-table {
+	display: flex;
+	flex-direction: column;
+	// A flex child will not shrink below its content unless told to, which is
+	// what makes the scroll area size to the page instead of overflowing it.
+	min-height: 0;
+	background-color: var(--cds-layer-01);
+
+	&__scroll {
+		position: relative;
+		overflow: auto;
+		min-height: 0;
+		flex: 1 1 auto;
+	}
+
+	// px column widths come from <colgroup>, and render.js writes the table's
+	// own width from `table.getTotalSize()`. That explicit width is what turns
+	// the sum of the column widths into horizontal scroll instead of squeezing
+	// columns — the whole fix for frappe's 10-column grid limit. Do NOT put
+	// `inline-size: max-content` back: a fixed-layout table with an indefinite
+	// width sizes itself from cell content and then redistributes the surplus,
+	// discarding the computed widths and desyncing <thead> from <tbody>.
+	&__table {
+		table-layout: fixed;
+		min-inline-size: 100%;
+	}
+
+	// Sticky header. Written as `thead.x th` (0,2,1) rather than `.x th`
+	// (0,1,1) so it outranks the `.cf-table .dt-cell { background: transparent }`
+	// reset below — a transparent sticky header lets the rows scroll through it.
+	thead#{&}__head--sticky th,
+	thead#{&}__head--sticky .cf-table__cell--filter {
+		position: sticky;
+		z-index: 3;
+		background-color: var(--cds-layer-accent-01);
+	}
+
+	thead#{&}__head--sticky th {
+		inset-block-start: 0;
+	}
+
+	// The inline-filter row sticks directly beneath the header row, so a report
+	// keeps its filters visible while scrolling — frappe-datatable kept them in
+	// a separate non-scrolling header element.
+	thead#{&}__head--sticky .cf-table__cell--filter {
+		inset-block-start: var(--cf-row-height, 48px);
+		background-color: var(--cds-layer-01);
+	}
+
+	// A pinned header cell is sticky in both axes, so it needs the higher layer.
+	thead#{&}__head--sticky th.cf-table__cell--pinned,
+	thead#{&}__head--sticky .cf-table__cell--filter.cf-table__cell--pinned {
+		z-index: 4;
+	}
+
+	&__cell {
+		overflow: hidden;
+		position: relative;
+
+		&--right { text-align: end; }
+		&--center { text-align: center; }
+
+		&--pinned {
+			background-color: var(--cds-layer-01);
+		}
+
+		// Carbon marks the frozen/scrolling seam with a shadow, not a rule.
+		&--pinned-last::after,
+		&--pinned-first::before {
+			content: "";
+			position: absolute;
+			inset-block: 0;
+			inline-size: 6px;
+			pointer-events: none;
+		}
+		&--pinned-last::after {
+			inset-inline-end: -6px;
+			box-shadow: inset 4px 0 4px -4px rgba(0, 0, 0, 0.3);
+		}
+		&--pinned-first::before {
+			inset-inline-start: -6px;
+			box-shadow: inset -4px 0 4px -4px rgba(0, 0, 0, 0.3);
+		}
+	}
+
+	&__cell-content {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	// Spacer rows stand in for the virtualized rows above and below the window.
+	// They must contribute height and nothing else.
+	&__spacer > td {
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+
+	&__resize-handle {
+		position: absolute;
+		inset-block: 0;
+		inset-inline-end: 0;
+		inline-size: 6px;
+		cursor: col-resize;
+		user-select: none;
+		touch-action: none;
+		z-index: 1;
+
+		&:hover,
+		&:active {
+			background-color: var(--cds-border-interactive);
+		}
+	}
+
+	&__filter-row td {
+		padding: 0;
+		background-color: var(--cds-layer-01);
+	}
+
+	// Two classes deliberately (see the neutralising block below):
+	// frappe-datatable's `.dt-input { border: none; background: inherit;
+	// padding: 0 }` is same-specificity and loads later, so a single-class rule
+	// here renders an invisible input.
+	&__filter-input.dt-input,
+	&__filter-input {
+		inline-size: 100%;
+		block-size: 100%;
+		min-block-size: 2rem;
+		border: 0;
+		border-block-end: 1px solid var(--cds-border-strong-01);
+		background-color: var(--cds-field-01);
+		color: var(--cds-text-primary);
+		padding-block: 0;
+		padding-inline: var(--cds-spacing-05, 1rem);
+		font-size: 0.875rem;
+
+		&:focus {
+			outline: 2px solid var(--cds-focus);
+			outline-offset: -2px;
+		}
+	}
+
+	&__empty {
+		padding: var(--cds-spacing-07, 2rem);
+		text-align: center;
+		color: var(--cds-text-secondary);
+		background-color: var(--cds-layer-01);
+		border-block-start: 1px solid var(--carbon-border-subtle);
+	}
+
+	&__total-row td {
+		font-weight: 600;
+		background-color: var(--cds-layer-accent-01);
+		border-block-start: 1px solid var(--cds-border-strong-01);
+	}
+
+	&__sort-icon {
+		display: inline-flex;
+		align-items: center;
+		padding-inline: var(--cds-spacing-03, 0.5rem);
+	}
+
+	// The toolbar and footer only take space when an adapter fills them.
+	&__toolbar:empty,
+	&__footer:empty {
+		display: none;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Neutralising frappe-datatable's stylesheet.
+//
+// The engine re-emits frappe-datatable's `dt-*` classes so that app code can
+// still TARGET our cells (`style.setStyle('.dt-cell--0-3')`, third-party report
+// CSS, `report_view.js` querying `.dt-filter`). The cost is that
+// `report.bundle.css` — which is `@import "~frappe-datatable/dist/frappe-datatable"`
+// — then applies its own LAYOUT to us, and that layout is built for a stack of
+// divs, not a <table>:
+//
+//     .dt-row      { display: flex }        -> destroys <tr>
+//     .dt-scrollable { height: 40vw }       -> collapses the viewport
+//     .dt-cell__content { padding; border; height: 100% }  -> double padding
+//     .dt-header .dt-row[data-is-filter] { display: flex !important }
+//
+// report.bundle.css is listed after desk.bundle.css in frappe's
+// `app_include_css`, so equal-specificity rules there BEAT ours. Every reset
+// below therefore carries extra specificity (or `!important` where frappe used
+// it first), and is scoped to `.cf-table` so real frappe-datatable instances —
+// Data Import preview and System Console still construct the stock library —
+// are untouched.
+.cf-table {
+	&.datatable {
+		overflow: visible;
+	}
+
+	// display only. Do NOT add `height: auto` here: `.cf-table tr.dt-row` is
+	// (0,2,1) and outranks Carbon's `.cds--data-table tr { block-size: 3rem }`
+	// (0,1,1), collapsing every body row to text height while the header — sized
+	// by the more specific `.cds--data-table--sort th` — stayed 48px.
+	.dt-row,
+	tr.dt-row {
+		display: table-row;
+	}
+
+	// frappe marks the filter row `display: flex !important`; only !important
+	// can restore it to a table row.
+	.dt-header .dt-row[data-is-filter],
+	.dt-row[data-is-filter] {
+		display: table-row !important;
+	}
+
+	// Borders only. Do NOT reset padding here: `.cf-table .dt-cell` is (0,2,0)
+	// and would outrank Carbon's own `.cds--data-table td` (0,1,1), collapsing
+	// every row to the height of its text. frappe-datatable's `.dt-cell` padding
+	// is (0,1,0) and already loses to Carbon on its own.
+	// EXACTLY two classes, deliberately. This has to beat frappe-datatable's
+	// `.dt-cell { background-color: var(--dt-cell-bg) }` (0,1,0) while still
+	// LOSING to `datatable.style.setStyle('.dt-cell--0-3', ...)`, whose injected
+	// rule is `.dt-instance-N .dt-cell--0-3` — also (0,2,0), but written into
+	// <head> at runtime and therefore later in source order. Adding a `:not()`
+	// here (the obvious way to spare the sticky header) pushes this to (0,3,0)
+	// and silently kills the one datatable API with 13 call sites across
+	// frappe, ERPNext and app reports. The sticky header keeps its background
+	// through greater specificity instead — see the `thead` rules above, which
+	// compile to `.cf-table thead.cf-table__head--sticky th` (0,2,2).
+	.dt-cell {
+		display: table-cell;
+		border-top: 0;
+		border-right: 0;
+		border-left: 0;
+		background-color: transparent;
+	}
+
+	// Carbon owns cell padding (on .cds--data-table td/th); frappe-datatable put
+	// it on the inner content div, which would double it, and gave that div
+	// `height: 100%` plus a 2px transparent focus border.
+	.dt-cell__content {
+		padding: 0;
+		border: 0;
+		height: auto;
+	}
+
+	.dt-scrollable {
+		height: auto;
+		border-top: 0;
+	}
+
+	.dt-header {
+		background: transparent;
+	}
+
+	// frappe-datatable absolutely positions the toast against `.datatable`;
+	// pin it to the bottom of the viewport area instead of letting it land in
+	// the middle of the rows.
+	.dt-toast {
+		position: absolute;
+		inset-block-end: var(--cds-spacing-05, 1rem);
+		inset-inline-start: 50%;
+		transform: translateX(-50%);
+		z-index: 5;
+	}
+}
+
+// The scroll viewport must fill its page area rather than take
+// frappe-datatable's fixed 40vw. Two classes so it outranks `.dt-scrollable`
+// from the later-loading report.bundle.css.
+.cf-table .cf-table__scroll,
+.cf-table__scroll.dt-scrollable {
+	height: auto;
+	max-height: 100%;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+}
+
+// ---------------------------------------------------------------------------
+// Neutralising frappe's child-table grid stylesheet.
+//
+// Same problem as the frappe-datatable block above, different origin: the Grid's
+// cells are still the `div.col.grid-static-col` elements frappe's GridRow built
+// (deliberately — that is what keeps `.grid-static-col[data-fieldtype]` in
+// desk/_numerics.scss, `.static-area`, `.field-area` and every mounted control
+// working). Those divs were written for a Bootstrap flex row, so inside a <td>
+// they need their flex sizing and their 15px gutter padding removed; Carbon's
+// own td padding provides the inset.
+// ---------------------------------------------------------------------------
+.cf-table {
+	// Defensive: engine rows carry frappe's own classes (`.grid-row`,
+	// `.data-row`, `.list-row`, `.list-row-container`), any of which may pick up
+	// a `display: flex` from a utility elsewhere in the desk stylesheet. One
+	// such rule collapses the entire table, so pin the table display roles.
+	thead,
+	tbody,
+	tfoot {
+		display: table-header-group;
+	}
+	tbody {
+		display: table-row-group;
+	}
+	tfoot {
+		display: table-footer-group;
+	}
+	tr {
+		display: table-row;
+	}
+
+	// Row height is published by the engine as `--cf-row-height`, snapped to one
+	// of Carbon's five row sizes. Two classes plus a type selector so it
+	// outranks BOTH frappe's `.datatable .dt-row { height: 35px }` (0,2,0) and
+	// Carbon's own `.cds--data-table tr { block-size: 3rem }` (0,1,1) — the two
+	// rules that otherwise fight over every report row.
+	tr.cf-table__row,
+	thead tr.cf-table__header-row,
+	tfoot tr.cf-table__total-row {
+		block-size: var(--cf-row-height, 48px);
+	}
+
+	td.cf-table__cell,
+	th.cf-table__cell {
+		display: table-cell;
+	}
+
+	// Grid cells give up their own inset: the CLICKABLE element is the
+	// `.grid-static-col` inside (frappe binds click-to-edit and the awesomplete
+	// repositioning on it), so any padding on the <td> is dead space where a
+	// click does nothing. Moving the inset inward makes the whole cell live, and
+	// makes <th> and <td> line up — Carbon zeroes `th` padding for sort headers
+	// but not `td`, which was offsetting every body cell by 16px.
+	.cf-table__cell--grid {
+		padding: 0;
+	}
+
+	// The GridRow cell, now a block child of the <td>. It carries the Carbon
+	// inset and fills the cell in both axes so the click target is the cell.
+	.grid-static-col,
+	.row-check,
+	.row-index {
+		display: flex;
+		align-items: center;
+		flex: none;
+		inline-size: 100%;
+		max-inline-size: none;
+		block-size: 100%;
+		min-block-size: var(--cf-row-height, 40px);
+		max-block-size: none;
+		padding: 0 var(--cds-spacing-05, 1rem) !important;
+		background-color: transparent;
+		border: 0;
+	}
+
+	// The engine's wrapper is transparent to layout here — the GridRow cell is
+	// the thing that should fill the <td>.
+	.cf-table__cell--grid > .cf-table__cell-content {
+		block-size: 100%;
+		overflow: visible;
+	}
+
+	// In edit mode the control replaces the static text and may be taller than
+	// a row (a Description text area). Let the row grow rather than clipping,
+	// and drop the fixed min-height so the cell hugs the control.
+	.editable-row .grid-static-col {
+		align-items: stretch;
+		min-block-size: 0;
+	}
+
+	.static-area,
+	.field-area {
+		inline-size: 100%;
+	}
+
+	// The detail-form host row takes no space: frappe renders the form itself as
+	// a fixed-position centered modal over the freeze backdrop
+	// (`.grid-row-open .form-in-grid`, common/grid.scss:533), so an inline row
+	// box would just push the rest of the grid down by a phantom row.
+	tr.grid-row-form,
+	tr.grid-row-form > td {
+		padding: 0;
+		border: 0;
+		block-size: 0;
+		min-block-size: 0;
+		background: transparent;
+	}
+
+	// frappe pins the check/index gutters with `position: sticky; left: 0`;
+	// column pinning is TanStack's job now and the engine writes its own
+	// offsets, so the stale rule must not fight it.
+	.row-check,
+	.row-index {
+		position: static;
+		inset-inline-start: auto;
+	}
+
+	// The open-row and configure-columns gutters are icon-sized.
+	.btn-open-row {
+		display: inline-flex;
+		align-items: center;
+	}
+
+	// Gutter columns hold a single control, not text, so Carbon's 16px inset is
+	// too generous — a 48px checkbox column keeps only 16px of usable width and
+	// clips the native checkbox. The inset moves INWARD like every other grid
+	// cell's: padding on the cell itself would leave the header's own background
+	// showing as a grey bar down each gutter edge. Addressed by column id (the
+	// engine writes `data-col-id` on every cell) rather than `:has()`, which
+	// would run on every cell in the table.
+	td[data-col-id="_check"],
+	th[data-col-id="_check"],
+	td[data-col-id="_index"],
+	th[data-col-id="_index"],
+	td[data-col-id="_open"],
+	th[data-col-id="_open"] {
+		padding: 0;
+		text-align: center;
+	}
+
+	[data-col-id="_check"] .row-check,
+	[data-col-id="_index"] .row-index,
+	[data-col-id="_open"] .col,
+	[data-col-id="_open"] .grid-static-col {
+		padding: 0 var(--cds-spacing-03, 0.5rem) !important;
+		justify-content: center;
+	}
+
+	[data-col-id="_check"] .cf-table__cell-content,
+	[data-col-id="_open"] .cf-table__cell-content {
+		overflow: visible;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.row-check input[type="checkbox"],
+	.grid-row-check {
+		margin: 0;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// List view.
+//
+// desk/_list.scss already renders the list as a Carbon data table, and its
+// selection rule is `.list-row-container:has(.list-row-checkbox:checked)
+// .list-row` — a DESCENDANT match, because frappe nests those two elements. The
+// engine puts both classes on one <tr>, so the same intent needs a self match.
+// ---------------------------------------------------------------------------
+.cf-table {
+	tr.list-row-container.list-row:has(.list-row-checkbox:checked) {
+		background-color: var(--cds-layer-selected-01);
+		color: var(--cds-text-primary);
+	}
+
+	// Cell content is `get_column_html` output — a `.list-row-col` div built for
+	// a flex row. Inside a <td> it needs neither the flex sizing nor the
+	// horizontal inset (Carbon's td padding provides that).
+	.list-row-col {
+		flex: none;
+		inline-size: 100%;
+		max-inline-size: none;
+		padding: 0;
+	}
+
+	// `.list-subject.level` and `.level-right` are frappe's flex boxes; they lay
+	// the subject checkbox beside its label, and right-align the meta rail.
+	.list-row-col.list-subject,
+	.list-row-col.level {
+		display: flex;
+		align-items: center;
+		gap: var(--cds-spacing-03, 0.5rem);
+	}
+
+	// The meta rail: fills its cell and packs its contents against the trailing
+	// edge, so the like heart lines up with the hearts in the rows.
+	.cf-table__meta {
+		inline-size: 100%;
+		flex: none;
+		justify-content: flex-end;
+	}
+}
+
+// The bulk-action overlay sits on top of the column header, which is what
+// Carbon's batch-actions bar does. `on_row_checked` toggles the two.
+//
+// It must take NO layout space while hidden — it lives above the table in
+// `$result`, so a zero-height host plus an absolutely positioned bar is what
+// keeps an empty band from appearing over every unselected list.
+.list-carbon-header {
+	position: relative;
+	z-index: 4;
+	block-size: 0;
+
+	// The host itself paints nothing: `_list.scss` gives `.list-row-head` the
+	// Carbon header fill, which would show as a grey band across the top of
+	// every unselected list. Only `.checkbox-actions` is visible, and only when
+	// `on_row_checked` shows it.
+	.list-row-head {
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline: 0;
+		margin: 0;
+		// Both, because desk/_list.scss floors `.list-row-head` with a
+		// min-height as well as a height; zeroing only `block-size` leaves the
+		// 48px floor and the empty bar still paints.
+		block-size: 0;
+		min-block-size: 0;
+		background: transparent;
+		border: 0;
+	}
+
+	.checkbox-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--cds-spacing-05, 1rem);
+		block-size: 48px;
+		padding-inline: var(--cds-spacing-05, 1rem);
+		background-color: var(--cds-background-brand);
+		color: var(--cds-text-on-color);
+
+		.list-header-meta,
+		.select-like {
+			color: var(--cds-text-on-color);
+		}
+	}
+}
+
+.list-carbon-mount {
+	display: flex;
+	flex-direction: column;
+	min-block-size: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Row state on pinned cells.
+//
+// Carbon paints hover and selection on the <tr>
+// (`.cds--data-table tbody tr:hover { background-color: $layer-hover }`), which
+// sits BEHIND the cells. Ordinary cells are transparent so it shows through; a
+// pinned cell has to be opaque — that is exactly what stops the scrolled
+// columns showing through it — and so it hid the row fill. The symptom is a
+// hover highlight that stops at the first pinned column and resumes after the
+// last one, leaving the row's two ends unlit.
+//
+// Written flat rather than nested under `&__cell--pinned`: `&` expands to the
+// whole parent chain, so `tbody tr:hover &` there would compile to
+// `tbody tr:hover .cf-table .cf-table__cell--pinned` and never match.
+// ---------------------------------------------------------------------------
+.cf-table tbody tr:hover .cf-table__cell--pinned {
+	background-color: var(--cds-layer-hover-01);
+}
+
+.cf-table tbody tr.cds--data-table--selected .cf-table__cell--pinned,
+.cf-table tbody tr.list-row-container:has(.list-row-checkbox:checked) .cf-table__cell--pinned {
+	background-color: var(--cds-layer-selected-01);
+}
+
+.cf-table tbody tr.cds--data-table--selected:hover .cf-table__cell--pinned,
+.cf-table tbody tr.list-row-container:has(.list-row-checkbox:checked):hover .cf-table__cell--pinned {
+	background-color: var(--cds-layer-selected-hover-01);
+}
+
+// ---------------------------------------------------------------------------
+// The Report view as a spreadsheet.
+//
+// frappe's Report view is its bulk-editing surface — most columns come back
+// `editable: true` and `report_view.js` supplies a `getEditor` that mounts real
+// frappe controls in the cell. frappe-datatable dressed that as a grid; a plain
+// Carbon data table reads as a read-only list, and users lose the signal that
+// the cells are live.
+//
+// Scoped to `.datatable` (the Report and Query views), NOT to every table: the
+// List view genuinely is read-only and should keep the plain Carbon treatment.
+// ---------------------------------------------------------------------------
+.cf-table.datatable {
+	// Cell boundaries. A deliberate deviation: Carbon's data table has no
+	// vertical rules, but a spreadsheet needs them to read as addressable cells
+	// rather than sentences. Kept at the subtle hairline so the table still
+	// reads as Carbon, not as a 90s grid.
+	tbody .dt-cell:not(:last-child) {
+		border-inline-end: 1px solid var(--carbon-border-subtle);
+	}
+
+	thead .dt-cell:not(:last-child) {
+		border-inline-end: 1px solid var(--carbon-border-subtle);
+	}
+
+	// An editable cell advertises itself on hover, the way Carbon's inline-edit
+	// data table does.
+	tbody .dt-cell {
+		cursor: cell;
+	}
+
+	// The injected `_checkbox` / `_rowIndex` gutters hold one control in a 32px
+	// column; Carbon's 16px cell inset leaves no room and the ellipsis wrapper
+	// clips what is left, so the checkbox rendered as a thin bar. Same treatment
+	// as the Grid's gutters: inset moved inward, overflow allowed, centred.
+	[data-col-id$=":_checkbox"],
+	[data-col-id$=":_rowIndex"] {
+		padding-inline: var(--cds-spacing-02, 0.25rem);
+		text-align: center;
+		cursor: default;
+	}
+
+	// Header and body share one box so the select-all lines up with the column
+	// beneath it. The header cell is a <th> whose content div is laid out by
+	// different rules, and it was sitting 8px left of the body checkboxes.
+	td[data-col-id$=":_checkbox"] .cf-table__cell-content,
+	th[data-col-id$=":_checkbox"] .cf-table__cell-content {
+		overflow: visible;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 100%;
+		block-size: 100%;
+		padding: 0;
+		text-align: center;
+	}
+
+	// Explicit box: as a flex child the native checkbox is otherwise free to be
+	// stretched or squeezed by the cell, which rendered it as a thin bar.
+	.dt-checkbox {
+		flex: none;
+		margin: 0;
+		inline-size: 16px;
+		block-size: 16px;
+	}
+
+	tbody .dt-cell--focus {
+		// Carbon's 2px focus ring, inset so it does not shift the grid.
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+		background-color: var(--cds-layer-01);
+		position: relative;
+		z-index: 1;
+	}
+
+	tbody .dt-cell--highlight {
+		background-color: var(--cds-highlight);
+	}
+
+	// The open editor fills the cell and sits above its neighbours.
+	tbody .dt-cell--editing {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+		z-index: 2;
+		overflow: visible;
+	}
+
+	.dt-cell__edit {
+		position: absolute;
+		// `inset: 0` resolves against the cell's PADDING box, so the editor is
+		// already inset by Carbon's 16px. Adding its own padding on top left a
+		// 120px column with ~30px of usable text width.
+		inset: 0;
+		display: flex;
+		align-items: center;
+		padding: 0;
+		background-color: var(--cds-field-01);
+
+		input,
+		textarea,
+		select,
+		.dt-input {
+			inline-size: 100%;
+			block-size: 100%;
+			border: 0;
+			background: transparent;
+			color: var(--cds-text-primary);
+			font: inherit;
+			// frappe's controls reserve a wide trailing inset for their own
+			// affordances (a Link keeps 44px for the open-record arrow). In a
+			// grid cell that is most of the column, so trim it to the icon.
+			padding-block: 0;
+			padding-inline: 0 var(--cds-spacing-06, 1.5rem);
+
+			&:focus {
+				outline: none;
+			}
+		}
+
+		// Keep the control's trailing button inside the cell.
+		.link-btn,
+		.select-icon {
+			inset-inline-end: 0;
+		}
+	}
+
+	// Hide the static content while its editor is open, as frappe-datatable did.
+	.dt-cell--editing > .dt-cell__content {
+		visibility: hidden;
+	}
+
+	// The scroll viewport takes keyboard focus so the grid can receive arrows;
+	// it should not paint a focus ring of its own over the cell ring.
+	.cf-table__scroll:focus,
+	.cf-table__scroll:focus-visible {
+		outline: none;
+	}
+}
+
+// While a drag-selection is in progress the pointer is crossing cell text;
+// without this the browser starts a text selection over it. `mousedown` is
+// deliberately not prevented (that would break links and editor focus), so the
+// suppression is a class instead.
+.cf-table--selecting,
+.cf-table--selecting * {
+	user-select: none;
+}
+
+// ---------------------------------------------------------------------------
+// Frozen columns must be opaque.
+//
+// A pinned cell is what the scrolling columns pass UNDER, so a transparent one
+// shows both at once. The datatable adapter's cells are also `.dt-cell`, and
+// the frappe-datatable reset `.cf-table .dt-cell { background-color: transparent }`
+// is (0,2,0) — it beat the pinned rule and the frozen columns went
+// see-through. Written flat with the ancestor for (0,2,1); nesting it under
+// `&__cell--pinned` concatenates rather than descends and lands at (0,1,1),
+// which is not enough.
+// ---------------------------------------------------------------------------
+.cf-table .cf-table__cell--pinned {
+	background-color: var(--cds-layer-01);
+	// Paint the border box, and give the borders the cell's own colour, so the
+	// row underneath cannot show through the 1px seams between frozen cells —
+	// which is what made the frozen column look translucent over a selected or
+	// hovered row.
+	background-clip: border-box;
+	border-color: var(--carbon-border-subtle);
+}
+
+.cf-table thead .cf-table__cell--pinned {
+	background-color: var(--cds-layer-accent-01);
+}
+
+// Stacking order for sticky cells. All four levels are needed: a frozen body
+// cell above the ordinary body cells it is passed under, the header above the
+// body, and the frozen header corner above both.
+.cf-table tbody .cf-table__cell--pinned {
+	z-index: 2;
+}
+
+.cf-table thead.cf-table__head--sticky th,
+.cf-table thead.cf-table__head--sticky .cf-table__cell--filter {
+	z-index: 3;
+}
+
+.cf-table thead.cf-table__head--sticky th.cf-table__cell--pinned,
+.cf-table thead.cf-table__head--sticky .cf-table__cell--filter.cf-table__cell--pinned {
+	z-index: 4;
+}

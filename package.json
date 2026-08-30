@@ -22,7 +22,9 @@
   "type": "module",
   "dependencies": {
     "@carbon/charts": "1.27.18",
-    "@carbon/styles": "1.113.0"
+    "@carbon/styles": "1.113.0",
+    "@tanstack/table-core": "9.2.4",
+    "@tanstack/virtual-core": "3.17.8"
   },
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
@@ -34,6 +36,7 @@
     "codegen": "node scripts/sync-fonts.mjs && node scripts/generate-chart-palettes.mjs",
     "audit": "node scripts/audit-tokens.mjs --strict && node scripts/audit-markup.mjs --strict",
     "compile": "node scripts/dev-compile.mjs",
-    "upgrade": "npx npm-check-updates -u && yarn install && yarn build"
+    "upgrade": "npx npm-check-updates -u && yarn install && yarn build",
+    "test:tables": "node scripts/test-tables.mjs"
   }
 }
