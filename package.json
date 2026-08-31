@@ -22,7 +22,7 @@
   "type": "module",
   "dependencies": {
     "@carbon/charts": "1.27.18",
-    "@carbon/styles": "1.113.0",
+    "@carbon/styles": "1.114.0",
     "@tanstack/table-core": "9.2.4",
     "@tanstack/virtual-core": "3.17.8"
   },
