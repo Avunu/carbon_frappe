@@ -197,32 +197,66 @@ try {
   })()`);
   ok("every header cell aligns with its body cell", align.mismatched.length === 0, JSON.stringify(align.mismatched));
 
-  // --- the detail form ----------------------------------------------------
-  // GridRowForm appends its wrapper to row.wrapper, which here is a <tr>, and
-  // show_form() then hides that row — so the form went down with it and the
-  // user got the freeze backdrop and nothing else. It now lives in a
-  // zero-height host row that carries .grid-row-open, which is the selector
-  // that turns .form-in-grid from height:0 into frappe's centered modal.
+  // --- the detail panel (Carbon expandable row) ---------------------------
+  // frappe's row form is a centered pseudo-modal: GridRowForm appends
+  // `.form-in-grid` to row.wrapper, show_form() hides that row, and
+  // `.grid-row-open .form-in-grid` (common/grid.scss:533) makes it
+  // position:fixed over a frappe.dom.freeze() backdrop. Carbon's equivalent is
+  // an expandable row — the summary stays put and a child row unfolds under it.
+  //
+  // Every assertion below is one of the ways that swap can silently go wrong:
+  // an adjacent-sibling break (Carbon's whole expandable stylesheet is written
+  // as `tr.cds--parent-row… + tr[data-child-row]`), a `.grid-row` on the child
+  // row (Sortable would make it draggable and renumber_based_on_dom() would
+  // count it), or an unbalanced freeze count (show_form freezes, hide_form
+  // unfreezes; inline mode has to counterweight both, not skip them).
   const form = await page.eval(`(() => {
     const grid = cur_frm.fields_dict.items.grid;
     const row = grid.grid_rows.filter(Boolean)[0];
     window.__formRow = row;
-    row.toggle_view();
+    window.__freezeBefore = frappe.dom.freeze_count;
+    row.toggle_view(true);
     return new Promise((res) => setTimeout(() => {
       const host = row.form_row;
+      const parent = row.wrapper[0];
       const formEl = row.grid_form && row.grid_form.wrapper[0];
+      const expandCell = parent.querySelector('td.cds--table-expand');
+      const button = row.expand_button;
+      const tbody = grid.wrapper.find('tbody.rows')[0];
       res({
         addendumInTable: !!(host && host.parentElement && host.parentElement.tagName === 'TBODY'),
-        hostCollapsed: !!(host && host.getBoundingClientRect().height < 2),
-        hostOpenClass: !!(host && host.classList.contains('grid-row-open')),
+        adjacent: parent.nextElementSibling === host,
+        childRowMarked: !!(host && host.hasAttribute('data-child-row')),
+        childNotGridRow: !!(host && !host.classList.contains('grid-row')),
+        childRowsForEveryRow:
+          tbody.querySelectorAll('tr[data-child-row]').length ===
+          grid.grid_rows.filter(Boolean).length,
         colspan: host && host.firstElementChild.getAttribute('colspan'),
         formInsideAddendum: !!(formEl && host && host.contains(formEl)),
         formVisible: !!(formEl && formEl.getBoundingClientRect().height > 200),
-        formFixed: !!(formEl && getComputedStyle(formEl).position === 'fixed'),
+        formInline: !!(formEl && getComputedStyle(formEl).position === 'static'),
+        panelStuck: !!(row.form_inner && getComputedStyle(row.form_inner).position === 'sticky'),
         frozen: document.querySelectorAll('#freeze').length,
+        freezeBalanced: frappe.dom.freeze_count === window.__freezeBefore,
         fieldsRendered: row.grid_form && Object.keys(row.grid_form.fields_dict || {}).length,
+        parentRowClass: parent.classList.contains('cds--parent-row'),
+        expandedClass: parent.classList.contains('cds--expandable-row'),
+        previousValue: expandCell && expandCell.getAttribute('data-previous-value'),
+        ariaExpanded: button && button.getAttribute('aria-expanded'),
+        ariaControls: button && button.getAttribute('aria-controls') === host.id,
+        // Not just the computed value: a sticky box that fills its containing
+        // block cannot move, which is exactly how this was wrong the first time.
+        panelHolds: (() => {
+          const scroll = grid.carbon_table.renderer.scroll;
+          if (scroll.scrollWidth - scroll.clientWidth < 200) return true;
+          const before = row.form_inner.getBoundingClientRect().left;
+          scroll.scrollLeft = 200;
+          const after = row.form_inner.getBoundingClientRect().left;
+          scroll.scrollLeft = 0;
+          return Math.abs(after - before) < 2;
+        })(),
         openGridRow: grid.open_grid_row === row.grid_form,
-        dataRowHidden: row.wrapper.css('display') === 'none',
+        dataRowVisible: row.wrapper.css('display') !== 'none',
         markedOpen: row.wrapper.hasClass('grid-row-open'),
         findable: $('.grid-row-open').data('grid_row') === row,
         curGrid: window.cur_frm.cur_grid === row,
@@ -230,22 +264,227 @@ try {
     }, 1200));
   })()`);
   console.log(JSON.stringify(form, null, 2));
-  ok("detail form gets its own <tr> inside <tbody>", form.addendumInTable && form.colspan > 1, JSON.stringify({ t: form.addendumInTable, c: form.colspan }));
-  ok("host row is collapsed and carries .grid-row-open", form.hostCollapsed && form.hostOpenClass, JSON.stringify({ h: form.hostCollapsed, o: form.hostOpenClass }));
-  ok("the form renders as frappe's centered modal", form.formInsideAddendum && form.formVisible && form.formFixed && form.fieldsRendered > 0, JSON.stringify({ v: form.formVisible, p: form.formFixed, f: form.fieldsRendered }));
-  ok("the freeze backdrop is up behind it", form.frozen > 0, String(form.frozen));
-  ok("frappe's open-row bookkeeping still holds", form.openGridRow && form.dataRowHidden && form.markedOpen && form.findable && form.curGrid, JSON.stringify(form));
+  ok("detail panel gets its own <tr> inside <tbody>", form.addendumInTable && form.colspan > 1, JSON.stringify({ t: form.addendumInTable, c: form.colspan }));
+  ok("child row is the parent's immediate sibling (Carbon selectors need it)", form.adjacent && form.childRowMarked, JSON.stringify({ a: form.adjacent, m: form.childRowMarked }));
+  ok("child row exists for every row and is not a .grid-row", form.childRowsForEveryRow && form.childNotGridRow, JSON.stringify({ all: form.childRowsForEveryRow, notGridRow: form.childNotGridRow }));
+  ok("the form renders inline, not as a modal", form.formInsideAddendum && form.formVisible && form.formInline && form.fieldsRendered > 0, JSON.stringify({ v: form.formVisible, inline: form.formInline, f: form.fieldsRendered }));
+  ok("the panel is stuck to the scroll viewport", form.panelStuck && form.panelHolds, JSON.stringify({ sticky: form.panelStuck, holds: form.panelHolds }));
+  ok("no freeze backdrop, and the freeze count is balanced", form.frozen === 0 && form.freezeBalanced, JSON.stringify({ frozen: form.frozen, balanced: form.freezeBalanced }));
+  ok("Carbon expandable classes and ARIA", form.parentRowClass && form.expandedClass && form.previousValue === 'collapsed' && form.ariaExpanded === 'true' && form.ariaControls, JSON.stringify({ p: form.parentRowClass, e: form.expandedClass, pv: form.previousValue, a: form.ariaExpanded, c: form.ariaControls }));
+  ok("frappe's open-row bookkeeping still holds", form.openGridRow && form.dataRowVisible && form.markedOpen && form.findable && form.curGrid, JSON.stringify(form));
+
+  await page.screenshot(SHOT + "/bench-grid-expanded.png");
+
+  // Opening a second row collapses the first: frappe's toggle_view() is an
+  // accordion and `cur_frm.cur_grid` / `grid.open_grid_row` are single slots.
+  const accordion = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const rows = grid.grid_rows.filter(Boolean);
+    rows[1].toggle_view(true);
+    return new Promise((res) => setTimeout(() => res({
+      firstClosed: !rows[0].wrapper.hasClass('grid-row-open'),
+      secondOpen: rows[1].wrapper.hasClass('grid-row-open'),
+      onlyOne: document.querySelectorAll('.grid-row-open').length === 1,
+      curGrid: window.cur_frm.cur_grid === rows[1],
+    }), 900));
+  })()`);
+  ok("one row at a time", accordion.firstClosed && accordion.secondOpen && accordion.onlyOne && accordion.curGrid, JSON.stringify(accordion));
 
   const closed = await page.eval(`(() => {
-    const row = window.__formRow;
-    row.toggle_view();
+    const grid = cur_frm.fields_dict.items.grid;
+    const row = grid.grid_rows.filter(Boolean)[1];
+    row.toggle_view(false);
     return new Promise((res) => setTimeout(() => res({
-      addendumHidden: row.form_row.style.display === 'none',
+      collapsed: row.wrapper[0].nextElementSibling.getBoundingClientRect().height < 2,
+      expandedClassGone: !row.wrapper[0].classList.contains('cds--expandable-row'),
+      previousValueGone: !row.wrapper[0].querySelector('td.cds--table-expand').hasAttribute('data-previous-value'),
       rowBack: row.wrapper.css('display') !== 'none',
       frozen: document.querySelectorAll('#freeze').length,
-    }), 800));
+      freezeBalanced: frappe.dom.freeze_count === window.__freezeBefore,
+      curGrid: window.cur_frm.cur_grid,
+    }), 900));
   })()`);
-  ok("closing the form restores the row and lifts the overlay", closed.addendumHidden && closed.rowBack && closed.frozen === 0, JSON.stringify(closed));
+  ok("closing collapses the panel and leaves no backdrop behind", closed.collapsed && closed.expandedClassGone && closed.previousValueGone && closed.rowBack && closed.frozen === 0 && closed.freezeBalanced, JSON.stringify(closed));
+
+  // The "Open in dialog" escape hatch, and the freeze count around it. Opening
+  // another row while a modal row is open closes the modal one through
+  // `toggle_view(false)` — a path that knows nothing about the mode, and that
+  // used to leave the backdrop stranded over the whole desk.
+  const modal = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const rows = grid.grid_rows.filter(Boolean);
+    rows[0].toggle_view(true, null, { modal: true });
+    return new Promise((res) => setTimeout(() => {
+      const formEl = rows[0].grid_form.wrapper[0];
+      const opened = {
+        modalClass: grid.wrapper.hasClass('cf-grid--modal-form'),
+        fixed: getComputedStyle(formEl).position === 'fixed',
+        frozen: document.querySelectorAll('#freeze').length,
+      };
+      rows[1].toggle_view(true);
+      setTimeout(() => res(Object.assign(opened, {
+        afterFrozen: document.querySelectorAll('#freeze').length,
+        afterCount: frappe.dom.freeze_count,
+        modalClassGone: !grid.wrapper.hasClass('cf-grid--modal-form'),
+        secondInline: getComputedStyle(rows[1].grid_form.wrapper[0]).position === 'static',
+      })), 900);
+    }, 1200));
+  })()`);
+  ok("Open in dialog restores the centered modal", modal.modalClass && modal.fixed && modal.frozen === 1, JSON.stringify(modal));
+  ok("switching rows lifts the modal backdrop instead of stranding it", modal.afterFrozen === 0 && modal.afterCount === 0 && modal.modalClassGone && modal.secondInline, JSON.stringify(modal));
+  await page.eval(`(() => { cur_frm.fields_dict.items.grid.grid_rows.filter(Boolean)[1].toggle_view(false); return true; })()`);
+
+  // The expand chevron itself, not just the API behind it.
+  const chevron = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const row = grid.grid_rows.filter(Boolean)[0];
+    row.expand_button.click();
+    return new Promise((res) => setTimeout(() => res({
+      opened: row.wrapper.hasClass('grid-row-open'),
+      aria: row.expand_button.getAttribute('aria-expanded'),
+    }), 900));
+  })()`);
+  ok("the chevron opens the panel", chevron.opened && chevron.aria === 'true', JSON.stringify(chevron));
+  await page.eval(`(() => { cur_frm.fields_dict.items.grid.grid_rows.filter(Boolean)[0].toggle_view(false); return true; })()`);
+
+  // --- cell interiors must not occlude row/header state ----------------------
+  // Carbon puts hover, selection and expansion on the <tr> and $layer-accent on
+  // the <th>; all of them sit BEHIND the cells. frappe paints cell surfaces at
+  // .grid-body scope, and `.grid-body .col:last-child` is (0,3,0) — a
+  // pseudo-class counts class-level — which in this layout matches EVERY cell,
+  // because the engine nests each frappe cell alone inside
+  // .cf-table__cell-content. That produced a header band visible only in the
+  // two gutters that have no frappe cell in them, and an expanded row whose
+  // hover tint reached the chevron column and nothing else.
+  //
+  // The hover half is driven with the REAL pointer, as the list suite does:
+  // Carbon's row-hover fill is behind `@media (any-hover: hover)` and a
+  // MouseEvent dispatched from page script does not make `:hover` match.
+  const headerPaint = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const bg = (n) => n ? getComputedStyle(n).backgroundColor : null;
+    const inner = (c) => c.querySelector('.grid-static-col, .row-check, .row-index');
+    const ths = Array.from(grid.wrapper.find('thead tr.grid-row th'));
+    return {
+      fills: Array.from(new Set(ths.map(bg))),
+      inners: Array.from(new Set(ths.map(inner).filter(Boolean).map(bg))),
+    };
+  })()`);
+  ok(
+    "the header band reaches every column, not just the gutters",
+    headerPaint.fills.length === 1 &&
+      headerPaint.fills[0] !== "rgba(0, 0, 0, 0)" &&
+      headerPaint.inners.length === 1 &&
+      headerPaint.inners[0] === "rgba(0, 0, 0, 0)",
+    JSON.stringify(headerPaint)
+  );
+
+  const panelBox = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const row = grid.grid_rows.filter(Boolean)[0];
+    row.toggle_view(true);
+    return new Promise((res) => setTimeout(() => {
+      const r = row.form_row.getBoundingClientRect();
+      res({ x: Math.round(r.left + 200), y: Math.round(r.top + 40) });
+    }, 900));
+  })()`);
+  await page.hover(panelBox.x, panelBox.y);
+  const rowPaint = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const row = grid.grid_rows.filter(Boolean)[0];
+    const bg = (n) => n ? getComputedStyle(n).backgroundColor : null;
+    const inner = (c) => c.querySelector('.grid-static-col, .row-check, .row-index');
+    const parent = row.wrapper[0];
+    const tds = Array.from(parent.querySelectorAll('td'));
+    return {
+      hoverCls: parent.classList.contains('cds--expandable-row--hover'),
+      tds: Array.from(new Set(tds.map(bg))),
+      inners: Array.from(new Set(tds.map(inner).filter(Boolean).map(bg))),
+    };
+  })()`);
+  console.log(JSON.stringify({ headerPaint, rowPaint }));
+  ok(
+    "an expanded row's hover tint covers the whole row, not just the chevron",
+    rowPaint.hoverCls &&
+      rowPaint.tds.length === 1 &&
+      rowPaint.tds[0] !== "rgba(0, 0, 0, 0)" &&
+      rowPaint.inners.length === 1 &&
+      rowPaint.inners[0] === "rgba(0, 0, 0, 0)",
+    JSON.stringify(rowPaint)
+  );
+  await page.eval(`(() => { cur_frm.fields_dict.items.grid.grid_rows.filter(Boolean)[0].toggle_view(false); return true; })()`);
+
+  // --- the Carbon toolbar --------------------------------------------------
+  // Everything here MOVED from `.grid-footer`; nothing was rebuilt. The point
+  // of the assertions is that the nodes are the same ones frappe wired its
+  // data-action handlers and cached handles onto.
+  const toolbar = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const bar = grid.wrapper.find('.cf-table__toolbar')[0];
+    const batch = bar && bar.querySelector('.cds--batch-actions');
+    const content = bar && bar.querySelector('.cds--toolbar-content');
+    const addRow = grid.wrapper.find('.grid-add-row')[0];
+    const footer = grid.wrapper.find('.cf-table__footer')[0];
+    return {
+      hasToolbar: !!bar,
+      batchBeforeContent: !!(batch && content && batch.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING),
+      addRowInToolbar: !!(content && content.contains(addRow)),
+      addRowIsSameNode: addRow === grid.wrapper.find('.grid-buttons .grid-add-row')[0],
+      deleteInBatch: !!(batch && batch.contains(grid.remove_rows_button[0])),
+      gearInToolbar: !!(content && grid.header_row.configure_columns_button &&
+        content.contains(grid.header_row.configure_columns_button[0])),
+      searchToggle: !!(content && content.querySelector('[aria-pressed]')),
+      paginationInFooter: !!(footer && footer.querySelector('.grid-pagination')),
+      footerHidden: getComputedStyle(grid.wrapper.find('.grid-footer')[0]).display === 'none',
+    };
+  })()`);
+  console.log(JSON.stringify(toolbar, null, 2));
+  ok("the Carbon toolbar exists with the batch bar before the content", toolbar.hasToolbar && toolbar.batchBeforeContent, JSON.stringify(toolbar));
+  ok("Add row moved into the toolbar (same node, handlers intact)", toolbar.addRowInToolbar && toolbar.addRowIsSameNode);
+  ok("Delete moved into the batch action list", toolbar.deleteInBatch);
+  ok("Configure Columns gear moved into the toolbar", toolbar.gearInToolbar);
+  ok("the filter-row toggle is present", toolbar.searchToggle);
+  ok("pagination sits below the table, footer is hidden", toolbar.paginationInFooter && toolbar.footerHidden, JSON.stringify({ p: toolbar.paginationInFooter, f: toolbar.footerHidden }));
+
+  const batch = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    // A BODY row's checkbox. The grid-body class is on the engine's scroll
+    // box, which wraps <thead> too, so the first match there is select-all.
+    grid.wrapper.find('tbody.rows .grid-row-check').first().click();
+    return new Promise((res) => setTimeout(() => {
+      const bar = grid.wrapper.find('.cds--batch-actions')[0];
+      const active = bar.classList.contains('cds--batch-actions--active');
+      const label = bar.querySelector('.cds--batch-summary__para').textContent;
+      grid.clear_selection();
+      return setTimeout(() => res({
+        active,
+        label,
+        selected: grid.get_selected().length,
+        clearedActive: bar.classList.contains('cds--batch-actions--active'),
+        clearedHidden: bar.getAttribute('aria-hidden'),
+        addRowBack: !grid.wrapper.find('.grid-add-row').hasClass('hidden'),
+      }), 500);
+    }, 700));
+  })()`);
+  ok("selecting a row raises the batch bar with a count", batch.active && /1/.test(batch.label), JSON.stringify({ a: batch.active, l: batch.label }));
+  ok("Cancel clears the selection, lowers the bar and restores Add row", batch.selected === 0 && !batch.clearedActive && batch.clearedHidden === 'true' && batch.addRowBack, JSON.stringify(batch));
+
+  // The magnifier reveals frappe's per-column filter row at ANY row count —
+  // upstream it only appears past `rows_threshold_for_grid_search` (20).
+  const search = await page.eval(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const before = grid.wrapper.find('tr.filter-row:visible').length;
+    grid.wrapper.find('.cds--toolbar-content [aria-pressed]')[0].click();
+    return new Promise((res) => setTimeout(() => res({
+      rows: grid.data.length,
+      before,
+      after: grid.wrapper.find('tr.filter-row').filter(function () {
+        return this.offsetParent !== null;
+      }).length,
+      inputs: grid.wrapper.find('tr.filter-row input').length,
+    }), 700));
+  })()`);
+  ok("the magnifier reveals the filter row below the 20-row threshold", search.rows < 20 && search.before === 0 && search.after === 1 && search.inputs > 0, JSON.stringify(search));
 
   await page.screenshot(SHOT + "/bench-grid.png");
   const errs = page.consoleErrors();

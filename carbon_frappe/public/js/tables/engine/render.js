@@ -20,10 +20,14 @@ import { CARBON, applyProfile } from "./classes";
 /** Marker on nodes we own, so adapters can tell engine DOM from their own. */
 const OWNED = "__carbon_table_node";
 
+/** Marker on a child row whose hover mirroring is already bound. */
+const CHILD_HOVER = "__carbon_child_hover";
+
 export default class TableRenderer {
 	constructor(host) {
 		this.host = host;
 		this.rows = new Map(); // rowId -> { tr, cells: Map<colId, {td, content}> }
+		this.addenda = new Map(); // rowId -> the adapter's addendum <tr>
 		this.headerCells = new Map(); // colId -> { th, content }
 		this.filterCells = new Map(); // colId -> { td, input }
 		this.footCells = new Map(); // colId -> { td, content }
@@ -88,6 +92,7 @@ export default class TableRenderer {
 
 	destroy() {
 		this.rows.clear();
+		this.addenda.clear();
 		this.headerCells.clear();
 		this.filterCells.clear();
 		this.footCells.clear();
@@ -322,8 +327,25 @@ export default class TableRenderer {
 		for (const row of slice.rows) {
 			seen.add(row.id);
 			desired.push(this.renderRow(row, leaf));
+			// Addendum rows are ADAPTER-OWNED but ENGINE-PLACED, so the engine
+			// has to own their removal as well. `reconcileOrder` only positions
+			// the nodes it is given; anything left behind stays in the <tbody>
+			// exactly where it was. Before this was tracked, a row that got
+			// released — or rebuilt, which `grid.reset_grid()` does to every
+			// GridRow on a Configure Columns change — left its addendum
+			// stranded, and a stray child row ahead of the first data row
+			// breaks Carbon's `tr.cds--parent-row + tr[data-child-row]`
+			// adjacency for the whole table.
 			const extra = this.host.renderRowAddendum(row, leaf);
-			if (extra) desired.push(extra);
+			const previous = this.addenda.get(row.id);
+			if (previous && previous !== extra) previous.remove();
+			if (extra) {
+				this.addenda.set(row.id, extra);
+				if (this.host.options.expandable) this.wireChildHover(extra);
+				desired.push(extra);
+			} else if (previous) {
+				this.addenda.delete(row.id);
+			}
 		}
 
 		if (slice.paddingBottom > 0) {
@@ -342,6 +364,12 @@ export default class TableRenderer {
 				this.host.releaseRow(id, entry);
 				entry.tr.remove();
 				this.rows.delete(id);
+			}
+		}
+		for (const [id, node] of this.addenda) {
+			if (!seen.has(id)) {
+				node.remove();
+				this.addenda.delete(id);
 			}
 		}
 		reconcileOrder(this.tbody, desired);
@@ -383,7 +411,18 @@ export default class TableRenderer {
 		attr(tr, "data-row-index", row.index);
 		attr(tr, "data-depth", row.depth || 0);
 		toggleClass(tr, CARBON.selectedRow, !!(row.getIsSelected && row.getIsSelected()));
-		toggleClass(tr, "cf-table__row--expanded", !!(row.getIsExpanded && row.getIsExpanded()));
+		const expanded = !!(row.getIsExpanded && row.getIsExpanded());
+		toggleClass(tr, "cf-table__row--expanded", expanded);
+		if (this.host.options.expandable) {
+			// Carbon's expandable stylesheet is written almost entirely as
+			// `tr.cds--parent-row… + tr[data-child-row]`, so BOTH the class and
+			// the attribute are selectors, not decoration — and `cds--expandable-row`
+			// means "expanded" on a parent row while being a permanent structural
+			// class on the child row.
+			toggleClass(tr, CARBON.parentRow, true);
+			attr(tr, "data-parent-row", "true");
+			toggleClass(tr, CARBON.expandableRow, expanded);
+		}
 
 		const desired = [];
 		for (let i = 0; i < leaf.length; i++) {
@@ -431,6 +470,23 @@ export default class TableRenderer {
 		reconcileOrder(tr, desired);
 		applyProfile(p, "row", tr, { host: this.host, row });
 		return tr;
+	}
+
+	/**
+	 * Carbon paints the parent row's hover state, not the child's, so hovering
+	 * the open panel leaves a white seam across the row above it. @carbon/react
+	 * fixes this in JS (TableExpandedRow.tsx) by mirroring the hover onto the
+	 * previous sibling; light DOM has no other way to do it either.
+	 */
+	wireChildHover(node) {
+		if (node[CHILD_HOVER]) return;
+		node[CHILD_HOVER] = true;
+		const set = (on) => {
+			const parent = node.previousElementSibling;
+			if (parent) toggleClass(parent, CARBON.expandableRowHover, on);
+		};
+		node.addEventListener("mouseenter", () => set(true));
+		node.addEventListener("mouseleave", () => set(false));
 	}
 
 	renderFoot(leaf) {

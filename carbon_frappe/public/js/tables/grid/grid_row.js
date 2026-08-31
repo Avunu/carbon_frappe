@@ -7,13 +7,14 @@
 //   inherited untouched — set_docfields, set_data, select, remove, insert, move,
 //     refresh, refresh_field, refresh_check, refresh_dependency,
 //     set_dependant_property, evaluate_depends_on_value, make_control,
-//     set_arrow_keys, toggle_view, show_form, hide_form, has_prev/has_next,
-//     open_prev/open_next, open_row_at_index, change_page_if_reqd, get_field,
-//     set_field_property, toggle_reqd/display/editable, get_visible_columns,
-//     the whole Configure Columns dialog, and GridRowForm.
+//     set_arrow_keys, has_prev/has_next, open_prev/open_next,
+//     open_row_at_index, change_page_if_reqd, get_field, set_field_property,
+//     toggle_reqd/display/editable, get_visible_columns, the whole Configure
+//     Columns dialog, and GridRowForm.
 //
-//   replaced here — make() (a <tr> instead of two nested divs) and
-//     setup_columns() (no Bootstrap 12-column cap).
+//   replaced here — make() (a <tr> instead of two nested divs), setup_columns()
+//     (no Bootstrap 12-column cap), and show_form()/hide_form(), which turn
+//     frappe's centered pseudo-modal into a Carbon expandable row.
 //
 // `make_column` is deliberately NOT overridden. It builds a
 // `div.col.grid-static-col[data-fieldname][data-fieldtype]` carrying
@@ -24,6 +25,8 @@
 // `.grid-static-col[...]` selector still matches.
 import GridRow from "frappe/public/js/frappe/form/grid_row";
 import GridRowForm from "frappe/public/js/frappe/form/grid_row_form";
+import { ensureChildRow, expandButton, syncExpandState } from "./expand";
+import { rowMenuButton } from "./row_menu";
 
 export default class CarbonGridRow extends GridRow {
 	/**
@@ -92,65 +95,152 @@ export default class CarbonGridRow extends GridRow {
 	}
 
 	/**
-	 * The <tr> that hosts the expanded detail form, created on demand.
+	 * The per-column search inputs, always built.
 	 *
-	 * frappe's `GridRowForm` constructor does
-	 * `$('<div class="form-in-grid">').appendTo(this.row.wrapper)`, and
-	 * `show_form()` then calls `this.row.toggle(false)` to hide the data row and
-	 * reveal the form in its place. That works when `wrapper` (`.grid-row`) and
-	 * `row` (`.data-row`) are two nested divs — the form is a sibling of the
-	 * hidden row. Here they are one <tr>, so the form was appended INSIDE the
-	 * row that then got hidden: the page froze behind the overlay and no form
-	 * ever appeared.
-	 *
-	 * A table cannot nest rows, so the form gets its own <tr> immediately after
-	 * the data row. That row is a DOM HOST, not a visual expansion: frappe's
-	 * grid form is a centered modal — `.grid-row-open .form-in-grid` is
-	 * `position: fixed; top: 5%; left: 50%; width: 80%` (common/grid.scss:533),
-	 * which is what the `frappe.dom.freeze()` backdrop is for. So the row is
-	 * collapsed to zero height and only exists to (a) keep `.form-in-grid` in the
-	 * grid's DOM subtree and (b) carry `.grid-row-open`, which is the selector
-	 * that reveals the form and that `.form-grid-container:has(.grid-row-open)`
-	 * also keys off.
+	 * frappe hides the filter row below `rows_threshold_for_grid_search` (20)
+	 * and — the part that matters — REMOVES the row's wrapper when it decides
+	 * not to show it, so `search_columns` is never populated. The Carbon
+	 * toolbar's magnifier owns that visibility now (tables/grid/toolbar.js), and
+	 * it has to be able to reveal the row at any row count, so the row is always
+	 * constructed. `this.show_search` is left truthy because `render_row()`
+	 * branches on it to build search cells rather than data cells.
 	 */
-	ensure_form_host() {
-		if (!this.form_row) {
-			this.form_row = document.createElement("tr");
-			this.form_row.className = "grid-row grid-row-form";
-			this.form_cell = document.createElement("td");
-			this.form_row.appendChild(this.form_cell);
-		}
-		const columns = this.grid.carbon_table
-			? this.grid.carbon_table.table.getVisibleLeafColumns().length
-			: 1;
-		this.form_cell.setAttribute("colspan", columns);
-		return this.form_cell;
+	show_search_row() {
+		return !!this.show_search;
 	}
 
+	/**
+	 * Also stamp the row number into the detail panel.
+	 *
+	 * frappe writes `.row-index span, .grid-form-row-index` through
+	 * `this.wrapper.find(...)`, and the panel is no longer inside the row's
+	 * <tr> — it is the sibling child row — so the "Editing Row #" heading came
+	 * up blank.
+	 */
+	set_row_index() {
+		super.set_row_index();
+		if (this.doc && this.doc.idx !== undefined && this.form_row) {
+			$(this.form_row).find(".grid-form-row-index").html(this.doc.idx);
+		}
+	}
+
+	/** True while this row's detail panel is open. */
+	is_expanded() {
+		return !!(this.wrapper && this.wrapper.hasClass("grid-row-open"));
+	}
+
+	// ------------------------------------------------------- expandable anatomy
+
+	/**
+	 * The child row's inner container, which is where the detail form lives.
+	 *
+	 * Kept under frappe's old name as well (`ensure_form_host`) because the
+	 * shape of this method is what the grid test suite asserts against.
+	 */
+	ensure_form_host() {
+		return ensureChildRow(this);
+	}
+
+	/** `_expand` column content — the chevron. */
+	expand_node() {
+		return expandButton(this);
+	}
+
+	/**
+	 * `_menu` column content — the `⋮` overflow menu.
+	 *
+	 * It reuses frappe's own trailing cell when there is one so that
+	 * `open_form_button.parent().focus()` (grid_row.js:1533, and the global
+	 * `$(document).on("escape")` handler) still lands somewhere real. When
+	 * `df.in_place_edit` suppresses that cell, we make our own.
+	 */
+	menu_node() {
+		if (!this.menu_cell) {
+			this.menu_cell =
+				this.open_form_cell && this.open_form_cell.length
+					? this.open_form_cell.get(0)
+					: document.createElement("div");
+			this.menu_cell.classList.add("cf-grid__row-menu-cell");
+		}
+		const button = rowMenuButton(this);
+		if (button.parentNode !== this.menu_cell) this.menu_cell.appendChild(button);
+		return this.menu_cell;
+	}
+
+	// ------------------------------------------------------------- detail panel
+
+	/**
+	 * Accepts a third argument frappe does not have: `{ modal: true }` opens the
+	 * row in the legacy centered dialog instead of the inline panel. It is the
+	 * escape hatch the row menu's "Open in dialog" item uses, for child doctypes
+	 * whose form is too tall to read inside a table row.
+	 *
+	 * Only the REQUEST is recorded here, and only when this call could open the
+	 * row. How the row is actually displayed is latched in `show_form()` and
+	 * read back in `hide_form()`, because the two have to agree about the freeze
+	 * count and a close can arrive from somewhere that knows nothing about the
+	 * mode: `super.toggle_view(true)` on a DIFFERENT row closes this one by
+	 * calling `this.toggle_view(false)` (grid_row.js:1452). Resetting the flag
+	 * there left `hide_form()` thinking an open modal was inline, so it added a
+	 * counterweight freeze that super's unfreeze then only half-removed — and
+	 * the backdrop stayed up over the whole desk.
+	 */
+	toggle_view(show, callback, opts) {
+		if (opts && opts.modal !== undefined) this._request_modal = !!opts.modal;
+		else if (show === true) this._request_modal = false;
+		return super.toggle_view(show, callback);
+	}
+
+	/**
+	 * Open the row as a Carbon expandable row.
+	 *
+	 * frappe's show_form() is built for a modal and does three things that are
+	 * wrong here; each is undone immediately after `super` rather than
+	 * reimplemented, so the script triggers, the Layout build and the
+	 * `cur_frm.cur_grid` bookkeeping in between stay frappe's:
+	 *
+	 *   1. `GridRowForm`'s constructor appends `.form-in-grid` to
+	 *      `this.row.wrapper` — our <tr>. It is built here first, so it can be
+	 *      relocated into the child row before super renders into it.
+	 *   2. `this.row.toggle(false)` hides the data row, because upstream the
+	 *      form is a SIBLING of the row inside `.grid-row`. Here they are one
+	 *      <tr>, and Carbon keeps the parent row visible above the panel.
+	 *   3. `frappe.dom.freeze()` raises a modal backdrop. Inline needs none —
+	 *      but `hide_form()` unconditionally unfreezes, so the count has to be
+	 *      balanced rather than skipped (frappe.dom.freeze_count, dom.js:172).
+	 */
 	show_form() {
 		const host = this.ensure_form_host();
-		// Build the form BEFORE super runs, so its wrapper can be relocated out
-		// of the <tr> and into the addendum cell; super then finds it already
-		// created and only renders into it.
 		if (!this.grid_form) {
 			this.grid_form = new GridRowForm({ row: this });
 		}
 		if (this.grid_form.wrapper.parent().get(0) !== host) {
 			this.grid_form.wrapper.appendTo(host);
 		}
-		this.form_row.style.display = "";
 
 		super.show_form();
+		this.set_row_index();
 
-		// `.grid-row-open` is what turns `.form-in-grid` from `height: 0` into
-		// the visible modal. super put it on `this.wrapper`, which it then hid
-		// via `this.row.toggle(false)` — and wrapper and row are one <tr> here,
-		// so the form went dark with the row. The addendum row carries the class
-		// as well, and the same `grid_row` data, so
-		// `$(".grid-row-open").data("grid_row")` (layout.js:712,
-		// ui/keyboard.js:335) resolves from either element.
-		this.form_row.classList.add("grid-row-open");
-		$(this.form_row).data({ grid_row: this, doc: this.doc || "" });
+		// Latch the mode for the matching hide_form().
+		this._modal_form = !!this._request_modal;
+		const modal = this._modal_form;
+
+		// (2) the parent row stays visible — Carbon's expandable row shows the
+		// summary above the panel, and `.grid-row-open` now sits on a node the
+		// user can actually see, which is also where frappe expects it
+		// (`$('.grid-row-open').data('grid_row')` — layout.js:712,
+		// ui/keyboard.js:335).
+		this.wrapper.show();
+
+		// (3) balance super's freeze unless we actually want the backdrop.
+		if (!modal) frappe.dom.unfreeze();
+
+		// super's `frappe.utils.is_xs()` branch pins the grid to `min-width: 0`
+		// and `position: unset` so a modal can escape it. The inline panel lives
+		// inside the table and wants neither.
+		$(this.grid.form_grid).css({ "min-width": "", position: "" });
+
+		$(this.grid.wrapper).toggleClass("cf-grid--modal-form", modal);
 
 		// super toggles these through `this.wrapper.find(...)`, which no longer
 		// contains the form. Re-apply against the host it actually lives in.
@@ -163,18 +253,32 @@ export default class CarbonGridRow extends GridRow {
 			.find(".grid-delete-row")
 			.toggle(!(this.grid.df && this.grid.df.cannot_delete_rows));
 
-		// The addendum row is placed by the engine's render pass; nothing in
-		// frappe's show_form() triggers one, so the form would stay detached.
-		this.grid.carbon_table && this.grid.carbon_table.render();
+		syncExpandState(this, true);
+		if (this.grid.carbon_table) {
+			this.grid.carbon_table.setExpandedRow(this.doc && this.doc.name);
+			this.grid.carbon_table.render();
+		}
 	}
 
 	hide_form() {
+		const modal = !!this._modal_form;
+		// Counterweight to super's unconditional `frappe.dom.unfreeze()`. In
+		// modal mode super's own freeze from show_form() is still standing and
+		// this one would be one too many.
+		if (!modal) frappe.dom.freeze("", "dark grid-form");
+
 		super.hide_form();
-		if (this.form_row) {
-			this.form_row.classList.remove("grid-row-open");
-			this.form_row.style.display = "none";
+
+		this._modal_form = false;
+		this._request_modal = false;
+		$(this.grid.wrapper).removeClass("cf-grid--modal-form");
+		$(this.grid.form_grid).css({ "min-width": "", position: "" });
+
+		syncExpandState(this, false);
+		if (this.grid.carbon_table) {
+			this.grid.carbon_table.setExpandedRow(null);
+			this.grid.carbon_table.render();
 		}
-		this.grid.carbon_table && this.grid.carbon_table.render();
 	}
 
 	/**

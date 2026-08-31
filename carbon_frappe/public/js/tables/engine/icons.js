@@ -21,6 +21,8 @@ const FALLBACK = {
 	"es-line-settings": '<circle cx="8" cy="8" r="3" fill="none" stroke="currentColor"/>',
 	"es-small-close": '<path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" fill="none"/>',
 	"es-line-search": '<circle cx="7" cy="7" r="4" fill="none" stroke="currentColor"/><path d="M10 10l3 3" stroke="currentColor"/>',
+	"es-line-download": '<path d="M8 2v7M5 7l3 3 3-3M3 13h10" fill="none" stroke="currentColor"/>',
+	"es-line-upload": '<path d="M8 12V5M5 8l3-3 3 3M3 13h10" fill="none" stroke="currentColor"/>',
 	"expand-alt": '<path d="M6 3l5 5-5 5z"/>',
 	collapse: '<path d="M3 6l5 5 5-5z"/>',
 };
