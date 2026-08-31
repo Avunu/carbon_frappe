@@ -17,6 +17,7 @@
 @use "@carbon/styles/scss/components/data-table/expandable/data-table-expandable";
 @use "@carbon/styles/scss/components/data-table/skeleton/data-table-skeleton";
 @use "@carbon/styles/scss/components/pagination/pagination";
+@use "@carbon/styles/scss/components/overflow-menu/overflow-menu";
 
 @include data-table.data-table;
 @include data-table-sort.data-table-sort;
@@ -24,6 +25,7 @@
 @include data-table-expandable.data-table-expandable;
 @include data-table-skeleton.data-table-skeleton;
 @include pagination.pagination;
+@include overflow-menu.overflow-menu;
 
 // ---------------------------------------------------------------------------
 // Engine anatomy — everything Carbon's component CSS does not cover because it
@@ -381,6 +383,31 @@
 		border: 0;
 	}
 
+	// CELL INTERIORS ARE TRANSPARENT; THE ROW AND THE HEADER CELL CARRY THE PAINT.
+	//
+	// This is the rule the whole table's state model rests on. Carbon puts
+	// hover, selection and expansion on the <tr> and $layer-accent on the <th>,
+	// all of which sit BEHIND the cells — so a cell with a background of its own
+	// hides every one of them. frappe paints cell surfaces `--fg-color` at
+	// `.grid-body` scope, and `.grid-body .col:last-child` (common/grid.scss:271)
+	// is (0,3,0): a pseudo-class counts class-level. It also matches far more
+	// than it used to, because the engine nests each frappe cell alone inside
+	// `.cf-table__cell-content`, making every one of them a `:last-child`.
+	//
+	// (0,5,0) / (0,4,0), enough to clear that and the hover variants above it.
+	.grid-body .grid-row .col,
+	.grid-body .grid-row .col:last-child,
+	.grid-body .grid-row .grid-static-col,
+	.grid-body .grid-row .row-check,
+	.grid-body .grid-row .row-index,
+	.grid-heading-row .grid-row .col,
+	.grid-heading-row .grid-row .col:last-child,
+	.grid-heading-row .grid-row .grid-static-col,
+	.grid-heading-row .grid-row .row-check,
+	.grid-heading-row .grid-row .row-index {
+		background-color: transparent;
+	}
+
 	// The engine's wrapper is transparent to layout here — the GridRow cell is
 	// the thing that should fill the <td>.
 	.cf-table__cell--grid > .cf-table__cell-content {
@@ -401,17 +428,13 @@
 		inline-size: 100%;
 	}
 
-	// The detail-form host row takes no space: frappe renders the form itself as
-	// a fixed-position centered modal over the freeze backdrop
-	// (`.grid-row-open .form-in-grid`, common/grid.scss:533), so an inline row
-	// box would just push the rest of the grid down by a phantom row.
-	tr.grid-row-form,
-	tr.grid-row-form > td {
-		padding: 0;
-		border: 0;
-		block-size: 0;
-		min-block-size: 0;
-		background: transparent;
+	// The detail panel is a Carbon expandable row now, not a host for frappe's
+	// modal. Its anatomy lives in its own section further down; what belongs
+	// here is only the height rule, because the block above pins
+	// `tr.cf-table__row` to `--cf-row-height` and the child row must not inherit
+	// a fixed height.
+	tr[data-child-row] {
+		block-size: auto;
 	}
 
 	// frappe pins the check/index gutters with `position: sticky; left: 0`;
@@ -436,26 +459,29 @@
 	// showing as a grey bar down each gutter edge. Addressed by column id (the
 	// engine writes `data-col-id` on every cell) rather than `:has()`, which
 	// would run on every cell in the table.
+	td[data-col-id="_expand"],
+	th[data-col-id="_expand"],
 	td[data-col-id="_check"],
 	th[data-col-id="_check"],
 	td[data-col-id="_index"],
 	th[data-col-id="_index"],
-	td[data-col-id="_open"],
-	th[data-col-id="_open"] {
+	td[data-col-id="_menu"],
+	th[data-col-id="_menu"] {
 		padding: 0;
 		text-align: center;
 	}
 
 	[data-col-id="_check"] .row-check,
 	[data-col-id="_index"] .row-index,
-	[data-col-id="_open"] .col,
-	[data-col-id="_open"] .grid-static-col {
+	[data-col-id="_menu"] .col,
+	[data-col-id="_menu"] .grid-static-col {
 		padding: 0 var(--cds-spacing-03, 0.5rem) !important;
 		justify-content: center;
 	}
 
+	[data-col-id="_expand"] .cf-table__cell-content,
 	[data-col-id="_check"] .cf-table__cell-content,
-	[data-col-id="_open"] .cf-table__cell-content {
+	[data-col-id="_menu"] .cf-table__cell-content {
 		overflow: visible;
 		display: flex;
 		align-items: center;
@@ -466,6 +492,543 @@
 	.grid-row-check {
 		margin: 0;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Child-table Grid — the Carbon expandable detail panel.
+//
+// frappe's row form is an inline `div.form-in-grid` that its own stylesheet
+// turns into a centered pseudo-modal: `.grid-row-open .form-in-grid` is
+// `position: fixed; top: 5%; left: 50%; width: 80%` over a `frappe.dom.freeze()`
+// backdrop (common/grid.scss:533). Carbon's equivalent is an expandable row —
+// the summary stays visible and a child row unfolds beneath it.
+//
+// That upstream rule STOPS MATCHING on its own: it needs `.form-in-grid` to be
+// a descendant of `.grid-row-open`, and the form now lives in the sibling child
+// <tr> rather than inside the parent row. Only the base `.form-in-grid` rule
+// (`height: 0; opacity: 0; overflow: hidden`) still applies, and that is what
+// the reset below is for.
+// ---------------------------------------------------------------------------
+.cf-table {
+	// --- the expand gutter --------------------------------------------------
+
+	// Carbon sizes `td/th.cds--table-expand` itself (32px square, per row size);
+	// all that is needed is to stop the button being stretched by the flex
+	// centering the gutter columns use.
+	.cds--table-expand__button {
+		flex: none;
+		margin: 0 auto;
+		color: var(--cds-layer-selected-inverse);
+	}
+
+	// Header gutters are blank: there is no expand-all (one row opens at a time)
+	// and the Configure Columns gear moved to the toolbar.
+	th[data-col-id="_expand"],
+	th[data-col-id="_menu"] {
+		font-size: 0;
+	}
+
+	// frappe's pencil is redundant next to the chevron, but the element stays in
+	// the DOM: `hide_form()` does `open_form_button.parent().focus()` and a
+	// global `$(document).on("escape")` handler refocuses it (grid_row.js:366).
+	.btn-open-row {
+		display: none !important;
+	}
+
+	// --- the child row ------------------------------------------------------
+
+	// The panel must not scroll out of view sideways. This table scrolls
+	// horizontally by design (removing frappe's 10-column cap is the whole
+	// point of the engine), and a colspan'd cell is as wide as the table — so
+	// left to itself the form slides off-screen with the columns.
+	tr[data-child-row] > td.cf-table__child-cell {
+		padding: 0;
+		background-color: var(--cds-layer-01);
+	}
+
+	// STICKY GOES ON THE INNER CONTAINER, NOT THE CELL. A sticky box can only
+	// shift WITHIN its containing block, and the child cell spans every column
+	// — it already fills the row, so there is nowhere for it to travel and
+	// `position: sticky` on it is silently inert (measured: the cell tracked
+	// scrollLeft 1:1). The inner container is narrower than the cell, so it can.
+	//
+	// `--cf-panel-width` is the scroll viewport's width, written by the grid
+	// adapter's ResizeObserver — the same "measure in JS, write one explicit px
+	// value" discipline the engine uses for <colgroup>.
+	//
+	// The 3.5rem is Carbon's own expanded-row inset: its
+	// `tr.cds--parent-row.cds--expandable-row + tr[data-child-row] td
+	// { padding-inline-start: 3.5rem }` is (0,4,3) and outranks the reset above,
+	// which is left to win over the ordinary `td` padding. Matching the sticky
+	// offset to it means the panel is already in its stuck position at
+	// scrollLeft 0, so it never jumps sideways on the first scroll.
+	.cds--child-row-inner-container {
+		position: sticky;
+		inset-inline-start: 3.5rem;
+		box-sizing: border-box;
+		inline-size: calc(var(--cf-panel-width, 100%) - 3.5rem);
+		padding-inline-end: var(--cds-spacing-05, 1rem);
+	}
+
+	// Undo the base `.form-in-grid` rule (common/grid.scss:517) — it is written
+	// for a thing that is hidden until a modal reveals it. (0,2,0) over (0,1,0).
+	.form-in-grid {
+		position: static;
+		block-size: auto;
+		inline-size: auto;
+		max-inline-size: none;
+		opacity: 1;
+		overflow: visible;
+		margin: 0;
+		padding: 0;
+		background-color: transparent;
+		border-radius: 0;
+		box-shadow: none;
+		z-index: auto;
+		transform: none;
+	}
+
+	// --- panel chrome -------------------------------------------------------
+
+	// frappe's heading is a modal title bar. Inline it reads as a section
+	// header: the row label on the left, its actions on the right.
+	.grid-form-heading {
+		padding: 0;
+		background-color: transparent;
+		border: 0;
+		border-block-end: 1px solid var(--carbon-border-subtle);
+		margin-block-end: var(--cds-spacing-05, 1rem);
+	}
+
+	.grid-header-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--cds-spacing-03, 0.5rem);
+		padding: 0 0 var(--cds-spacing-03, 0.5rem);
+		background-color: transparent;
+	}
+
+	.grid-form-heading .panel-title {
+		font-size: var(--cds-heading-compact-01-font-size, 0.875rem);
+		font-weight: var(--cds-heading-compact-01-font-weight, 600);
+		line-height: var(--cds-heading-compact-01-line-height, 1.28572);
+		color: var(--cds-text-primary);
+	}
+
+	// `pull-right` is Bootstrap's float, which in a flex row leaves the buttons
+	// stacked in source order at the wrong end.
+	.grid-form-heading .row-actions,
+	.grid-footer-toolbar .row-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--cds-spacing-02, 0.25rem);
+		float: none;
+
+		.btn {
+			float: none;
+		}
+	}
+
+	.grid-form-body {
+		max-block-size: none;
+		overflow: visible;
+	}
+
+	.grid-footer-toolbar {
+		padding-block-start: var(--cds-spacing-05, 1rem);
+		border-block-start: 1px solid var(--carbon-border-subtle);
+		background-color: transparent;
+	}
+
+	.grid-shortcuts {
+		color: var(--cds-text-secondary);
+	}
+
+	// Selection tint. The Grid does not use TanStack row selection — frappe
+	// owns it through `doc.__checked` and the `.grid-row-check` inputs — so the
+	// engine never adds `cds--data-table--selected`. Same `:has()` shape the
+	// List view uses in desk/_list.scss, and the cells have to be painted too
+	// because _datatable.scss gives each one an opaque `--cds-layer-01` fill
+	// that would otherwise occlude the row.
+	tr.grid-row:has(.grid-row-check:checked) {
+		background-color: var(--cds-layer-selected-01);
+	}
+
+	tr.grid-row:has(.grid-row-check:checked):hover {
+		background-color: var(--cds-layer-selected-hover-01);
+	}
+
+	// --- the row overflow menu ---------------------------------------------
+
+	.cf-grid__row-menu-cell {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 100%;
+		block-size: 100%;
+	}
+
+	// Carbon reveals the row menu on hover / selection only; it stays reachable
+	// by keyboard because focus counts as a reveal.
+	.cds--overflow-menu {
+		opacity: 0;
+		block-size: var(--cds-spacing-07, 2rem);
+		inline-size: var(--cds-spacing-07, 2rem);
+		min-block-size: 0;
+	}
+
+	tr:hover .cds--overflow-menu,
+	tr.cds--data-table--selected .cds--overflow-menu,
+	tr.cds--expandable-row .cds--overflow-menu,
+	.cds--overflow-menu:focus,
+	.cds--overflow-menu--open {
+		opacity: 1;
+	}
+}
+
+// The menu itself is portaled to <body> — a table cell clips its overflow, the
+// same reason frappe re-parents awesomplete dropdowns out of grid cells.
+//
+// Carbon's `cds--overflow-menu-options__btn` is `display: inline-flex` with no
+// `inline-size`, because @carbon/react's own markup stretches it from the <li>.
+// Rebuilt in light DOM the buttons shrink to their text and drift to the
+// trailing edge, so the width and alignment are restated here.
+.cf-grid__row-menu {
+	position: fixed;
+	z-index: 1060;
+	inline-size: max-content;
+	min-inline-size: 10rem;
+	max-inline-size: 20rem;
+	background-color: var(--cds-layer-02);
+
+	// A bare <ul> in the light DOM still carries the UA's 40px list indent,
+	// which pads the menu out and pushes every label off its 16px inset.
+	.cds--overflow-menu-options__content {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cds--overflow-menu-options__option {
+		block-size: var(--cds-spacing-08, 2.5rem);
+		inline-size: 100%;
+	}
+
+	.cds--overflow-menu-options__btn {
+		inline-size: 100%;
+		justify-content: flex-start;
+		text-align: start;
+	}
+
+	.cds--overflow-menu-options__option--danger .cds--overflow-menu-options__btn {
+		color: var(--cds-text-error);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Child-table Grid — the "open in dialog" escape hatch.
+//
+// Some child doctypes have forms too tall to read inside a table row, so the
+// row menu can still open the legacy centered dialog. Rather than re-enabling
+// frappe's rule (which no longer matches — see above), its geometry is restated
+// here, scoped to the class `CarbonGridRow#show_form` sets on `.grid-field`.
+// ---------------------------------------------------------------------------
+.cf-grid--modal-form .cf-table {
+	// The child row gives its space back: the panel is out of flow now.
+	tr[data-child-row] {
+		block-size: 0;
+	}
+
+	tr[data-child-row] > td.cf-table__child-cell {
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+
+	.cds--child-row-inner-container {
+		position: static;
+		inline-size: auto;
+		max-block-size: none;
+		padding: 0;
+		overflow: visible;
+	}
+
+	.form-in-grid {
+		position: fixed;
+		inset-block-start: 5%;
+		inset-inline-start: 50%;
+		transform: translate(-50%, 0);
+		inline-size: 80%;
+		max-inline-size: var(--page-max-width);
+		z-index: 1021;
+		padding: var(--cds-spacing-05, 1rem);
+		background-color: var(--cds-layer-01);
+		box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+	}
+
+	.grid-form-body {
+		max-block-size: 80vh;
+		overflow: auto;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Child-table Grid — the Carbon table toolbar.
+//
+// tables/grid/toolbar.js MOVES frappe's footer buttons up here rather than
+// rebuilding them, so each one arrives wearing its Bootstrap classes
+// (`btn btn-xs btn-secondary`, `btn-danger`). Those are neutralised below and
+// re-dressed as Carbon, which is cheaper and far safer than re-creating the
+// buttons and re-binding the `data-action` handlers frappe wired onto the
+// original elements.
+// ---------------------------------------------------------------------------
+.cf-table {
+	&__toolbar {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		block-size: var(--cds-spacing-09, 3rem);
+		background-color: var(--cds-layer-01);
+		border-block-end: 1px solid var(--carbon-border-subtle);
+	}
+
+	.cds--toolbar-content {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		inline-size: 100%;
+		block-size: 100%;
+	}
+
+	// frappe's `.grid-buttons` / `.grid-custom-buttons` are inline-flex boxes
+	// with their own background; here they are pure grouping and should not
+	// introduce a box of their own.
+	.cds--toolbar-content .grid-buttons,
+	.cds--toolbar-content .grid-custom-buttons {
+		display: flex;
+		align-items: center;
+		gap: var(--cds-spacing-02, 0.25rem);
+		block-size: 100%;
+		margin: 0;
+		padding: 0;
+		background-color: transparent;
+		border: 0;
+	}
+
+	// Icon actions: Carbon's toolbar action is a square the height of the bar.
+	.cds--toolbar-content .cds--toolbar-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		block-size: var(--cds-spacing-09, 3rem);
+		inline-size: var(--cds-spacing-09, 3rem);
+		min-block-size: 0;
+		padding: 0;
+		color: var(--cds-icon-primary);
+		background-color: transparent;
+		border: 0;
+		border-radius: 0;
+		cursor: pointer;
+
+		&:hover {
+			background-color: var(--cds-field-hover-01);
+		}
+
+		&[aria-pressed="true"] {
+			background-color: var(--cds-layer-selected-01);
+		}
+
+		svg {
+			inline-size: 1rem;
+			block-size: 1rem;
+			fill: currentColor;
+		}
+	}
+
+	// The gear is a <div>, not a <button> — frappe builds it as
+	// `div.col.grid-static-col.pointer > a > svg` (grid_row.js:376). It keeps
+	// its own click handler; only the box changes.
+	.cf-grid__toolbar-gear {
+		inline-size: var(--cds-spacing-09, 3rem) !important;
+		max-inline-size: none;
+		padding: 0 !important;
+		background-color: transparent !important;
+		border: 0 !important;
+
+		a {
+			display: inline-flex;
+			align-items: center;
+		}
+	}
+
+	// `es-line-download` is the sprite's only download glyph and it is drawn
+	// with STROKES (`stroke-linecap` paths plus an outline `<circle>`), while
+	// frappe's `.es-icon` rule forces `fill: var(--icon-stroke); stroke-width: 0`
+	// (common/icons.scss:18-22) — which fills the circle and renders a solid
+	// dot. Restoring stroke rendering for this one button is narrower than
+	// substituting a glyph that does not mean "download".
+	.cds--toolbar-content .grid-download svg {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1;
+	}
+
+	// The primary action. Carbon's toolbar primary button is full bar height,
+	// and there is exactly ONE primary — "Add multiple" sits beside it as the
+	// secondary.
+	.cds--toolbar-content .grid-add-row,
+	.cds--toolbar-content .grid-add-multiple-rows {
+		display: inline-flex;
+		align-items: center;
+		box-sizing: border-box;
+		block-size: var(--cds-spacing-09, 3rem);
+		min-block-size: 0;
+		padding-inline: var(--cds-spacing-05, 1rem);
+		border: 0;
+		border-radius: 0;
+		font-size: var(--cds-body-compact-01-font-size, 0.875rem);
+		white-space: nowrap;
+	}
+
+	.cds--toolbar-content .grid-add-row {
+		color: var(--cds-text-on-color);
+		background-color: var(--cds-background-brand);
+
+		&:hover {
+			background-color: var(--cds-background-brand);
+			filter: brightness(0.92);
+		}
+	}
+
+	.cds--toolbar-content .grid-add-multiple-rows {
+		color: var(--cds-link-primary);
+		background-color: transparent;
+
+		&:hover {
+			background-color: var(--cds-field-hover-01);
+		}
+	}
+
+	// Panel action buttons read as Carbon ghost buttons, not Bootstrap pills.
+	.grid-form-heading .btn,
+	.grid-footer-toolbar .btn {
+		block-size: var(--cds-spacing-07, 2rem);
+		min-block-size: 0;
+		padding-inline: var(--cds-spacing-04, 0.75rem);
+		color: var(--cds-link-primary);
+		background-color: transparent;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+
+		&:hover {
+			background-color: var(--cds-field-hover-01);
+		}
+	}
+
+	.grid-form-heading .btn.grid-delete-row {
+		color: var(--cds-text-error);
+	}
+
+	// --- batch actions ------------------------------------------------------
+
+	// Carbon slides this bar over the toolbar with `clip-path` + `transform`
+	// (_data-table-action.scss:298-339); the component CSS is already included,
+	// so only the moved buttons need re-dressing.
+	.cds--batch-actions {
+		block-size: var(--cds-spacing-09, 3rem);
+	}
+
+	.cds--batch-summary__para {
+		margin: 0;
+	}
+
+	.cds--action-list {
+		.btn,
+		.cds--batch-summary__cancel {
+			block-size: var(--cds-spacing-09, 3rem);
+			min-block-size: 0;
+			margin: 0;
+			padding-inline: var(--cds-spacing-05, 1rem);
+			color: var(--cds-text-on-color);
+			background-color: transparent;
+			border: 0;
+			border-radius: 0;
+			font-size: var(--cds-body-compact-01-font-size, 0.875rem);
+			white-space: nowrap;
+
+			&:hover {
+				background-color: var(--cds-background-brand-hover, rgba(255, 255, 255, 0.12));
+			}
+		}
+
+		// `.hidden` is how frappe shows and hides these; it must keep winning
+		// over the flex display above.
+		.btn.hidden {
+			display: none !important;
+		}
+	}
+
+	// --- pagination ---------------------------------------------------------
+
+	// `.grid-pagination` is present from the moment `Grid.make()` runs but
+	// `GridPagination` only fills it past `grid_page_length` (50) — and it is
+	// never `:empty`, because frappe's template leaves whitespace in it. So the
+	// footer keys off actual CHILD ELEMENTS; `:not(:empty)` left a 48px white
+	// band under every short grid.
+	&__footer {
+		display: none;
+	}
+
+	&__footer:has(.grid-pagination > *) {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		border-block-start: 1px solid var(--carbon-border-subtle);
+	}
+
+	.grid-pagination {
+		display: flex;
+		align-items: center;
+		gap: var(--cds-spacing-03, 0.5rem);
+		block-size: var(--cds-spacing-09, 3rem);
+		padding-inline: var(--cds-spacing-05, 1rem);
+		background-color: var(--cds-layer-01);
+		color: var(--cds-text-secondary);
+
+		.btn {
+			color: var(--cds-link-primary);
+			background-color: transparent;
+			border: 0;
+		}
+	}
+}
+
+// The container must not scroll: `.cf-table__scroll` is the engine's scroller,
+// and frappe's `:has(.grid-row-open)` variant swaps in `overflow-x: clip`, which
+// would clip the table sideways the instant a panel opened.
+//
+// (0,4,0) on both selectors — frappe's `.form-grid-container:has(.grid-row.grid-row-open)`
+// is (0,3,0) (a `:has()` contributes its most specific argument), so a plain
+// `.form-grid-container:has(.cf-table)` at (0,2,0) would lose.
+.form-grid-container:has(.grid-row.grid-row-open):has(.cf-table),
+.form-grid-container:has(.cf-table.cf-table) {
+	overflow: visible;
+
+	.form-grid {
+		inset-inline-start: auto !important;
+	}
+}
+
+// The footer is empty now — everything in it moved into the toolbar or the
+// engine's own footer region. `.grid-bulk-actions` is left behind as an empty
+// shell, so `:empty` would not catch it.
+.grid-field:has(.cf-table) > .grid-footer {
+	display: none;
 }
 
 // ---------------------------------------------------------------------------

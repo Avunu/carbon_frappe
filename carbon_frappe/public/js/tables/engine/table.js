@@ -32,6 +32,12 @@ const DEFAULTS = {
 	showTotalRow: false,
 	stickyHeader: true,
 	selectable: false,
+	// Emit Carbon's expandable-row contract: `cds--parent-row` +
+	// `data-parent-row` on every body row, `cds--expandable-row` on the open
+	// one, and the parent/child hover coupling Carbon's CSS cannot do alone.
+	// Only meaningful together with `renderRowAddendum`, which supplies the
+	// child <tr>.
+	expandable: false,
 	sortable: true,
 	resizable: true,
 	reorderable: false,
@@ -57,6 +63,11 @@ const DEFAULTS = {
 	createFilterCell: null,
 	onRowAdopt: null,
 	onRowRelease: null,
+	// Called once, after mount, with the (empty) toolbar / footer regions the
+	// renderer scaffolds. Both are `display: none` while empty, so an adapter
+	// that ignores them pays nothing.
+	renderToolbar: null,
+	renderFooter: null,
 };
 
 export default class CarbonTable {
@@ -89,6 +100,12 @@ export default class CarbonTable {
 		}
 		container.classList.add(this.scopeClass);
 		this.container = container;
+
+		// Region hooks run after mount so an adapter can move its own nodes in
+		// (the Grid relocates frappe's button DOM rather than rebuilding it) and
+		// still hold live element references afterwards.
+		this.fillRegion("renderToolbar", this.renderer.toolbar);
+		this.fillRegion("renderFooter", this.renderer.footer);
 
 		// @tanstack/store's subscribe() returns `{ unsubscribe }`, NOT a bare
 		// teardown function. Both shapes are accepted here so a future store
@@ -289,6 +306,28 @@ export default class CarbonTable {
 	getColumnSize(columnId) {
 		const column = this.table.getColumn(columnId);
 		return column ? column.getSize() : null;
+	}
+
+	/** Invoke a region hook once; a failure must not take the table down. */
+	fillRegion(name, node) {
+		const fn = this.options[name];
+		if (typeof fn !== "function" || !node) return;
+		try {
+			fn(node, this);
+		} catch (e) {
+			console.error(`carbon_frappe: table region hook "${name}" failed`, e);
+		}
+	}
+
+	/**
+	 * Expand exactly one row, or none. TanStack's expanded state is a
+	 * `{rowId: true}` map; adapters get this accessor so they never reach into
+	 * `table.store.state` (v9 removed `getState()`), and so "one row at a time"
+	 * is expressed once rather than at every call site.
+	 */
+	setExpandedRow(rowId) {
+		this.table.setExpanded(rowId == null ? {} : { [rowId]: true });
+		return this;
 	}
 
 	toggleFilters(show) {

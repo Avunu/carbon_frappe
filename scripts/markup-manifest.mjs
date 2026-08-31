@@ -23,6 +23,31 @@ export const SELECTORS = [
 	["field-area", "frappe/public/js/frappe/form/grid_row.js"],
 	["sortable-handle", "frappe/public/js/frappe/form/grid_row.js"],
 	["column-limit-reached", "frappe/public/js/frappe/form/grid_row.js"],
+	// The child-table detail panel. The Carbon expandable row RE-HOMES frappe's
+	// `.form-in-grid` into a child <tr> and restyles its chrome; a rename here
+	// leaves the panel unstyled inside an otherwise correct expandable row.
+	["form-in-grid", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["grid-form-heading", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["grid-form-body", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["grid-header-toolbar", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["grid-footer-toolbar", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["grid-shortcuts", "frappe/public/js/frappe/form/grid_row_form.js"],
+	["btn-open-row", "frappe/public/js/frappe/form/grid_row.js"],
+	// Footer buttons the Carbon toolbar MOVES rather than rebuilds. A rename
+	// means the toolbar silently comes up missing that action while the button
+	// stays behind in the (hidden) footer.
+	["grid-footer", "frappe/public/js/frappe/form/grid.js"],
+	["grid-buttons", "frappe/public/js/frappe/form/grid.js"],
+	["grid-custom-buttons", "frappe/public/js/frappe/form/grid.js"],
+	["grid-add-row", "frappe/public/js/frappe/form/grid.js"],
+	["grid-add-multiple-rows", "frappe/public/js/frappe/form/grid.js"],
+	["grid-remove-rows", "frappe/public/js/frappe/form/grid.js"],
+	["grid-remove-all-rows", "frappe/public/js/frappe/form/grid.js"],
+	["grid-edit-rows", "frappe/public/js/frappe/form/grid.js"],
+	["grid-duplicate-rows", "frappe/public/js/frappe/form/grid.js"],
+	["grid-download", "frappe/public/js/frappe/form/grid.js"],
+	["grid-upload", "frappe/public/js/frappe/form/grid.js"],
+	["grid-pagination", "frappe/public/js/frappe/form/grid.js"],
 	["list-row-col", "frappe/public/js/frappe/list/list_view.js"],
 	["list-header-subject", "frappe/public/js/frappe/list/list_view.js"],
 	["list-row-checkbox", "frappe/public/js/frappe/list/list_view.js"],
@@ -112,6 +137,46 @@ export const PATCH_TARGETS = [
 		"GridRow.make_column builds the .grid-static-col cell we reuse verbatim",
 		"frappe/public/js/frappe/form/grid_row.js",
 		/make_column\(df, colsize, txt, ci\)/,
+	],
+	[
+		"GridRowForm appends .form-in-grid to the ROW (we re-home it to the child row)",
+		"frappe/public/js/frappe/form/grid_row_form.js",
+		/\$\('<div class="form-in-grid"><\/div>'\)\.appendTo\(this\.row\.wrapper\)/,
+	],
+	[
+		"GridRow.show_form hides the data row (Carbon keeps the parent row visible)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/show_form\(\)\s*\{[\s\S]{0,1200}?this\.row\.toggle\(false\)/,
+	],
+	[
+		"GridRow.show_form raises a modal backdrop (inline mode balances the count)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/frappe\.dom\.freeze\("", "dark grid-form"\)/,
+	],
+	[
+		"GridRow.hide_form unfreezes unconditionally (the counterweight depends on it)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/hide_form\(\)\s*\{[\s\S]{0,600}?frappe\.dom\.unfreeze\(\)/,
+	],
+	[
+		"frappe.dom.freeze is reference-counted (show/hide must balance, not skip)",
+		"frappe/public/js/frappe/dom.js",
+		/frappe\.dom\.freeze_count\+\+/,
+	],
+	[
+		"Grid.make binds data-action handlers onto the button ELEMENTS (so moving them is safe)",
+		"frappe/public/js/frappe/form/grid.js",
+		/frappe\.utils\.bind_actions_with_object\(this\.wrapper, this\)/,
+	],
+	[
+		"Grid.refresh_remove_rows_button (the hook the Carbon batch bar rides on)",
+		"frappe/public/js/frappe/form/grid.js",
+		/refresh_remove_rows_button\(\)\s*\{/,
+	],
+	[
+		"GridRow.show_search_row removes the filter row below the threshold (we override it)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/!this\.show_search && this\.wrapper\.remove\(\)/,
 	],
 	[
 		"query_report constructs from window.DataTable (reassignment reaches it)",

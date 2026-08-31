@@ -22,7 +22,9 @@
 import Grid from "frappe/public/js/frappe/form/grid";
 import CarbonTable from "../engine/table";
 import { gridProfile } from "./classes";
+import { ensureChildRow } from "./expand";
 import CarbonGridRow from "./grid_row";
+import GridToolbar, { mountFooter } from "./toolbar";
 
 /**
  * frappe's own Bootstrap-span -> pixel table (grid_row.js:970-983), reused so a
@@ -52,6 +54,31 @@ export default class CarbonGrid extends Grid {
 		// binding and every button handle set up by `super.make()` still works.
 		this.form_grid.empty();
 		this.carbon_table = new CarbonTable(this.form_grid.get(0), this.engine_options());
+		this.observe_panel_width();
+	}
+
+	/**
+	 * Publish the scroll viewport's width as `--cf-panel-width`.
+	 *
+	 * The expanded detail panel lives in a cell that spans every column, so it
+	 * is as wide as the TABLE — which on a wide child table is wider than the
+	 * screen. `_carbon-table.scss` sticks the panel's inner container to the
+	 * viewport edge and sizes it from this property, so the form stays put while
+	 * the columns scroll behind it. Same discipline as <colgroup>: measure in
+	 * JS, write one explicit px value, let CSS consume it.
+	 */
+	observe_panel_width() {
+		const scroll = this.carbon_table && this.carbon_table.renderer.scroll;
+		if (!scroll || typeof ResizeObserver === "undefined") return;
+		const write = () => {
+			this.carbon_table.container.style.setProperty(
+				"--cf-panel-width",
+				`${scroll.clientWidth}px`
+			);
+		};
+		this._panel_observer = new ResizeObserver(write);
+		this._panel_observer.observe(scroll);
+		write();
 	}
 
 	engine_options() {
@@ -63,18 +90,33 @@ export default class CarbonGrid extends Grid {
 			profile: gridProfile(),
 			sortable: false, // row order is the child table's `idx`, dragged not sorted
 			resizable: true,
-			inlineFilters: false,
+			// The filter row is always BUILT (CarbonGridRow#show_search_row);
+			// the toolbar's magnifier owns whether it is SHOWN.
+			inlineFilters: true,
+			// Emit Carbon's `cds--parent-row` / `data-parent-row` contract, and
+			// mirror child-row hover back onto the parent.
+			expandable: true,
+			renderToolbar: (node) => {
+				this.toolbar = new GridToolbar(this, node);
+			},
+			renderFooter: (node) => mountFooter(this, node),
 			// Rows carry live frappe controls, so the engine must never rebuild
 			// them; CarbonGridRow owns the <tr> and every cell inside it.
 			createRowNode: (row) => {
 				const grid_row = this.grid_rows_by_docname[row.original.name];
 				return grid_row && grid_row.wrapper ? grid_row.wrapper.get(0) : null;
 			},
-			// The expanded detail form rides in its own <tr> after the data row.
-			renderRowAddendum: (row) => {
+			// The detail panel rides in its own <tr> after the data row, and is
+			// present for EVERY row whether open or not. Carbon collapses it
+			// with CSS (`block-size: 0` + `max-block-size: 0`), which is both
+			// what its adjacent-sibling selectors require and what makes the
+			// open/close transition possible. Only the expensive part —
+			// frappe's GridRowForm and its Layout — stays lazy.
+			renderRowAddendum: (row, leaf) => {
 				const grid_row = this.grid_rows_by_docname[row.original.name];
-				if (!grid_row || !grid_row.form_row) return null;
-				return grid_row.form_row.style.display === "none" ? null : grid_row.form_row;
+				if (!grid_row) return null;
+				ensureChildRow(grid_row, leaf ? leaf.length : 0);
+				return grid_row.form_row;
 			},
 			// Grids are never virtualized: rows hold live frappe controls, an
 			// open detail form makes row heights non-uniform, and
@@ -183,15 +225,62 @@ export default class CarbonGrid extends Grid {
 		});
 		this.header_search.row && this.header_search.row.addClass("filter-row");
 
-		const show_search =
-			this.header_search.show_search || !!this.header_search.show_search_row();
+		// The filter row is always built; the toolbar's magnifier decides
+		// whether it is shown. An active filter forces it open so a user can
+		// always see — and clear — what is filtering the grid.
+		if (this.filter_applied) this.search_open = true;
+		const show_search = !!this.search_open;
 		if (this.carbon_table) {
-			this.carbon_table.options.inlineFilters = show_search;
+			this.carbon_table.options.inlineFilters = true;
 			this.carbon_table.filtersVisible = show_search;
 		}
 		$(this.parent).find(".grid-heading-row").toggleClass("with-filter", show_search);
 
+		// `make_head()` builds a NEW header row on every refresh, so the gear it
+		// owns has to be re-adopted into the toolbar each time.
+		this.toolbar && this.toolbar.sync();
+
 		this.filter_applied && this.update_search_columns();
+	}
+
+	/** Show/hide frappe's per-column filter row. Driven by the toolbar magnifier. */
+	toggle_search(show) {
+		this.search_open = show === undefined ? !this.search_open : !!show;
+		if (this.carbon_table) {
+			this.carbon_table.filtersVisible = this.search_open;
+			this.carbon_table.render();
+		}
+		$(this.parent).find(".grid-heading-row").toggleClass("with-filter", this.search_open);
+		return this.search_open;
+	}
+
+	/**
+	 * Carbon's batch-action bar is driven by the same debounced hook every
+	 * checkbox change already funnels through (grid.js:362), so there is no new
+	 * selection plumbing — only a second consumer of the existing signal.
+	 */
+	refresh_remove_rows_button() {
+		super.refresh_remove_rows_button();
+		this.toolbar && this.toolbar.refreshBatch();
+	}
+
+	/**
+	 * The batch bar's Cancel action: drop the whole selection.
+	 *
+	 * The tail mirrors what `setup_check`'s click handler does (grid.js:236-262)
+	 * — unchecking boxes with `.prop()` fires no click, so without it the
+	 * "Add row" button stays hidden (it is hidden while anything is selected)
+	 * and the Delete/Edit/Duplicate labels keep their stale counts.
+	 */
+	clear_selection() {
+		this.wrapper.find(".grid-row-check:checked").prop("checked", false);
+		for (const row of this.grid_rows || []) {
+			if (row && row.doc) row.doc.__checked = 0;
+		}
+		this.setup_toolbar();
+		this.refresh_remove_rows_button();
+		this.refresh_edit_rows_button();
+		this.refresh_duplicate_rows_button();
 	}
 
 	header_node_for(columnId) {
@@ -199,10 +288,10 @@ export default class CarbonGrid extends Grid {
 		if (!hr) return "";
 		if (columnId === "_check") return hr.row_check ? hr.row_check.get(0) : "";
 		if (columnId === "_index") return hr.row_index ? hr.row_index.get(0) : "";
-		if (columnId === "_open") {
-			// On the header the trailing cell is the Configure Columns gear.
-			return hr.configure_columns_button ? hr.configure_columns_button.get(0) : "";
-		}
+		// Both gutters are blank in the header: there is no expand-all (this
+		// grid opens one row at a time) and the Configure Columns gear has moved
+		// to the Carbon toolbar, where Carbon puts table-level settings.
+		if (columnId === "_expand" || columnId === "_menu") return "";
 		const $col = hr.columns && hr.columns[columnId];
 		return $col && $col.length ? $col.get(0) : "";
 	}
@@ -210,6 +299,7 @@ export default class CarbonGrid extends Grid {
 	search_node_for(columnId) {
 		const hs = this.header_search;
 		if (!hs) return null;
+		if (columnId === "_expand" || columnId === "_menu") return null;
 		if (columnId === "_check") return hs.row_check ? hs.row_check.get(0) : null;
 		if (columnId === "_index") return hs.row_index ? hs.row_index.get(0) : null;
 		const $col = hs.search_columns && hs.search_columns[columnId];
@@ -224,6 +314,20 @@ export default class CarbonGrid extends Grid {
 		};
 
 		const columns = [
+			{
+				// Carbon orders the gutters expand-then-checkbox
+				// (carbon-website data-table usage.mdx: "The expandable icon
+				// always appears first and to the left of the selection icon").
+				id: "_expand",
+				label: "",
+				size: 32,
+				pinned: "start",
+				sortable: false,
+				filterable: false,
+				resizable: false,
+				align: "center",
+				cell: (ctx) => node_of(ctx.row.original, (r) => r.expand_node()),
+			},
 			{
 				id: "_check",
 				label: "",
@@ -269,17 +373,15 @@ export default class CarbonGrid extends Grid {
 		}
 
 		columns.push({
-			id: "_open",
+			id: "_menu",
 			label: "",
-			size: 50,
+			size: 48,
 			pinned: "end",
 			sortable: false,
 			filterable: false,
 			resizable: false,
-			cell: (ctx) =>
-				node_of(ctx.row.original, (r) =>
-					r.open_form_cell && r.open_form_cell.length ? r.open_form_cell.get(0) : ""
-				),
+			align: "center",
+			cell: (ctx) => node_of(ctx.row.original, (r) => r.menu_node()),
 		});
 
 		return columns;

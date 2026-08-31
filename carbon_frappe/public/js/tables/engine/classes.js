@@ -36,11 +36,25 @@ export const CARBON = {
 	sortableTable: "cds--data-table--sort",
 	// `cds--data-table--sticky-header` is deliberately NOT used — see the note
 	// in table.js#render. Sticky is done with position:sticky on the <th>s.
+	// Expandable rows. `expandableRow` is overloaded by Carbon itself: on a
+	// parent row it means EXPANDED, on the child row it is permanent structure.
+	// `data-parent-row` / `data-child-row` are selectors too — see render.js.
 	expandableRow: "cds--expandable-row",
+	expandableRowHover: "cds--expandable-row--hover",
 	parentRow: "cds--parent-row",
 	childRow: "cds--child-row",
+	childRowInner: "cds--child-row-inner-container",
+	expandCell: "cds--table-expand",
 	expandRow: "cds--table-expand__button",
+	expandSvg: "cds--table-expand__svg",
+	columnMenu: "cds--table-column-menu",
+	overflowMenuDataTable: "cds--overflow-menu--data-table",
 	selectedRow: "cds--data-table--selected",
+	// Toolbar / batch actions.
+	actionList: "cds--action-list",
+	toolbarAction: "cds--toolbar-action",
+	searchExpandable: "cds--toolbar-search-container-expandable",
+	searchActive: "cds--toolbar-search-container-active",
 	pagination: "cds--pagination",
 	skeleton: "cds--skeleton",
 };

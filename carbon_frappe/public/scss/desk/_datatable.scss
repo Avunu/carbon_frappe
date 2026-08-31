@@ -44,11 +44,17 @@
 	font-weight: var(--font-weight-semibold);
 	color: var(--cds-text-primary);
 
-	.grid-row,
-	.grid-static-col,
-	.row-check,
-	.row-index {
-		background-color: var(--cds-layer-accent-01);
+	// Cell-level fills are for the DIV grid only. In the Carbon table the <th>
+	// itself carries $layer-accent and the cell interiors must stay transparent
+	// — painting them here hid the header band everywhere except the two
+	// gutters that have no frappe cell inside them.
+	&:not(.cf-table__head) {
+		.grid-row,
+		.grid-static-col,
+		.row-check,
+		.row-index {
+			background-color: var(--cds-layer-accent-01);
+		}
 	}
 }
 
@@ -61,25 +67,37 @@
 // Body: rows on $layer-01. frappe paints every cell surface --fg-color (white)
 // at .grid-body scope, so re-point them all — otherwise the rows stay white and
 // the row-hover (below) is occluded by the opaque cell backgrounds.
+//
+// PAINTING CELLS IS THE DIV GRID'S ANSWER, AND ONLY THE DIV GRID'S. In the
+// Carbon table the <tr> carries every state — hover, selection, expansion — and
+// an opaque cell interior sits on top of all of them. `.col:last-child` was the
+// worst of it: in frappe's layout that selects the single trailing cell, but the
+// engine nests each frappe cell alone inside `.cf-table__cell-content`, so it
+// matched EVERY cell in the table — at (0,3,0), which outranks the (0,2,0)
+// reset in desk/_carbon-table.scss. The visible result was a header band that
+// only showed in the two gutters that have no frappe cell inside them, and an
+// expanded row whose tint reached the chevron column and nothing else.
 .grid-body {
 	border-radius: 0;
 
-	.grid-static-col,
-	.data-row .row-check,
-	.data-row .row-index,
-	.col:last-child {
-		background-color: var(--cds-layer-01);
-		border-color: var(--carbon-border-subtle);
-	}
-
-	// row hover -> $layer-hover-01, applied to the cells so it is visible over
-	// their opaque $layer-01 background.
-	.grid-row:hover {
+	&:not(.cf-table__scroll) {
 		.grid-static-col,
 		.data-row .row-check,
 		.data-row .row-index,
 		.col:last-child {
-			background-color: var(--cds-layer-hover-01);
+			background-color: var(--cds-layer-01);
+			border-color: var(--carbon-border-subtle);
+		}
+
+		// row hover -> $layer-hover-01, applied to the cells so it is visible
+		// over their opaque $layer-01 background.
+		.grid-row:hover {
+			.grid-static-col,
+			.data-row .row-check,
+			.data-row .row-index,
+			.col:last-child {
+				background-color: var(--cds-layer-hover-01);
+			}
 		}
 	}
 }
