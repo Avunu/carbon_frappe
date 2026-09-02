@@ -4,3 +4,19 @@ __pycache__/
 .DS_Store
 .dev-dist/
 dist
+
+# ── frappe-nix ────────────────────────────────────────────────────────────
+# The materialized dev bench: frappe copied out of the store, sites/, logs/,
+# config/pids, the env symlink. Runtime state, never source — deleting it costs
+# a re-copy of the apps, not the database (which lives in .devenv/state).
+/.frappe-nix/
+
+# nix / direnv / devenv
+/.devenv/
+/.direnv/
+/result
+
+# devenv reads .env at eval time from this directory.
+.env
+.env.*
+!.env.example
