@@ -10,7 +10,7 @@ app_license = "MIT"
 
 # Theme CSS is delivered by shadowing frappe's own bundle names in assets.json
 # (desk/website/login/email .bundle.css), not via *_include_css hooks.
-# See build.py and scripts/patch-assets.mjs.
+# See build.py and scripts/patch-assets.ts.
 
 # carbon_charts: injects Carbon categorical colors into frappe.Chart and
 #   re-themes those charts on theme change.

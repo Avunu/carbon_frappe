@@ -40,7 +40,7 @@ Frappe resolves every stylesheet through `sites/assets/assets.json`, keyed by ba
 Three mechanisms keep the shadow deterministic:
 
 1.  **Name collision** — this app builds after frappe, so its entries win the assets.json merge.
-2.  **`scripts/patch-assets.mjs`** — runs as the app's `build` script after every full `bench build`; re-points the shadowed keys (and `rtl_` variants) at this app's compiled assets and clears the redis `assets_json` cache.
+2.  **`scripts/patch-assets.ts`** — runs as the app's `build` script after every full `bench build`; re-points the shadowed keys (and `rtl_` variants) at this app's compiled assets and clears the redis `assets_json` cache.
 3.  **`after_migrate` hook** (`carbon_frappe.build.patch_assets`) — re-asserts the shadow after migrations, healing partial `bench build --apps frappe` runs.
 
 Inside each bundle, the styling itself is a three-layer transposition:
@@ -60,7 +60,7 @@ Small JS bundles cover what stylesheets cannot reach. Every theme patch delegate
 -   **`carbon_desk.bundle.js`** — tags formatter output with `carbon-num` so numerics and dates get IBM Plex Mono.
 -   **`carbon_anatomy.bundle.js`** — the Carbon UI Shell header (mounted into the empty `<header>` frappe leaves in `www/desk.html`) and the page header (eyebrow + `heading-04` title, which has no host element in frappe).
 -   **`carbon_tables.bundle.js`** — not a theme patch but a functional replacement: one Carbon-styled, TanStack-driven table engine behind frappe's child-table Grid, List view and Report/Query views. See _Tables_ below.
--   **`scripts/audit-markup.mjs`** — guards every selector, runtime shape and asset-shadow assumption the above depends on. See _Caveats_.
+-   **`scripts/audit-markup.ts`** — guards every selector, runtime shape and asset-shadow assumption the above depends on. See _Caveats_.
 
 ## Tables
 
@@ -87,7 +87,7 @@ Compatibility is the point. Nothing here alters a public frappe API:
 **Known limits**
 
 -   `frappe/data_import/import_preview.js` and `system_console.js` hold module-local `frappe-datatable` imports that a global reassignment cannot reach. They keep using the stock library, which remains installed and themed.
--   The child-table panel keeps `frappe.dom.freeze_count` balanced by hand: `GridRow.show_form()` freezes and `hide_form()` unfreezes unconditionally, so inline mode counterweights both rather than skipping them. If frappe ever makes that pairing conditional, the guard in `scripts/markup-manifest.mjs` will catch it.
+-   The child-table panel keeps `frappe.dom.freeze_count` balanced by hand: `GridRow.show_form()` freezes and `hide_form()` unfreezes unconditionally, so inline mode counterweights both rather than skipping them. If frappe ever makes that pairing conditional, the guard in `scripts/markup-manifest.ts` will catch it.
 -   Column pinning is declared but inert on child tables. The engine builds its `columnPinning` state once, in the constructor, from the `columns` it was handed — and the Grid constructs the engine with an empty column list, filling it later through `setColumns()`, which does not revisit pinning. So `df.sticky` and the `_expand` / `_check` / `_index` gutters do not actually freeze on a horizontally scrolled child table. The List and Report adapters pass their columns up front and are unaffected. The expanded panel does not rely on this — it sticks on its own.
 -   List-view rows are not virtualized: the list scrolls the page rather than an inner box, which is what frappe's paging buttons and `.disable-scrolling` assume. `page_length` (20/100/500/2500) remains the bound on row count.
 
@@ -111,15 +111,16 @@ bench build
 
 -   **Bench-global**: assets.json is shared by every site on the bench, so the theme applies to sites that don't have the app installed. Run carbon\_frappe on a dedicated bench.
 -   **Partial builds**: `bench build --apps frappe` re-points the shadowed keys at frappe's assets until the next full `bench build` or `bench migrate`. Prefer plain `bench build`.
--   **`bench watch`**: rebuilds of frappe's own bundles re-claim the keys mid-session. This is the most common way to lose the theme, and it has **no symptom other than stock frappe styling reappearing** — nothing errors. `npm run audit` now checks for it explicitly; the fix is `node scripts/patch-assets.mjs`.
+-   **`bench watch`**: rebuilds of frappe's own bundles re-claim the keys mid-session. This is the most common way to lose the theme, and it has **no symptom other than stock frappe styling reappearing** — nothing errors. `npm run audit` now checks for it explicitly; the fix is `node scripts/patch-assets.ts`.
+-   **TypeScript bundle entries**: the four `carbon_*.bundle.ts` entry points are compiled by frappe's own esbuild, but frappe keys `assets.json` by the *entry* basename (`esbuild.js:450`), so a build writes `carbon_desk.bundle.**ts**` while `hooks.py` and `include_script` look up `carbon_desk.bundle.**js**` with no extension fallback. The `.js` key then keeps an older build's hash and the desk serves a swept or stale bundle — silently. `scripts/patch-assets.ts` repairs it on every `bench build`, `carbon_frappe/build.py` repairs it on migrate/install, and `npm run audit` detects it; but **`bench watch` runs none of those**, so re-run `node scripts/patch-assets.ts` after a watch session.
 -   The shadowing relies on frappe's (undocumented) basename keying and merge semantics of `assets.json`. The orthodox fallback — `app_include_css`/`web_include_css` hooks — remains structurally compatible with this app's bundles if the shadow mechanism ever breaks.
 
 ### Drift guards
 
 Both run warn-only on every `bench build` and strict via `npm run audit`.
 
--   **`scripts/audit-tokens.mjs`** — Carbon token renames, removed frappe variables, changes to frappe's bundle entry imports, the g10 premise, and the frappe runtime shapes the theme patches.
--   **`scripts/audit-markup.mjs`** — every frappe class the stylesheet targets, every runtime shape `js/anatomy/*` wraps, the frappe declarations we deliberately override, and the asset shadow itself. Declared in `scripts/markup-manifest.mjs` so the guard and the code cannot drift apart.
+-   **`scripts/audit-tokens.ts`** — Carbon token renames, removed frappe variables, changes to frappe's bundle entry imports, the g10 premise, and the frappe runtime shapes the theme patches.
+-   **`scripts/audit-markup.ts`** — every frappe class the stylesheet targets, every runtime shape `js/anatomy/*` wraps, the frappe declarations we deliberately override, and the asset shadow itself. Declared in `scripts/markup-manifest.ts` so the guard and the code cannot drift apart.
 
 These exist because all of these failures are silent: the theme keeps loading and a component quietly reverts to stock frappe styling.
 
@@ -145,10 +146,10 @@ yarn run compile      # compile all bundles against a sibling ../frappe checkout
 yarn run codegen      # refresh vendored IBM Plex fonts + @carbon/charts palettes
 yarn run audit        # strict drift audit (CI)
 yarn run test:tables  # browser tests for the table engine and its adapters
-node scripts/dev-table.mjs --serve   # the engine alone, on :8123, with no bench
+node scripts/dev-table.ts --serve   # the engine alone, on :8123, with no bench
 ```
 
-`scripts/test-tables.mjs` drives headless Chromium over the DevTools Protocol (no
+`scripts/test-tables.ts` drives headless Chromium over the DevTools Protocol (no
 dependencies beyond Node 22+ and `chromium` on PATH) against a running bench. It
 covers the engine in isolation, then each adapter's frappe contract: the `dt-*`
 selectors, `style.setStyle`, `rowmanager.getCheckedRows`, a report script's
@@ -158,11 +159,11 @@ actions, and g100 parity. Most of those assertions exist because that exact thin
 regressed once — several are specificity guards against frappe-datatable's,
 Bootstrap's or Carbon's own stylesheet quietly winning.
 
-`scripts/dev-table.mjs` builds the engine and a fixture page into `.dev-dist/`
+`scripts/dev-table.ts` builds the engine and a fixture page into `.dev-dist/`
 with no frappe present at all, which is where engine behaviour is verified before
 any adapter is involved.
 
-`scripts/dev-compile.mjs` replicates frappe's exact sass pipeline (legacy API, `includePaths` = app roots + node\_modules, `~` importer), so bundles can be smoke-tested without a bench. Set `FRAPPE_PATH` if frappe isn't at `../frappe`.
+`scripts/dev-compile.ts` replicates frappe's exact sass pipeline (legacy API, `includePaths` = app roots + node\_modules, `~` importer), so bundles can be smoke-tested without a bench. Set `FRAPPE_PATH` if frappe isn't at `../frappe`.
 
 ### Upgrading Carbon
 

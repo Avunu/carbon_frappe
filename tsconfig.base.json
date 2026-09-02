@@ -1,0 +1,39 @@
+{
+  // Shared rules for both halves of the app. Split because the browser bundles and
+  // the Node build scripts need different `lib`/`types`, and a single config that
+  // unions them would let a DOM API leak into a build script (or `node:fs` into a
+  // bundle) without complaint.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+
+    // Nothing here compiles TypeScript: frappe's esbuild builds the browser
+    // bundles (it globs `*.bundle.{js,ts,...}` — see frappe/esbuild/esbuild.js)
+    // and Node 24+ strips types from the scripts at load. tsc only ever checks.
+    "noEmit": true,
+
+    // Both of those consumers erase types WITHOUT type information, one file at a
+    // time. These three options make tsc reject the syntax that erasure cannot
+    // handle — `enum`, `namespace`, parameter properties, and value/type import
+    // ambiguity — so a build failure can never be discovered at runtime instead.
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // The point of frappe-types is that the desk API is checked. Silencing its
+    // declarations here would defeat the exercise.
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true
+  }
+}

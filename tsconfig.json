@@ -1,0 +1,14 @@
+{
+  // Solution file. It compiles nothing itself — it exists so that editors and
+  // `tsc --build` can find the right project for any file in the repo.
+  //
+  // Without it, `scripts/tables/cdp.ts` resolves to no project at all (an editor
+  // only auto-discovers `tsconfig.json`, and the browser project excludes
+  // `scripts/`), and silently falls back to an inferred ES5, no-types project —
+  // which reports a flood of fake errors and, worse, hides real ones.
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.browser.json" },
+    { "path": "./tsconfig.scripts.json" }
+  ]
+}

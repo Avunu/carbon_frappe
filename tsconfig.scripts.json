@@ -1,0 +1,24 @@
+{
+  // Node half: build, codegen and the Chrome-DevTools table harness.
+  //
+  // No `frappe-types/global` — a build script has no desk. DOM is in `lib` only
+  // because the harness passes function bodies to CDP `Runtime.evaluate`, where
+  // they execute in the page; those bodies are typed against DOM here even though
+  // this process never touches a document itself.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Required of a referenced project (see tsconfig.json). Emit stays off;
+    // only the .tsbuildinfo cache is written.
+    "composite": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+
+    // Node runs these files directly, stripping types as it loads them, so an
+    // import specifier has to name the file that is actually on disk: `./cdp.ts`.
+    // Safe only because nothing here is emitted — tsc would otherwise rewrite
+    // these paths into something that does not exist.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["scripts/**/*.ts"],
+  "exclude": ["node_modules"]
+}

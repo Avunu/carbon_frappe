@@ -1,5 +1,5 @@
 // carbon_frappe website bundle — SHADOWS frappe's website.bundle.css via
-// assets.json (see scripts/patch-assets.mjs). Recompiles frappe's website
+// assets.json (see scripts/patch-assets.ts). Recompiles frappe's website
 // styles with Carbon injections, then layers tokens + web overrides.
 // NOTE: Website Theme's get_scss_paths() also auto-imports this file into
 // custom compiled themes; ours cascades last there too.

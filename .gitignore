@@ -20,3 +20,6 @@ dist
 .env
 .env.*
 !.env.example
+
+# tsc --build cache (project references); never source
+*.tsbuildinfo
