@@ -201,15 +201,30 @@ export interface TableCellClassContext<THost> extends TableRegionClassContext<TH
 }
 
 /**
- * A filter- or total-row cell's context (`filterCell`, `totalCell`).
+ * A filter-row cell's context (`filterCell`).
  *
- * Neither carries `content`: the filter cell's contents are the adapter's own
- * (or the engine's `<input>`), and the total cell's are written by
- * `renderTotalContent` after the hook has run.
+ * No `content`: a filter cell's contents are the adapter's own, or the engine's
+ * `<input>`, so there is no single inner node to hand over.
  */
 export interface TableColumnCellClassContext<THost> extends TableRegionClassContext<THost> {
 	column: TableClassColumn;
 	colIndex: number;
+}
+
+/**
+ * A total-row cell's context (`totalCell`).
+ *
+ * Carries `content` for the same reason `cell` and `headerCell` do: stock
+ * frappe-datatable puts `dt-cell__content` on the inner div of EVERY cell it
+ * emits, total-row cells included (`cellmanager.js:919-920`), and an adapter
+ * cannot re-emit that contract without the node.
+ *
+ * `renderTotalContent` has already run by the time the hook fires
+ * (render.ts#renderFoot), so the node is present and populated.
+ */
+export interface TableTotalCellClassContext<THost> extends TableColumnCellClassContext<THost> {
+	/** The inner `div.cf-table__cell-content`, NOT the `<td>` handed in as `node`. */
+	content: HTMLElement;
 }
 
 /**
@@ -251,7 +266,7 @@ export interface TableClassHookContexts<THost> {
 	row: TableRowClassContext<THost>;
 	cell: TableCellClassContext<THost>;
 	totalRow: TableRegionClassContext<THost>;
-	totalCell: TableColumnCellClassContext<THost>;
+	totalCell: TableTotalCellClassContext<THost>;
 	empty: TableRegionClassContext<THost>;
 }
 

@@ -865,7 +865,12 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 			toggleClass(entry.td, "cf-table__cell--right", align === "right");
 			this.host.renderTotalContent(entry, column, i);
 			this.applyPinning(entry.td, column);
-			applyProfile(p, "totalCell", entry.td, { host: this.host, column, colIndex: i });
+			applyProfile(p, "totalCell", entry.td, {
+				host: this.host,
+				column,
+				colIndex: i,
+				content: entry.content,
+			});
 			desired.push(entry.td);
 		}
 		this.prune(this.footCells, desired, (e) => e.td);

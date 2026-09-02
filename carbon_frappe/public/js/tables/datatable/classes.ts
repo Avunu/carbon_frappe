@@ -167,22 +167,26 @@ export function datatableProfile(scopeClass: string): TableClassProfile {
 			add(node, "dt-row", "dt-row-totalRow");
 			setData(node, "data-is-total-row", "1");
 		},
-		totalCell(node, { colIndex }) {
+		totalCell(node, { colIndex, content }) {
 			add(node, "dt-cell", `dt-cell--col-${colIndex}`);
 			setData(node, "data-col-index", colIndex);
-			// NO `add(content, "dt-cell__content")` here, and that is the state
-			// this file was already in — see the migration note. The JS
-			// destructured `content` out of this context, but engine/render.js
-			// does NOT put it there (`{ host, column, colIndex }`, render.js:524
-			// — the total row's `content` div is built at :512 and never
-			// passed). `add` then dereferenced `undefined.classList` and threw
-			// on every render; `applyProfile` swallowed it into a console.error
-			// (engine/classes.ts), so the two lines above had already run and
-			// the class was never applied. Adding it now would be a behaviour
-			// change, so the dead call is dropped rather than repaired: the DOM
-			// is byte-for-byte what it was, minus the console noise. Fixing it
-			// properly means passing `content: entry.content` at render.js:524
-			// AND restoring this line, together.
+			setData(node, "data-is-total-row", "1");
+			// Stock puts `dt-cell__content` on the inner div of EVERY cell, and
+			// the non-header variant of the modifier on anything that is not a
+			// header — total-row cells included (cellmanager.js:919-920). This
+			// is not decoration: `columnmanager.setColumnWidth` sizes a column
+			// by injecting a rule for `.dt-cell__content--col-N`
+			// (columnmanager.js:435-450), so a total cell without the class is
+			// invisible to every width caller in the ecosystem.
+			//
+			// This line was dead for the life of the engine: the hook used to
+			// destructure a `content` the renderer never passed, so `add`
+			// dereferenced `undefined.classList` and threw on every total-row
+			// render. `applyProfile` swallowed it into a console.error, which is
+			// why it went unnoticed — the two `add`/`setData` calls above had
+			// already run, so the row looked right apart from the missing
+			// classes. render.ts#renderFoot now passes `content`.
+			add(content, "dt-cell__content", `dt-cell__content--col-${colIndex}`);
 		},
 	};
 }

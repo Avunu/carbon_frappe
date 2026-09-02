@@ -37,7 +37,7 @@ import type {
 	DataTableCellValue,
 	DataTableColIndex,
 	DataTableColumn,
-	DataTableColumnTotalCell,
+	DataTableTotalCell,
 	DataTableCurrentSort,
 	DataTableData,
 	DataTableDataRow,
@@ -210,7 +210,7 @@ export interface CarbonDataTableHost {
 		parentRowIndex: DataTableRowIndex,
 		immediateOnly?: boolean
 	): DataTableRow[];
-	getTotalRow(): DataTableColumnTotalCell[];
+	getTotalRow(): DataTableTotalCell[];
 
 	/**
 	 * These four return the host itself at runtime (they end in
@@ -801,10 +801,10 @@ export class BodyRendererShim {
 	 * `query_report.js` reads the computed totals row back out.
 	 *
 	 * The cells the host builds carry `content`, `colIndex` and `column` but no
-	 * `isTotalRow: 1`, so they are `DataTableColumnTotalCell`s rather than
-	 * `DataTableTotalCell`s — see the migration notes.
+	 * `isTotalRow: 1`, matching stock (`body-renderer.js:95-131`), so these are
+	 * full `DataTableTotalCell`s.
 	 */
-	getTotalRow(): DataTableColumnTotalCell[] {
+	getTotalRow(): DataTableTotalCell[] {
 		return this.host.getTotalRow();
 	}
 	render(): void {

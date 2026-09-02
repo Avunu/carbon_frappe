@@ -50,7 +50,7 @@ import type {
 	DataTableColIndex,
 	DataTableColumn,
 	DataTableColumnInput,
-	DataTableColumnTotalCell,
+	DataTableTotalCell,
 	DataTableComponentOverrides,
 	DataTableData,
 	DataTableDataRow,
@@ -768,15 +768,19 @@ export default class CarbonDataTable {
 			const cell = r.original[dtColIndex];
 			return cell ? cell.content : null;
 		});
-		// NOT a full `DataTableTotalCell`: stock builds `{ content, isTotalRow: 1,
-		// colIndex, column }` (body-renderer.js:97-108) and this builds only the
-		// two members `frappe.utils.report_column_total` reads
-		// (`column.column.disable_total` / `.fieldtype`, utils.js:970-975). That
-		// divergence is why frappe-types names the hook's parameter
-		// `DataTableColumnTotalCell` — the shape BOTH implementations pass —
-		// rather than `DataTableTotalCell`. Adding the missing members here would
-		// change what every third-party hook sees, so it is recorded, not fixed.
-		const cell: DataTableColumnTotalCell = { column: col, colIndex: dtColIndex };
+		// The full stock cell (`body-renderer.js:97-108`), member for member, so
+		// a third-party `columnTotal` hook cannot tell the two implementations
+		// apart. `content` is `null` at hook time on stock too: it is seeded
+		// `null` at :98 and only replaced by the hook's own return value
+		// afterwards (:115-129). `frappe.utils.report_column_total` happens to
+		// read only `column` (utils.js:970-975), but a hook is entitled to the
+		// whole shape, and passing less was a real divergence.
+		const cell: DataTableTotalCell = {
+			content: null,
+			isTotalRow: 1,
+			colIndex: dtColIndex,
+			column: col,
+		};
 		let total: string | number | null | undefined = null;
 		const hook = this.options.hooks && this.options.hooks.columnTotal;
 		if (typeof hook === "function") total = hook.call(this, values, cell);
@@ -801,20 +805,21 @@ export default class CarbonDataTable {
 	/**
 	 * The computed totals row, as `query_report.js` reads it back.
 	 *
-	 * The cells carry `content`, `colIndex` and `column` but NOT the
-	 * `isTotalRow: 1` stock's `body-renderer.js:104` sets, so they are
-	 * `DataTableColumnTotalCell`s and not the stronger `DataTableTotalCell`
-	 * stock hands back — see the note in {@link renderTotalCell}, and
-	 * `BodyRendererShim.getTotalRow` in ./managers.ts, which declares the same.
+	 * Member for member what stock returns (`body-renderer.js:95-131`):
+	 * `content` holding the rendered total, plus `isTotalRow: 1`, `colIndex` and
+	 * `column`. The marker matters beyond assignability — it is what
+	 * `getCellHTML` keys the `data-is-total-row` attribute off
+	 * (`cellmanager.js:809-823`), so a consumer round-tripping these cells back
+	 * through stock rendering gets the right markup.
 	 */
-	getTotalRow(): DataTableColumnTotalCell[] {
+	getTotalRow(): DataTableTotalCell[] {
 		return this.columns.map((column, i) => {
 			const entry: TotalCellTarget = {
 				content: document.createElement("div"),
 				rendered: undefined,
 			};
 			this.renderTotalCell(entry, { id: this.engineColumnId(i) }, i, this.engine);
-			return { content: entry.content.innerHTML, colIndex: i, column };
+			return { content: entry.content.innerHTML, isTotalRow: 1, colIndex: i, column };
 		});
 	}
 
