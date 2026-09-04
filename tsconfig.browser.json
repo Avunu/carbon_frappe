@@ -1,0 +1,24 @@
+{
+  // Browser half: the four esbuild bundle entries and everything they pull in.
+  //
+  // `frappe-types/global` installs the ambient desk API (`frappe`, `__`, `locals`,
+  // `cur_frm`) exactly as it exists at runtime — these files are loaded as plain
+  // scripts on a desk page, not as modules that could import it.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Required of a referenced project (see tsconfig.json). Emit stays off;
+    // only the .tsbuildinfo cache is written.
+    "composite": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["frappe-types/global"]
+  },
+  "include": [
+    "carbon_frappe/public/js/**/*.ts",
+    "carbon_frappe/public/js/**/*.d.ts",
+    "dev/**/*.ts"
+  ],
+  // `carbon_frappe/public/js/generated` is deliberately NOT excluded: its one
+  // file is emitted as a checked `.ts` module (see scripts/generate-chart-palettes.ts)
+  // precisely so carbon_charts.bundle.ts's import of it resolves.
+  "exclude": ["node_modules", "carbon_frappe/public/dist"]
+}

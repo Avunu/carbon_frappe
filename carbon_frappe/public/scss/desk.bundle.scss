@@ -1,8 +1,8 @@
 // carbon_frappe desk bundle — SHADOWS frappe's desk.bundle.css via assets.json
-// (see scripts/patch-assets.mjs). Recompiles frappe's own desk styles with
+// (see scripts/patch-assets.ts). Recompiles frappe's own desk styles with
 // Carbon values injected at compile time, then layers Carbon tokens and
 // component overrides on top. Mirror of frappe/public/scss/desk.bundle.scss —
-// scripts/audit-tokens.mjs flags drift in frappe's import list.
+// scripts/audit-tokens.ts flags drift in frappe's import list.
 
 // -- Compile-time injections (all !default-guarded in frappe/Bootstrap) ------
 $btn-border-radius: 0;

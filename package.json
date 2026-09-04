@@ -29,14 +29,18 @@
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
-    "sass": "1.103.1"
+    "@types/node": "^26.4.1",
+    "frappe-types": "^16.0.1",
+    "sass": "1.104.0",
+    "typescript": "^7.0.2"
   },
   "scripts": {
-    "build": "node scripts/patch-assets.mjs --warn-only && node scripts/audit-tokens.mjs --warn-only && node scripts/audit-markup.mjs --warn-only",
-    "codegen": "node scripts/sync-fonts.mjs && node scripts/generate-chart-palettes.mjs",
-    "audit": "node scripts/audit-tokens.mjs --strict && node scripts/audit-markup.mjs --strict",
-    "compile": "node scripts/dev-compile.mjs",
+    "build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only",
+    "codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts",
+    "audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
+    "compile": "node scripts/dev-compile.ts",
+    "typecheck": "tsc --build",
     "upgrade": "npx npm-check-updates -u && yarn install && yarn build",
-    "test:tables": "node scripts/test-tables.mjs"
+    "test:tables": "node scripts/test-tables.ts"
   }
 }
