@@ -491,7 +491,7 @@
   resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.16.tgz#8ebe53d69efada7044454e3305c19017d97ced2a"
   integrity sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==
 
-"@types/jquery@^3.5.34":
+"@types/jquery@^3.5":
   version "3.5.34"
   resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-3.5.34.tgz#c1993eaac0db03cf9db974976dd8f07bbf7c5708"
   integrity sha512-3m3939S3erqmTLJANS/uy0B6V7BorKx7RorcGZVjZ62dF5PAGbKEDZK1CuLtKombJkFA2T1jl8LAIIs7IV6gBQ==
@@ -1009,12 +1009,12 @@ dompurify@^3.4.12:
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
-frappe-types@^16.0.1:
-  version "16.0.1"
-  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.0.1.tgz#7bd3c987f324263cac78328a7e8453663ecff4a1"
-  integrity sha512-t+eFxwJcrwOOxLAD/+TUEHpGRz4QSzVgsTdbqf1btNViVjxXBQOOKLnvNg2VtucqvQDdR4qUq2YdZnotwQl84g==
+frappe-types@^16.1.1:
+  version "16.1.1"
+  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.1.1.tgz#f4454ef11cf1c2f2f0eee4f6efd724534be2b14b"
+  integrity sha512-FsAj0Yg6Y03cjPFjP80/LOFLETPHHT5GYkyPHOJ2BIKlj7vIdK9bSjZFZySYH3l6FI1yx+X61KCP4c+mTztgGw==
   dependencies:
-    "@types/jquery" "^3.5.34"
+    "@types/jquery" "^3.5"
 
 html-to-image@1.11.11:
   version "1.11.11"
