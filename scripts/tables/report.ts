@@ -45,6 +45,22 @@ interface CheckedProbe {
 	items: number;
 }
 
+/**
+ * The checkbox INPUTS after a select-all, against the rows that are drawn.
+ *
+ * `checked` (the map) was asserted long before `ticked` (the DOM) was, and that
+ * gap is exactly where "select-all highlights every row but ticks none" lived:
+ * every internal count was right while the boxes the user looks at were empty.
+ */
+interface CheckAllProbe {
+	rendered: number;
+	ticked: number;
+	highlighted: number;
+	headChecked: boolean;
+	headIndeterminate: boolean;
+	mapChecked: number;
+}
+
 /** The `datamanager` members reports reach for. */
 interface DataManagerProbe {
 	dataIsOriginal: boolean;
@@ -308,6 +324,72 @@ try {
   })()`);
   ok("rowmanager.getCheckedRows()", JSON.stringify(checked.checked) === "[0,1]", JSON.stringify(checked));
   ok("ReportView.get_checked_items() sees them", checked.items === 2, `n=${checked.items}`);
+
+  // select-all, through the header box the user actually clicks
+  const checkAll = await page.eval<CheckAllProbe>(`(() => {
+    const dt = cur_list.datatable;
+    dt.rowmanager.checkAll(false);
+    document.querySelector('.dt-row-header .dt-checkbox').click();
+    const probe = () => {
+      const boxes = [...document.querySelectorAll('tbody .dt-checkbox')];
+      const head = document.querySelector('.dt-row-header .dt-checkbox');
+      return {
+        rendered: boxes.length,
+        ticked: boxes.filter(b => b.checked).length,
+        highlighted: document.querySelectorAll('tbody tr.cds--data-table--selected').length,
+        headChecked: head.checked,
+        headIndeterminate: head.indeterminate,
+        mapChecked: dt.rowmanager.getCheckedRows().length,
+      };
+    };
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(probe()))));
+  })()`);
+  ok(
+    "select-all ticks every row's checkbox, not just the highlight",
+    checkAll.rendered > 0 && checkAll.ticked === checkAll.rendered,
+    JSON.stringify(checkAll)
+  );
+  ok(
+    "select-all highlights the same rows it ticks",
+    checkAll.highlighted === checkAll.rendered,
+    JSON.stringify(checkAll)
+  );
+  ok(
+    "select-all leaves the header box checked, not indeterminate",
+    checkAll.headChecked && !checkAll.headIndeterminate,
+    JSON.stringify(checkAll)
+  );
+
+  // ...and one row on its own leaves the header showing "some"
+  const partial = await page.eval<CheckAllProbe>(`(() => {
+    const dt = cur_list.datatable;
+    dt.rowmanager.checkAll(false);
+    dt.rowmanager.checkRow(1, true);
+    const probe = () => {
+      const boxes = [...document.querySelectorAll('tbody .dt-checkbox')];
+      const head = document.querySelector('.dt-row-header .dt-checkbox');
+      return {
+        rendered: boxes.length,
+        ticked: boxes.filter(b => b.checked).length,
+        highlighted: document.querySelectorAll('tbody tr.cds--data-table--selected').length,
+        headChecked: head.checked,
+        headIndeterminate: head.indeterminate,
+        mapChecked: dt.rowmanager.getCheckedRows().length,
+      };
+    };
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(probe()))));
+  })()`);
+  ok(
+    "rowmanager.checkRow ticks the box it checks",
+    partial.ticked === 1 && partial.mapChecked === 1,
+    JSON.stringify(partial)
+  );
+  ok(
+    "one checked row leaves the header box indeterminate",
+    partial.headIndeterminate && !partial.headChecked,
+    JSON.stringify(partial)
+  );
+  await page.eval(`(() => cur_list.datatable.rowmanager.checkAll(false))()`);
 
   // datamanager surface used by reports
   const dm = await page.eval<DataManagerProbe>(`(() => {

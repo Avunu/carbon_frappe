@@ -146,6 +146,25 @@ function isChecked(node: Element): boolean {
 	return "checked" in node && node.checked === true;
 }
 
+/** The two DOM properties a checkbox's visual state lives in. */
+interface CheckboxInput {
+	checked: boolean;
+	indeterminate: boolean;
+}
+
+/**
+ * The WRITE side of {@link isChecked}.
+ *
+ * Duck-typed for the reason {@link isElement} is: a checkbox belonging to a
+ * document in another realm is a perfectly good checkbox that
+ * `instanceof HTMLInputElement` answers `false` for. Both properties are tested
+ * because {@link CarbonDataTable.syncCheckboxes} assigns both — `indeterminate`
+ * is the header box's third state, and it exists only on an input.
+ */
+function isCheckboxInput(node: Element): node is Element & CheckboxInput {
+	return "checked" in node && "indeterminate" in node;
+}
+
 /**
  * `options` after the defaults merge — the only form this class ever holds.
  *
@@ -633,6 +652,11 @@ export default class CarbonDataTable {
 			renderTotal: (entry, column, colIndex, host) =>
 				this.renderTotalCell(entry, column, colIndex, host),
 			events: {
+				// Every render: the renderer recycles row nodes as the window
+				// scrolls, and a recycled node comes back with the markup
+				// `getCheckboxHTML` returns — an UNCHECKED box — however the
+				// map reads. See {@link CarbonDataTable.syncCheckboxes}.
+				onRender: () => this.syncCheckboxes(),
 				onSortColumn: (column) => {
 					const col = this.columns[this.colIndexOfEngineColumn(engineColumnRef(column))];
 					this.fireEvent("onSortColumn", col);
@@ -873,10 +897,66 @@ export default class CarbonDataTable {
 			if (v) selection[this.rowIdFor(i)] = true;
 		});
 		this.engine.table.setRowSelection(selection);
+		// Directly, as well as from `onRender`: the engine coalesces renders
+		// into a rAF, and this is the path that already KNOWS the map moved, so
+		// the boxes tick in the same frame as the click that ticked them.
+		this.syncCheckboxes();
 		if (this.options.checkedRowStatus) {
 			const n = this.rowmanager.getCheckedRows().length;
 			if (n) this.showToastMessage(`${n} ${n === 1 ? __("row selected") : __("rows selected")}`);
 			else this.clearToastMessage();
+		}
+	}
+
+	/**
+	 * Reflect `rowmanager.checkMap` onto the checkbox INPUTS, row and header.
+	 *
+	 * Nothing else does. A checkbox cell's content is the fixed markup
+	 * {@link CarbonDataTable.getCheckboxHTML} returns, and the engine rewrites a
+	 * cell only when its rendered content CHANGES (../engine/table.ts's
+	 * `applyContent`) — so that string, identical on every render, is never
+	 * written twice and no render has ever moved a `checked`. The only thing
+	 * that used to move one was the user's own click on it, which is why
+	 * `checkAll` highlighted every row while leaving every row's box unticked,
+	 * and why a checked row scrolled out of the virtualized window came back
+	 * unticked (a recycled `<td>`, freshly innerHTML'd, holding a brand-new
+	 * input).
+	 *
+	 * Which is also why the state is DERIVED here on every render rather than
+	 * written once at the moment of the toggle: `checkMap` is the only place a
+	 * row's checked-ness survives, so the DOM has to be caught up to it each
+	 * time the renderer hands back a node.
+	 */
+	syncCheckboxes(): void {
+		if (!this.options.checkboxColumn) return;
+		const checkMap = this.rowmanager.checkMap;
+		const renderer = this.engine.renderer;
+
+		// `.dt-checkbox` is written by `getCheckboxHTML` and nowhere else, so
+		// inside the <tbody> the class picks out exactly the row boxes — the
+		// same identity `bindCheckboxes` dispatches a `change` on, read back.
+		for (const node of renderer.tbody.querySelectorAll(".dt-checkbox")) {
+			if (!isCheckboxInput(node)) continue;
+			const td = node.closest(".dt-cell");
+			if (!td) continue;
+			// The row's index in the ORIGINAL data, which is what the profile's
+			// `cell` hook writes here and what `checkMap` is keyed by — not the
+			// row's position in the render window, and under `treeView` not its
+			// position among its siblings either.
+			node.checked = !!checkMap[Number(td.getAttribute("data-row-index"))];
+		}
+
+		// The header box summarises the rows `checkAll` acts on — the CURRENT
+		// row model, i.e. what filtering and (under treeView) collapsing have
+		// left visible — so that ticking every row by hand leaves it in the
+		// same state ticking it would have.
+		const rows = this.engine.table.getRowModel().rows;
+		let checked = 0;
+		for (const row of rows) if (checkMap[rowIndexOf(row)]) checked++;
+		for (const node of renderer.thead.querySelectorAll(".dt-checkbox")) {
+			if (!isCheckboxInput(node)) continue;
+			node.checked = checked > 0 && checked === rows.length;
+			node.indeterminate = checked > 0 && checked < rows.length;
 		}
 	}
 
