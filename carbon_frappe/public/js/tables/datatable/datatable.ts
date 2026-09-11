@@ -134,6 +134,21 @@ function isElement(target: EventTarget | null | undefined): target is Element {
 }
 
 /**
+ * Both chevrons a tree toggle carries, open first.
+ *
+ * frappe styles them itself and expects BOTH in the DOM at once: `.icon-open`
+ * is `display: flex` and `.icon-close` is `display: none` by default, and
+ * `.dt-cell--tree-close` (which {@link CarbonDataTable.cellHTML} puts on the
+ * toggle, an ancestor of both, so the descendant selectors still match) swaps
+ * which one shows. An empty toggle therefore renders as nothing at all — zero
+ * width, no icon, no hint that the row opens. Same feather chevrons
+ * frappe-datatable's icons.js ships, so the two render identically.
+ */
+const TREE_TOGGLE_ICONS =
+	'<span class="icon-open"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></span>' +
+	'<span class="icon-close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg></span>';
+
+/**
  * `checked` off a delegated `change` target.
  *
  * The JS read `input.checked` straight off the event target after testing only
@@ -763,8 +778,9 @@ export default class CarbonDataTable {
 			// is a compile error ("this function is always defined"). The guard
 			// is kept because the engine's expansion feature is opt-in.
 			const expanded = row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
+			const closed = expanded ? "" : " dt-cell--tree-close";
 			const toggle = hasChildren
-				? `<span class="dt-tree-node__toggle ${expanded ? "" : "dt-cell--tree-close"}"></span>`
+				? `<span class="dt-tree-node__toggle${closed}">${TREE_TOGGLE_ICONS}</span>`
 				: '<span class="dt-tree-node__toggle-placeholder"></span>';
 			out = `<span class="dt-tree-node" style="padding-left:${indent * 20}px">${toggle}${out}</span>`;
 		}
@@ -870,6 +886,7 @@ export default class CarbonDataTable {
 		this.container.appendChild(this.pasteTarget);
 
 		this.bindCheckboxes();
+		this.bindTreeToggles();
 	}
 
 	bindCheckboxes(): void {
@@ -885,6 +902,48 @@ export default class CarbonDataTable {
 				const rowIndex = Number(td.getAttribute("data-row-index"));
 				this.rowmanager.checkRow(rowIndex, isChecked(input));
 			}
+		});
+	}
+
+	/**
+	 * Open/close a tree node when its toggle is clicked.
+	 *
+	 * frappe-datatable bound this in `CellManager.bindTreeEvents` (cellmanager.js
+	 * :200-212) and nothing else ever did, so a tree report rendered by this
+	 * class had a chevron that no listener answered: `initial_depth` still
+	 * collapsed the rows, because `query_report.js` reaches
+	 * {@link RowManagerShim.setTreeDepth} directly, but no click could open one
+	 * again.
+	 *
+	 * Delegated off `container` like {@link CarbonDataTable.bindCheckboxes}, and
+	 * matching with `closest` rather than a `classList` test on the target
+	 * itself: the toggle owns two icon spans and an SVG apiece, so the click
+	 * usually lands on a descendant — and a report is free to render its own
+	 * element carrying the class, which the stock delegated handler accepted and
+	 * which some do (little_cocalico's Print Queue renders a labelled button).
+	 *
+	 * The header is excluded: a `thead` cell has no row to expand, and its
+	 * `data-row-index` is not a data row's.
+	 */
+	bindTreeToggles(): void {
+		this.container.addEventListener("click", (e) => {
+			if (!this.options.treeView) return;
+			if (!isElement(e.target)) return;
+			const toggle = e.target.closest(".dt-tree-node__toggle");
+			if (!toggle) return;
+			const td = toggle.closest(".dt-cell");
+			if (!td || td.closest("thead")) return;
+			const rowIndex = Number(td.getAttribute("data-row-index"));
+			if (!Number.isFinite(rowIndex)) return;
+			// A toggle inside a <button> would otherwise submit an enclosing
+			// form; the click still reaches the cell-focus handler, which is
+			// what a click anywhere else in the cell does anyway.
+			e.preventDefault();
+			const row = this.engine.table.getRow(this.rowIdFor(rowIndex));
+			// `typeof`, not truthiness, for the reason given in `cellHTML`.
+			const expanded =
+				!!row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
+			this.setExpanded(rowIndex, !expanded);
 		});
 	}
 
