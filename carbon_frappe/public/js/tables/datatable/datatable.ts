@@ -771,9 +771,24 @@ export default class CarbonDataTable {
 		return out;
 	}
 
+	/**
+	 * The column the indent and toggle go in: the first one that is not a
+	 * checkbox or a serial number.
+	 *
+	 * frappe-datatable computed this as `getColumnIndexById("_rowIndex") + 1`
+	 * (cellmanager.js:902), which is only the first data column while
+	 * `serialNoColumn` is on. Turn it off and the lookup misses, `-1 + 1` lands
+	 * on 0, and the whole tree — indent, chevron, the only thing that opens a
+	 * node — renders inside the 32px sticky checkbox cell, where it is clipped
+	 * out of sight. A tree report then looks like it has no toggle at all.
+	 *
+	 * `standardColumnCount` is the count of those leading columns, so it IS the
+	 * index of the first user column in every combination: 2 with both on (what
+	 * the old formula returned, unchanged), 1 with only the checkbox, 0 with
+	 * neither.
+	 */
 	treeColumnIndex(): DataTableColIndex {
-		const i = this.datamanager.getColumnIndexById("_rowIndex");
-		return i + 1;
+		return this.standardColumnCount;
 	}
 
 	renderTotalCell(
