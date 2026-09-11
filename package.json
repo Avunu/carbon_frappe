@@ -21,10 +21,10 @@
   "author": "Avunu LLC",
   "type": "module",
   "dependencies": {
-    "@carbon/charts": "1.27.18",
-    "@carbon/styles": "1.114.0",
+    "@carbon/charts": "1.27.19",
+    "@carbon/styles": "1.115.0",
     "@tanstack/table-core": "9.2.4",
-    "@tanstack/virtual-core": "3.17.9"
+    "@tanstack/virtual-core": "3.17.10"
   },
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
