@@ -51,6 +51,20 @@
     "@carbon/layout" "^11.59.0"
     "@ibm/telemetry-js" "^1.5.0"
 
+"@carbon/icon-helpers@^10.82.0":
+  version "10.82.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.82.0.tgz#dfc3ef2b82cf5abd5d784407c5e9570a52301695"
+  integrity sha512-HwyUn3iOzV7ahnf2oBaDL4fui7FBbTDBf+0N+sFfs+x17PFD3WkTz4BRefnWjlfLyKmuQTUwRuoOAVBSN1qY0Q==
+  dependencies:
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/icons@11.88.0":
+  version "11.88.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.88.0.tgz#b91bdb49b8bb32b2cd71a1651503000c83e5cded"
+  integrity sha512-roUCNGQ4ts6dLibTbsbXdT9VZP92kz9b8vHr1waJ9tE4XwCpJNM8NfS5221/Ad05qwavKVMsN8dKDyi7yICMwQ==
+  dependencies:
+    "@ibm/telemetry-js" "^1.5.0"
+
 "@carbon/layout@^11.59.0":
   version "11.59.0"
   resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.59.0.tgz#d0724d6eddcad601669eb03f97708683e64c27cf"
@@ -1016,10 +1030,10 @@ dompurify@^3.4.14:
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
-frappe-types@^16.1.1:
-  version "16.1.1"
-  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.1.1.tgz#f4454ef11cf1c2f2f0eee4f6efd724534be2b14b"
-  integrity sha512-FsAj0Yg6Y03cjPFjP80/LOFLETPHHT5GYkyPHOJ2BIKlj7vIdK9bSjZFZySYH3l6FI1yx+X61KCP4c+mTztgGw==
+frappe-types@^16.2.0:
+  version "16.2.0"
+  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.2.0.tgz#c23970fea454c9513b2bd2b136245338a099f5f1"
+  integrity sha512-ixyDEfGM65+tD+acyMMtzzFR1ktVY5GoURJ7Ofsl/QUe135wUIegfdKqtgevw+Z/67uLJaT8XARLlNSWMan6yw==
   dependencies:
     "@types/jquery" "^3.5"
 

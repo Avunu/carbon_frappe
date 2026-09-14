@@ -1,9 +1,11 @@
-// WP5a — Navbar -> Carbon UI Shell header.
-// Carbon's strongest signature: the g100 (#161616) header in BOTH themes,
-// 48px tall (frappe's --navbar-height already is). Implemented as a scoped
-// token flip so every descendant (icons, menus, search) inverts without
-// touching markup. Dropdown panels anchored inside the navbar become g100
-// layer panels.
+// Website navbar -> the g100 bar (website bundle only).
+//
+// This partial used to be the DESK header too, as a scoped token flip on
+// `.navbar`. v16's desk has no `.navbar` — its header is desk/_ui-shell.scss on
+// Carbon's own cds--header classes — so this now serves the website/portal
+// pages alone. The scoped inversion (every descendant reads its tokens from
+// the `.navbar` element) is still the right mechanism there; the hex values
+// could move onto the `.cf-zone-g100` emission in a later pass.
 @use "@carbon/colors" as c;
 
 $header-bg: c.$gray-100; // #161616

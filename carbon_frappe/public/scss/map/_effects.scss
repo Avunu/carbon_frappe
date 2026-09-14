@@ -7,7 +7,8 @@
 :root,
 [data-theme="light"],
 [data-theme="dark"],
-.dark {
+.dark,
+.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
 	// Carbon has essentially one drop shadow (menus/dropdowns) and relies on
 	// $overlay for modals. Strip espresso's inset top-light entirely.
 	--elevation-sm: 0 2px 6px var(--cds-shadow);

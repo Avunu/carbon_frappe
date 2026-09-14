@@ -18,7 +18,8 @@
 :root,
 [data-theme="light"],
 [data-theme="dark"],
-.dark {
+.dark,
+.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
 	// Surfaces -> Carbon layering model
 	--surface-base: var(--cds-background);
 	// name says white: under g10 $background is #f4f4f4, so this is layer-01
@@ -130,7 +131,8 @@
 
 // -- Overloaded neutral ladder + chromatic status slots: dark (g100) --------
 [data-theme="dark"],
-.dark {
+.dark,
+.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
 	// Side nav shares the g100 UI Shell tone rather than lifting to layer-01
 	--surface-sidebar: var(--cds-background);
 	--surface-menu-bar: var(--cds-background);

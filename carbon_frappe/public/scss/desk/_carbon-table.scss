@@ -1,31 +1,16 @@
 // WP11 — Carbon Tables engine (carbon_tables.bundle.js).
 //
 // The light-DOM Carbon data table the engine renders for the Grid, List view
-// and Report/Query views. Carbon's component styles are pulled in as MIXINS
-// rather than through `@carbon/styles/scss/components/index`, so this emits
-// exactly the families the engine uses — no reset, no unrelated components, and
-// no second copy of anything the desk bundle already carries.
+// and Report/Query views. Carbon's own component CSS (data-table family,
+// pagination, overflow-menu) is included by desk/_carbon-components.scss —
+// the one partial that `@use`s Carbon component modules, so nothing is
+// emitted twice — and this file carries only the engine's overrides on top.
 //
 // Why light DOM at all: `@carbon/web-components` would give the same visuals,
 // but its shadow roots put row and cell internals out of reach of
 // `datatable.style.setStyle()` (13 call sites across frappe/erpnext/avunu) and
 // of every third-party report stylesheet. The engine therefore renders plain
 // `cds--data-table` markup, exactly as @carbon/react does.
-@use "@carbon/styles/scss/components/data-table/data-table";
-@use "@carbon/styles/scss/components/data-table/sort/data-table-sort";
-@use "@carbon/styles/scss/components/data-table/action/data-table-action";
-@use "@carbon/styles/scss/components/data-table/expandable/data-table-expandable";
-@use "@carbon/styles/scss/components/data-table/skeleton/data-table-skeleton";
-@use "@carbon/styles/scss/components/pagination/pagination";
-@use "@carbon/styles/scss/components/overflow-menu/overflow-menu";
-
-@include data-table.data-table;
-@include data-table-sort.data-table-sort;
-@include data-table-action.data-table-action;
-@include data-table-expandable.data-table-expandable;
-@include data-table-skeleton.data-table-skeleton;
-@include pagination.pagination;
-@include overflow-menu.overflow-menu;
 
 // ---------------------------------------------------------------------------
 // Engine anatomy — everything Carbon's component CSS does not cover because it

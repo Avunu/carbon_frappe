@@ -27,20 +27,23 @@
     "@tanstack/virtual-core": "3.17.11"
   },
   "devDependencies": {
+    "@carbon/icon-helpers": "^10.82.0",
+    "@carbon/icons": "11.88.0",
     "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
     "@types/node": "^26.5.1",
-    "frappe-types": "^16.1.1",
+    "frappe-types": "^16.2.0",
     "sass": "1.104.1",
     "typescript": "^7.0.2"
   },
   "scripts": {
     "build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only",
-    "codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts",
+    "codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts && node scripts/generate-shell-icons.ts",
     "audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
     "compile": "node scripts/dev-compile.ts",
     "typecheck": "tsc --build",
     "upgrade": "npx npm-check-updates -u && yarn install && yarn build",
-    "test:tables": "node scripts/test-tables.ts"
+    "test:tables": "node scripts/test-tables.ts",
+    "test:shell": "node scripts/test-shell.ts"
   }
 }

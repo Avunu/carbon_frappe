@@ -232,7 +232,8 @@ $dark-gray: (
 }
 
 [data-theme="dark"],
-.dark {
+.dark,
+.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
 	@each $step, $value in $dark-gray {
 		--gray-#{$step}: #{$value};
 	}

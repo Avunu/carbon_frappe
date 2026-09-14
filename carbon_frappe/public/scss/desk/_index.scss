@@ -2,13 +2,16 @@
 @import "./controls";
 @import "./buttons";
 @import "./page-head";
-@import "./navbar";
 @import "./breadcrumbs";
 @import "./sidebar";
 @import "./list";
 @import "./modals";
 @import "./datatable";
+// Carbon component CSS, included ONCE (see the note in the file), then the
+// two consumers' overrides on top of it
+@import "./carbon-components";
 @import "./carbon-table";
+@import "./ui-shell";
 @import "./form";
 @import "./widgets";
 @import "./numerics";

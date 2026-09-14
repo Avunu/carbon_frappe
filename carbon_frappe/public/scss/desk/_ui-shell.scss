@@ -1,0 +1,524 @@
+// WP5 — Carbon UI Shell header (light DOM, Carbon's own classes).
+//
+// Markup is mounted by js/anatomy/ui_shell.ts and is @carbon/react's UI Shell
+// class for class (Header, HeaderMenuButton, HeaderName, HeaderNavigation,
+// HeaderMenu, HeaderGlobalBar, HeaderPanel, Switcher), so Carbon's component
+// CSS — included once, by desk/_carbon-components.scss — styles it unchanged.
+// `side-nav` is deliberately absent (frappe's own `.body-sidebar` stays the
+// left panel, restyled in _sidebar.scss) and so is `content` (`.main-section`
+// is the content; its row reservation is below). This file is the product's
+// overrides on top of Carbon's: layout, stacking, the zone, and frappe's
+// harvested utilities as Carbon cells.
+//
+// The zone. The header runs Carbon's g100 theme in BOTH desk themes — Carbon:
+// "The UI Shell can be customized to use any of the four IBM themes by
+// applying an inline theme to the shell zone." carbon/_themes.scss adds the
+// `.cf-zone-g100` class to its existing g100 emission (one emission, three
+// selectors; a second copy is ~20 KB), so every `$token` Carbon's header CSS
+// reads resolves to g100 on the header element. The frappe variables the
+// HARVESTED nodes read (`--text-color`, `--icon-stroke`, …) are re-declared on
+// the zone too, because a custom property declared on `:root` as
+// `var(--cds-text-secondary)` is computed THERE and inherited as the g10
+// value — re-declaring `--cds-*` lower down does not re-resolve it (Carbon
+// issue #11138). The map/ partials carry the zone selector on the blocks that
+// already pin frappe's variables to `var(--cds-*)`; the residue frappe flips
+// itself in desk/dark.scss is pinned in §3 below.
+//
+// Carbon's header / header-panel / switcher / badge-indicator mixins are
+// included by desk/_carbon-components.scss (one emission for the whole
+// bundle; see the note there). `text-truncate` is mixin-only and emits no CSS
+// of its own, so it is safe to `@use` here.
+@use "@carbon/colors" as c;
+@use "@carbon/styles/scss/utilities/text-truncate";
+
+$shell-height: 3rem; // mini-units(6)
+// above .body-sidebar (1020), frappe's .sticky-top (1019) and the sidebar's
+// .overlay (1021); below bootstrap's modal backdrop (1040), which must still
+// cover the header, and #freeze (2000). `.frappe-menu` shares 1030 and is
+// appended to <body> later in the DOM, so a menu opened from a header cell
+// still paints above it.
+$shell-z: 1030;
+$cell: 3rem;
+
+// -- 1. Layout ---------------------------------------------------------------
+// Taking the header out of flow means its row has to be reserved, and the two
+// full-height columns re-cut to what is left. Gated on .cf-has-shell (set by
+// js/anatomy/ui_shell.ts only on a successful mount) so the cases where frappe
+// fills <header> itself — read_only, impersonation, announcement, mobile —
+// keep stock frappe's layout untouched.
+body.cf-has-shell {
+	// The landing page ships its own header. ui_shell.ts harvests its
+	// utilities and removes it, but the desktop page can finish rendering
+	// AFTER a harvest — which put a second black bar under ours. Hiding it in
+	// CSS is race-proof.
+	.desktop-navbar {
+		display: none !important;
+	}
+
+	// The row is reserved on body's two flex CHILDREN, not on body itself:
+	// desk/mobile.scss pins `body { padding: 0 !important }` and says why —
+	// "the html and body elements cannot have any padding or margin", because
+	// the desk measures its columns against the raw viewport. Indenting the
+	// children respects that instead of winning an !important fight with it.
+	//
+	// .body-sidebar is absolutely positioned with `top: auto`, so it resolves to
+	// its own static position and rides along inside its container.
+	> .body-sidebar-container,
+	> .main-section {
+		margin-block-start: $shell-height;
+	}
+
+	// ...and frappe pins both columns to the WHOLE viewport, which they now
+	// share with the header.
+	.main-section,
+	.body-sidebar,
+	.body-sidebar-placeholder {
+		height: calc(100vh - #{$shell-height});
+	}
+}
+
+// -- 2. Stacking --------------------------------------------------------------
+// Carbon's z('header') is 8000 — above every frappe dialog, backdrop, tooltip
+// and toast — and its $z-indexes map is not `!default`, so it is overridden
+// after the include rather than configured.
+.cds--header {
+	z-index: $shell-z;
+}
+
+.cds--header-panel {
+	z-index: $shell-z;
+}
+
+.cds--header__menu-title[aria-expanded="true"] {
+	z-index: $shell-z + 2;
+}
+
+.cds--header__menu-title[aria-expanded="true"] + .cds--header__menu {
+	z-index: $shell-z + 1;
+}
+
+// -- 3. The zone's frappe residue --------------------------------------------
+// Variables frappe flips itself (desk/dark.scss, espresso/_typography.scss,
+// desk/avatar.scss, common/css_variables.scss) that the map/ layer does not
+// pin. Every value is a var(--cds-*) so it follows the zone's g100 emission.
+.cf-zone-g100 {
+	--text-color: var(--cds-text-primary);
+	--heading-color: var(--cds-text-primary);
+	--text-light: var(--cds-text-secondary);
+	--neutral: var(--cds-background);
+	--invert-neutral: var(--cds-text-primary);
+	--icon-stroke: var(--cds-icon-primary);
+	--icon-fill: transparent;
+	--navbar-bg: var(--cds-background);
+	--avatar-frame-bg: var(--cds-layer-accent-01);
+	--avatar-frame-color: var(--cds-text-secondary);
+	--avatar-frame-border: var(--carbon-border-subtle);
+	--scrollbar-thumb-color: var(--cds-border-strong-01);
+	--scrollbar-track-color: var(--cds-layer-01);
+	--sidebar-hover-color: var(--cds-layer-hover-01);
+	--sidebar-active-color: var(--cds-background-selected);
+	color-scheme: dark;
+}
+
+// -- 4. Header name, nav, sub-menus ------------------------------------------
+.cf-shell-header {
+	// Carbon's action is inline-flex with no centring of its own; only the
+	// menu toggle and `.cds--btn--icon-only` get it. Every cell here is a bare
+	// action, so centre the glyph once for all of them.
+	.cds--header__action {
+		align-items: center;
+		justify-content: center;
+	}
+
+	// Nothing left of the global bar may SHRINK. js/anatomy/shell/nav.ts fits
+	// the bar by measuring every item at its intrinsic width and hiding the
+	// tail into "More"; a flex item that had already been squeezed by then
+	// measures short, the bar keeps too many rows, and the name — the first
+	// thing flex gives up — reads as the prefix alone. So the name and every
+	// bar item are rigid; the global bar (`flex: 1 1 0%`) is the only elastic
+	// child, and the overflow is resolved by hiding rows, never by squeezing.
+	a.cds--header__name {
+		flex: none;
+		// A workspace title can still be long ("Shift & Attendance", a private
+		// "<title>-<user>"): the anchor is capped and the product span — the
+		// element HeaderName renders — ellipsises inside it.
+		max-inline-size: 24rem;
+
+		> span:last-child {
+			min-inline-size: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.cds--header__name--prefix {
+			flex: none;
+			white-space: nowrap;
+		}
+	}
+
+	.cds--header__nav,
+	.cds--header__menu-bar > li {
+		flex: none;
+	}
+
+	// A Section Break can carry 21 links (Selling, Stock). Carbon's menu has
+	// no max height and is fixed at mini-units(25) = 200px; ERPNext labels
+	// ("Timesheet Billing Summary") need more. 16rem matches the left panel.
+	.cds--header__menu-title[aria-expanded="true"] + .cds--header__menu {
+		inline-size: 16rem;
+		max-block-size: calc(100vh - #{$shell-height});
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	// @carbon/react wraps every label in this span; @carbon/styles never emits
+	// the class (only the mixin behind it).
+	.cds--header__menu-item .cds--text-truncate--end {
+		@include text-truncate.text-truncate-end;
+	}
+
+	// The "More" overflow flattens a Section Break under a non-interactive
+	// heading: label-01 on $text-secondary, a 32px row, with the group's own
+	// hairline above it.
+	.cf-header__menu-group {
+		display: flex;
+		align-items: center;
+		block-size: 2rem;
+		padding-inline: 1rem;
+		border-block-start: 1px solid var(--cds-border-subtle-00);
+		color: var(--cds-text-secondary);
+		font-size: 0.75rem;
+		letter-spacing: 0.32px;
+		line-height: 1;
+		user-select: none;
+	}
+
+	// hidden top-level items must not take flex space; bootstrap's reboot
+	// declares `[hidden] { display: none !important }`, restated so the bar
+	// never depends on it
+	.cds--header__menu-bar > li[hidden] {
+		display: none !important;
+	}
+}
+
+// The sidebar editor renders its own rows into .sidebar-items; the nav would
+// project scaffolding. sidebar_editor.js marks the wrapper (`data-mode`) for
+// exactly as long as editing lasts.
+body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__nav {
+	display: none;
+}
+
+// -- 5. Global bar: frappe's utilities as Carbon cells -----------------------
+// "Icons should always be aligned to the right of the header with no gaps
+// between icons." Every utility is a 48x48 cell on the header's own grid.
+//
+// The harvested nodes arrive with sidebar geometry — labels, keyboard hints,
+// block layout, margins — and js/anatomy/shell/utilities.ts puts
+// `cds--header__action` on each one's interactive element. The rules below
+// flatten the wrappers around it to transparent 48px flex shells and neutralise
+// the utilities frappe's markup carries. margin is !important because the
+// account menu ships .mt-3 (`margin-top: 1rem !important`), which pushed it
+// 16px down the rail and left it measuring 48x33.
+.cf-shell-header .cds--header__global {
+	.standard-items-sections,
+	.navbar-search-bar,
+	.sidebar-notification,
+	.standard-sidebar-item,
+	.dropdown-navbar-user,
+	.desktop-search-wrapper,
+	.desktop-notifications,
+	.desktop-notifications > .dropdown {
+		position: static;
+		display: flex;
+		align-items: stretch;
+		block-size: $cell;
+		inline-size: auto;
+		max-inline-size: none;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0;
+		background: none;
+	}
+
+	// The cell. Carbon's .cds--header__action supplies the box, the hover /
+	// active / focus ramp and --active; this neutralises frappe's inline and
+	// utility leftovers on the same element and colours the glyph through
+	// `color`, which both glyph families below read.
+	.cds--header__action {
+		position: relative; // badge anchor
+		display: inline-flex !important;
+		inline-size: $cell !important;
+		min-inline-size: $cell;
+		block-size: $cell !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border-radius: 0;
+		color: var(--cds-icon-secondary);
+		text-decoration: none;
+		cursor: pointer;
+		transition:
+			background-color var(--carbon-duration-fast-02),
+			border-color var(--carbon-duration-fast-02),
+			color var(--carbon-duration-fast-02);
+
+		&:hover {
+			color: var(--cds-icon-primary);
+			text-decoration: none;
+		}
+
+		&:active,
+		&.cds--header__action--active {
+			color: var(--cds-icon-primary);
+		}
+
+		// frappe's `a:focus { outline: 0 }` and bootstrap's box-shadow focus
+		// would otherwise stack on Carbon's 1px $focus border
+		&:focus {
+			box-shadow: none;
+		}
+	}
+
+	// Two glyph families on one rail: Carbon's inlined SVGs (menu, switcher)
+	// paint by FILL; frappe's sprite icons (`.icon`) paint by STROKE with a
+	// transparent fill, and es-icons by fill. `color` on the cell is the single
+	// source for all three.
+	.cds--header__action > svg:not(.icon):not(.es-icon) {
+		fill: currentColor;
+	}
+
+	.sidebar-item-icon,
+	.desktop-search-icon {
+		position: static !important; // frappe's `.indicator { position: relative }`; the dot anchors to the cell
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		margin: 0 !important;
+		padding: 0 !important;
+		color: inherit; // beats espresso's .text-ink-gray-7 (0,1,0)
+		font-size: 0; // hides the bare "Search" text node in the landing fallback
+	}
+
+	.icon,
+	.es-icon {
+		inline-size: 20px;
+		block-size: 20px;
+		color: inherit;
+	}
+
+	.icon {
+		stroke: currentColor;
+		fill: transparent;
+	}
+
+	.es-icon {
+		fill: currentColor;
+		stroke-width: 0;
+	}
+
+	// Labels and the name/email block have no room on a 48px rail — the icon
+	// carries the affordance and the cell's `title` names it. Visually hidden,
+	// not display:none, so frappe's <a> keeps an accessible name.
+	// sidebar.js drives .avatar-name-email with jQuery .show(), which writes an
+	// inline `display: block`, so !important is load-bearing.
+	.sidebar-item-label,
+	.avatar-name-email {
+		position: absolute !important;
+		inline-size: 1px !important;
+		block-size: 1px !important;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+		margin: -1px !important;
+		padding: 0 !important;
+		border: 0;
+	}
+
+	.keyboard-shortcut,
+	.desktop-keyboard-shortcut,
+	.sidebar-item-control,
+	.nested-container {
+		display: none !important;
+	}
+
+	// unboxes the count badge; the keyboard hint inside stays hidden above
+	.sidebar-item-suffix {
+		display: contents;
+	}
+
+	// -- notification badge: Carbon's badge indicator -------------------------
+	// js/anatomy/shell/utilities.ts classes the count with
+	// cds--badge-indicator(--count); frappe's own class is restated here so the
+	// badge renders either way. `.hidden` is what frappe toggles.
+	.sidebar-notification-count {
+		position: absolute;
+		display: flex;
+		padding: 0 0.25rem 0.125rem;
+		border-radius: 100px;
+		background: var(--cds-support-error);
+		color: var(--cds-text-on-color);
+		font-size: 0.75rem;
+		font-weight: 400;
+		letter-spacing: 0.32px;
+		line-height: 1.33333;
+		inset-block-start: 0;
+		inset-inline-end: 0;
+		margin-block-start: 0.25rem;
+		margin-inline-end: 0.25rem;
+		max-block-size: 1rem;
+		min-block-size: 0.5rem;
+		min-inline-size: 0.5rem;
+
+		&.hidden {
+			display: none !important;
+		}
+	}
+
+	// frappe's unseen dot (`indicator blue`, desk/notification.scss) becomes
+	// Carbon's 8px dot, and yields to the count while one is showing
+	.sidebar-item-icon.indicator::before {
+		position: absolute;
+		inset: auto;
+		inset-block-start: 0.5rem;
+		inset-inline-end: 0.5rem;
+		inline-size: 0.5rem;
+		block-size: 0.5rem;
+		margin: 0;
+		border-radius: 100px;
+		background: var(--cds-support-error);
+		opacity: 1;
+	}
+
+	.cds--header__action:has(.sidebar-notification-count:not(.hidden)) .sidebar-item-icon.indicator::before {
+		display: none;
+	}
+
+	// -- avatar ---------------------------------------------------------------
+	// The avatar is the one utility that keeps its own fill. Size the .avatar
+	// BOX only — .avatar-frame is width/height 100% of it by design
+	// (desk/avatar.scss). 24px in a 48px cell gives the same 12px optical inset
+	// as the 20px glyphs beside it.
+	.cds--header__action > div {
+		display: flex;
+	}
+
+	.avatar,
+	.avatar-small,
+	.avatar-smaller,
+	.avatar-medium,
+	.avatar-medium-2 {
+		inline-size: 24px !important;
+		block-size: 24px !important;
+		min-inline-size: 24px;
+	}
+
+	.avatar-frame {
+		inline-size: 100%;
+		block-size: 100%;
+	}
+
+	.standard-image {
+		font-size: var(--text-tiny);
+	}
+
+	// -- notifications: a g100 right panel ------------------------------------
+	// desk/notification.scss builds the panel as a full-height flyout for the
+	// SIDE NAV (absolute, top 0, 100vh, 360px). The bell lives up here now, so
+	// it becomes Carbon's right header panel: fixed under the header, flush to
+	// the inline end, full height, $layer surface with a $border-subtle rule —
+	// Carbon: "Right panels have a consistent width, span the full height of
+	// the viewport, and are flush to the right edge". frappe's 360px stays;
+	// Carbon's 16rem switcher width is too narrow for avatar + message rows.
+	//
+	// The host `.dropdown-notifications` is toggled with `hidden` by the bell
+	// (sidebar.js:527-530, re-armed in utilities.ts); unboxed when shown so the
+	// fixed panel inside is its only geometry.
+	.dropdown-notifications {
+		display: none;
+
+		&:not(.hidden) {
+			display: contents;
+		}
+	}
+
+	.desktop-notifications > .dropdown > .notifications-list {
+		display: none;
+	}
+
+	.desktop-notifications > .dropdown.show > .notifications-list {
+		display: block;
+	}
+
+	.notifications-list {
+		position: fixed;
+		inset-block: $shell-height 0;
+		inset-block-start: $shell-height !important; // the landing fallback ships inline `top: unset`
+		inset-inline-end: 0;
+		inset-inline-start: auto;
+		inline-size: 22.5rem;
+		block-size: auto;
+		min-block-size: 0;
+		max-block-size: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		border-inline-start: 1px solid var(--carbon-border-subtle);
+		background-color: var(--cds-layer-01);
+		color: var(--cds-text-primary);
+		box-shadow: none;
+		overflow: hidden;
+
+		// frappe's own padding stays: the tab row (Notifications / Events /
+		// What's New + three actions) needs every one of the 360px
+		.notification-list-header {
+			margin: 0;
+			border-block-end: 1px solid var(--carbon-border-subtle);
+		}
+
+		.notification-list-body {
+			block-size: calc(100% - #{$cell});
+			overflow-y: auto;
+		}
+
+		.notifications-category {
+			color: var(--cds-text-secondary);
+
+			&.active {
+				color: var(--cds-text-primary);
+				border-block-end: 2px solid var(--cds-border-interactive);
+			}
+		}
+
+		.recent-item {
+			border-radius: 0;
+			color: var(--cds-text-secondary);
+
+			&:not(.no-hover):hover {
+				background-color: var(--cds-layer-hover-01);
+				color: var(--cds-text-primary);
+			}
+		}
+
+		.icon {
+			stroke: var(--cds-icon-secondary);
+		}
+
+		.list-footer {
+			color: var(--cds-text-secondary);
+
+			&:hover {
+				color: var(--cds-text-primary);
+			}
+		}
+	}
+}
+
+// -- 6. The theme-switcher preview strip -------------------------------------
+// The one `.navbar` left in the desk (ui/theme_switcher.js): keep its preview
+// tiles showing a g100 bar.
+.theme-grid .navbar {
+	background-color: #{c.$gray-100};
+}

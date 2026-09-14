@@ -19,7 +19,12 @@
 	@include theme.theme(themes.$g10);
 }
 
+// .cf-zone-g100 is the UI Shell zone: the header, its sub-menus and the right
+// panel run g100 in BOTH desk themes (Carbon: "apply an inline theme to the
+// shell zone"). One emission, three selectors — the block is ~20 KB, so a
+// second copy is not free. See desk/_ui-shell.scss.
 [data-theme="dark"],
-.dark {
+.dark,
+.cf-zone-g100 {
 	@include theme.theme(themes.$g100);
 }

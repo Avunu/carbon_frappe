@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Drift audit — runs warn-only on every `bench build` (via the package
- * `build` script) and strict in CI (`npm run audit`). Three checks:
+ * `build` script) and strict in CI (`npm run audit`). Six checks:
  *
  *  1. Carbon token references: every `var(--cds-*)` we reference (without a
  *     fallback) must exist in @carbon/themes' emitted token set.
@@ -10,6 +10,10 @@
  *  3. Shadow mirrors: the frappe SCSS entry files our shadow bundles
  *     recompile must still exist, and frappe's desk.bundle.scss import list
  *     is diffed against our mirror (catches new imports we should add).
+ *  4. Mapping premises: the g10 light theme, the semantic pins, the g100 zone.
+ *  5. JS hooks: the frappe runtime shapes the theme monkey-patches.
+ *  6. Carbon class names: every `cds--*` class the theme's SCSS or JS emits or
+ *     targets still exists in @carbon/styles (catches Carbon renames).
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -68,6 +72,51 @@ if (!/--radius-\d+\s*:/.test(allScssText)) {
 // drift apart silently.
 if (!/@include\s+theme\.theme\(\s*themes\.\$g10\s*\)/.test(allScssText)) {
 	warn("light theme is not themes.$g10 — the background/layer ladder assumed by scss/desk would be inverted");
+}
+// (4) the UI Shell zone must SHARE the g100 emission. desk/_ui-shell.scss and
+// js/anatomy/ui_shell.ts both assume `.cf-zone-g100` carries every g100 token;
+// a second `theme.theme()` emission would also cost ~20 KB, and a dropped
+// selector would leave the header on the page theme with no error anywhere.
+if (!/\.cf-zone-g100\s*\{\s*@include\s+theme\.theme\(\s*themes\.\$g100\s*\)/.test(allScssText)) {
+	warn("`.cf-zone-g100` does not share the themes.$g100 emission in scss/carbon/_themes.scss — the UI Shell header would render in the page theme");
+}
+
+// ---- Check 6: Carbon class names still exist in @carbon/styles -----------
+// The theme emits Carbon's own light-DOM markup (the table engine, the UI
+// Shell header) and targets those classes from SCSS. Carbon writes every class
+// as `.#{$prefix}--<suffix>`, so the suffix appears literally in its sources;
+// if a rename drops one, the component silently reverts to unstyled markup.
+// Both the SCSS and the browser JS are scanned, because the JS is where most
+// of the shell's classes are written.
+{
+	const stylesRoot = path.join(appRoot, "node_modules", "@carbon", "styles", "scss");
+	const jsRoot = path.join(appRoot, "carbon_frappe", "public", "js");
+	if (!fs.existsSync(stylesRoot)) {
+		warn("@carbon/styles is not installed — cannot verify Carbon class names");
+	} else {
+		const carbonScss = walk(stylesRoot)
+			.filter((f) => f.endsWith(".scss"))
+			.map((f) => fs.readFileSync(f, "utf-8"))
+			.join("\n");
+		const ours = [
+			...ourScss.map((s) => s.text),
+			...walk(jsRoot)
+				.filter((f) => f.endsWith(".ts") || f.endsWith(".js"))
+				.map((f) => fs.readFileSync(f, "utf-8")),
+		].join("\n");
+		// Classes @carbon/react renders that @carbon/styles never emits (the
+		// mixin exists; the class does not), and the interpolated layer classes.
+		const allow = new Set(["text-truncate--end", "layer-one", "layer-two", "layer-three"]);
+		const seen = new Set<string>();
+		for (const m of ours.matchAll(/\bcds--([a-z0-9]+(?:[-_]+[a-z0-9]+)*)/g)) {
+			const suffix = m[1];
+			if (suffix === undefined || seen.has(suffix) || allow.has(suffix)) continue;
+			seen.add(suffix);
+			if (!carbonScss.includes(`--${suffix}`)) {
+				warn(`cds--${suffix} is not emitted by @carbon/styles — Carbon renamed or removed it; the markup that carries it is now unstyled`);
+			}
+		}
+	}
 }
 
 if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {

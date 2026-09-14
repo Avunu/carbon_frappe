@@ -1,32 +1,62 @@
 // Carbon UI Shell header.
 //
-// frappe/www/desk.html ships an empty <header></header> that frappe only fills
-// under four narrow conditions (read_only, impersonated, announcement widget,
-// mobile — see ui/toolbar/toolbar.js). On a normal desktop desk load it stays
-// empty, which makes it a mount point rather than a takeover.
+// frappe/www/desk.html:39 ships an empty <header></header> that frappe only
+// fills under four narrow conditions (read_only, impersonated, announcement
+// widget, mobile — see ui/toolbar/toolbar.js:9-21). On a normal desktop desk
+// load it stays empty, which makes it a mount point rather than a takeover.
 //
-// Anatomy, against patterns/global-header:
-//   1 Main menu    — hamburger, delegates to frappe's own sidebar toggle
-//   2 Header name  — company prefix (400) + product name (600), links home
-//   3 Header links — NOT USED. These are for a handful of product-level links
-//                    that "drop down to the side menu in narrow screen widths".
-//                    An ERPNext workspace carries ~58 nav items, and Carbon's
-//                    left-panel rule is explicit: "Use the left panel if there
-//                    are more than five secondary navigation items." So product
-//                    navigation stays in the left panel.
-//   4 Sub-menu     — NOT USED, same reason.
-//   5 Utilities    — "global system-level utilities ... such as profile,
-//                    search, notifications". Harvested from frappe rather than
-//                    rebuilt, so every handler stays bound.
-//   6 Switcher     — frappe has no cross-product switcher in the desk; the
-//                    nearest thing is the /app launcher. Left out rather than
-//                    faked.
+// The markup is @carbon/react's UI Shell, class for class, so @carbon/styles'
+// header / header-panel / switcher mixins (desk/_ui-shell.scss) style it
+// unchanged. Anatomy, against patterns/global-header:
 //
-// Everything is MOVED, never cloned: frappe binds handlers to those exact
-// nodes, so relocating keeps them live and avoids a second copy of each
-// affordance.
-import { record } from "./patch";
-import type { FrappeBootPartial } from "frappe-types";
+//   1 Main menu    — hamburger; delegates to frappe's own sidebar toggle
+//   2 Header name  — <app title> (400) + <workspace sidebar title> (600),
+//                    e.g. "ERPNext Projects"; links to the sidebar's home
+//   3 Header links — the Workspace Sidebar's top-level rows (shell/nav.ts)
+//   4 Sub-menu     — its Section Breaks, plus a measured "More" overflow
+//   5 Utilities    — frappe's search / notifications / account, MOVED in
+//                    (shell/utilities.ts)
+//   6 Switcher     — installed apps, in a right header panel (shell/switcher.ts)
+//
+// Everything the header shows is read from `frappe.app.sidebar` (shell/model.ts):
+// frappe's Workspace Sidebar is what resolves a route to a workspace, names the
+// app that owns it, and renders its items — the header is a projection of it.
+//
+// When it renders:
+//
+//   - `Sidebar.prototype.make_sidebar` is wrapped (shell/patch.ts' safePatch).
+//     It is the last step of `setup()` (ui/sidebar/sidebar.js:291) and the
+//     editor's own re-render call (sidebar_editor.js:75, :82, :537-579), i.e. the
+//     one place the sidebar DOM is rebuilt — by then `sidebar_title`,
+//     `header_subtitle`, `sidebar_data` and `frappe.current_app` are all set.
+//     (`sidebar_setup` fires BEFORE any of that, sidebar.js:283, so it is
+//     deliberately not used.)
+//   - Every router "change" re-marks the current link and re-syncs the
+//     hamburger; a full re-render only when the model's signature changed
+//     (`set_workspace_sidebar` skips `setup()` when the sidebar is unchanged,
+//     sidebar.js:681-683, so most route changes are exactly this).
+//   - `sidebar-expand` (sidebar.js:623-625) syncs the hamburger's aria state.
+//
+// Mount gate: `body > .main-section > header` — never bare `header`, the
+// landing page's `.desktop-navbar` is one too — empty, and only once
+// `frappe.app.sidebar` exists. `frappe.app` is `{}` until the Application
+// constructor returns (desk.js:10-12) and `startup()` runs `make_nav_bar()`
+// (the Toolbar whose constructor decides whether to replace <header>) before
+// `make_sidebar()` (desk.js:39-40), so the sidebar's presence proves the
+// replacement decision was already made. Either order of mount and first
+// `make_sidebar()` converges: the hook re-projects if the header exists, the
+// mount reads whatever sidebar state exists.
+import type { FrappeSidebar } from "frappe-types";
+import { record, safePatch } from "./patch";
+import { menu20 } from "../generated/shell-icons";
+import { esc, required } from "./shell/dom";
+import { readModel } from "./shell/model";
+import type { ShellModel } from "./shell/model";
+import { mountNav } from "./shell/nav";
+import type { ShellNav } from "./shell/nav";
+import { mountSwitcher } from "./shell/switcher";
+import type { ShellSwitcher } from "./shell/switcher";
+import { harvestUtilities } from "./shell/utilities";
 
 const MOUNTED = "cf-shell-mounted";
 // Set on <body> only when the header actually mounts, because the CSS that
@@ -34,217 +64,252 @@ const MOUNTED = "cf-shell-mounted";
 // full-height columns) must not fire in the four cases where frappe fills
 // <header> itself — read_only, impersonation, announcement, mobile.
 const SHELL_ON = "cf-has-shell";
+// The g100 zone: desk/_ui-shell.scss re-emits Carbon's g100 theme (and the
+// frappe variables the harvested nodes read) under this class, so the header
+// runs dark in both desk themes.
+const ZONE = "cf-zone-g100";
 
-/** The two halves of the header name: company prefix, then product. */
-interface ProductName {
-	company: string;
-	app: string;
+interface Shell {
+	header: HTMLElement;
+	menu: HTMLButtonElement;
+	name: HTMLAnchorElement;
+	nav: ShellNav;
+	global: HTMLElement;
+	switcher: ShellSwitcher;
+	lastSignature: string;
 }
 
-function productName(): ProductName {
-	// Annotated `FrappeBootPartial`, not inferred: `(window.frappe && frappe.boot) || {}`
-	// infers `FrappeBoot | {}` and every read below then fails. `{}` is
-	// assignable to a Partial, and each read comes back `T | undefined` —
-	// exactly what the `&&` chains here already assume.
-	const boot: FrappeBootPartial = (window.frappe && frappe.boot) || {};
-	const company = (boot.sysdefaults && boot.sysdefaults.company) || "";
-	const app = (boot.app_data && boot.app_data[0] && boot.app_data[0].app_title) || "Frappe";
-	return { company, app };
+let shell: Shell | null = null;
+
+function translate(s: string): string {
+	return typeof __ === "function" ? __(s) : s;
+}
+
+function renderName(s: Shell, model: ShellModel): void {
+	// HeaderName.tsx: prefix span (omitted when empty) + `&nbsp;` + name span
+	s.name.href = model.home;
+	s.name.innerHTML =
+		(model.prefix ? `<span class="cds--header__name--prefix">${esc(model.prefix)}</span>&nbsp;` : "") +
+		`<span>${esc(model.name)}</span>`;
+	s.header.setAttribute("aria-label", `${model.prefix} ${model.name}`.trim());
 }
 
 /**
- * Move the system-level utilities into the header's right rail.
- *
- * Two sources, because the desk has two shapes: workspace pages keep search and
- * notifications as the first entries of the side nav, while the landing page
- * has its own .desktop-navbar carrying the same three affordances. Taking
- * whichever exists is also what removes the duplicate header the landing page
- * would otherwise show.
- *
- * Runs again on every route change, so it must be idempotent. The decision has
- * to be driven by what the slot ALREADY HOLDS, not by where the sidebar's node
- * currently lives: after the first harvest that node sits in the slot, so the
- * `.body-sidebar .standard-items-sections` lookup goes permanently null. Keying
- * off that lookup alone hands every later call to the .desktop-navbar branch,
- * and the landing page re-renders a fresh navbar on each visit — which is how a
- * second search / bell / avatar used to stack up beside the first.
+ * The hamburger reflects the sidebar's state through `aria-expanded` only.
+ * Carbon's `--active` + Close glyph mean "an overlay is open and this
+ * dismisses it"; frappe's sidebar is expanded by default and collapses to a
+ * rail rather than going away, so a permanent ✕ would mislead.
  */
-function harvestUtilities(slot: Element): void {
-	// Move `node` in, evicting whatever it replaces. Re-appending a node the
-	// slot already owns just moves it to the end, which is how ordering stays
-	// stable across re-harvests.
-	const adopt = (node: Element | null, sel: string): void => {
-		const stale = slot.querySelector(sel);
-		if (node && stale && stale !== node) stale.remove();
-		const live = node || stale;
-		if (live) slot.appendChild(live);
-	};
+function syncMenuButton(s: Shell, expanded: boolean, disabled: boolean): void {
+	s.menu.setAttribute("aria-expanded", expanded ? "true" : "false");
+	s.menu.disabled = disabled;
+}
 
-	// EXACTLY ONE source, or the header shows two search icons and two bells.
-	// The side nav's copy is preferred because it exists on every route.
-	const sidebarUtilities = document.querySelector(".body-sidebar .standard-items-sections");
-	const alreadyHeld = slot.querySelector(".standard-items-sections, .desktop-search-wrapper");
+function project(): void {
+	const s = shell;
+	if (!s) return;
+	const model = readModel();
+	s.lastSignature = model.signature;
+	renderName(s, model);
+	s.nav.render(model);
+	s.switcher.render(model.app);
+	syncMenuButton(s, model.expanded, model.menuDisabled);
+	harvestUtilities(s.global, () => s.switcher.close());
+	// the harvest appends; the switcher is Carbon's "furthest right icon"
+	s.global.appendChild(s.switcher.button);
+	s.nav.layout();
+}
 
-	if (sidebarUtilities || alreadyHeld) {
-		adopt(sidebarUtilities, ".standard-items-sections");
-	} else {
-		const desktopNav = document.querySelector(".desktop-navbar");
-		for (const sel of [".desktop-search-wrapper", ".desktop-notifications", ".desktop-avatar"]) {
-			const el = desktopNav && desktopNav.querySelector(sel);
-			if (el) slot.appendChild(el);
-		}
+function refreshRoute(): void {
+	const s = shell;
+	if (!s) return;
+	const model = readModel();
+	if (model.signature !== s.lastSignature) {
+		project();
+		return;
 	}
-
-	// Once we own the header, the landing page's navbar is redundant chrome —
-	// whether we just emptied it or the side nav had already supplied the
-	// utilities. Dropping it unconditionally is also what stops it stacking a
-	// second header under ours.
-	dropDesktopNavbar();
-
-	// account menu — adopted last so it sits furthest right, per Carbon's
-	// ordering (search leftmost, account second from the right)
-	adopt(document.querySelector(".body-sidebar .dropdown-navbar-user"), ".dropdown-navbar-user");
-
-	bindNotifications(slot);
-}
-
-/**
- * Re-arm the notification bell after the move.
- *
- * frappe wires the bell to `this.wrapper.find(".dropdown-notifications")`
- * (ui/sidebar/sidebar.js), and that wrapper is the SIDEBAR container. Harvesting
- * the utilities moves the panel into <header>, so the lookup returns an empty
- * set from then on and the click toggles nothing — adopting the bell is what
- * kills it. Redo the toggle against where the panel actually lives now.
- *
- * frappe's own handler still runs and still no-ops on its empty set, so this
- * adds the missing toggle rather than racing a working one.
- */
-function bindNotifications(slot: Element): void {
-	// `querySelector<HTMLElement>` for the bell only: `dataset` is on
-	// HTMLElement, and the bell is frappe's own <button> (sidebar.js builds it
-	// as a standard item of `type: "Button"`). The panel is only ever read for
-	// its classList, which every Element has.
-	const bell = slot.querySelector<HTMLElement>(".sidebar-notification");
-	const panel = slot.querySelector(".dropdown-notifications");
-	// harvest re-runs on every route change; the listener must not stack up
-	if (!bell || !panel || bell.dataset.cfBell) return;
-	bell.dataset.cfBell = "1";
-
-	bell.addEventListener("click", () => {
-		panel.classList.toggle("hidden");
-		// what frappe fires on open, so the panel refreshes its counts
-		if (!panel.classList.contains("hidden") && window.jQuery) {
-			jQuery(panel).trigger("show.bs.dropdown");
-		}
-	});
-}
-
-function dropDesktopNavbar(): void {
-	const nav = document.querySelector(".desktop-navbar");
-	if (nav) nav.remove();
-}
-
-/**
- * `nodeType === 1` stays the decision the JS made; the rest is only what lets
- * the compiler believe it, since `Node` carries no `matches`. Duck-typed rather
- * than `instanceof Element` for the same reason
- * tables/datatable/navigation.ts is: a node adopted from another realm fails
- * `instanceof` while still being a perfectly good element.
- */
-function isElementNode(node: Node): node is Element {
-	return node.nodeType === 1 && "matches" in node && typeof node.matches === "function";
-}
-
-/**
- * A node the header template below just wrote.
- *
- * The JS dereferenced these lookups unchecked, so a template/selector drift
- * surfaced as a bare `TypeError: … is null` one line later. This throws in the
- * same place for the same reason and names the selector that went missing —
- * `mount()` runs inside the retry interval either way.
- */
-function required(root: ParentNode, sel: string): HTMLElement {
-	const node = root.querySelector<HTMLElement>(sel);
-	if (!node) throw new Error(`carbon_frappe: UI Shell header is missing ${sel}`);
-	return node;
+	s.nav.markCurrent();
+	s.nav.closeAll();
+	s.switcher.close();
+	syncMenuButton(s, model.expanded, model.menuDisabled);
 }
 
 function mount(): boolean {
-	const header = document.querySelector("header");
+	const header = document.querySelector<HTMLElement>("body > .main-section > header");
 	// bail if absent, already ours, or frappe filled it (read-only / mobile /
 	// impersonation / announcement) — those cases must keep frappe's markup
 	if (!header || header.classList.contains(MOUNTED) || header.children.length) return false;
+	if (!(window.frappe && frappe.app && frappe.app.sidebar)) return false;
 
-	const { company, app } = productName();
-	const esc = (s: string): string => frappe.utils.escape_html(s);
-
-	header.classList.add(MOUNTED, "cf-shell-header");
+	const toggleLabel = translate("Toggle navigation");
+	header.classList.add(MOUNTED, "cf-shell-header", "cds--header", ZONE);
 	document.body.classList.add(SHELL_ON);
 	header.innerHTML = `
-		<button class="cf-shell-menu" aria-label="Open navigation" type="button">
-			<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-				<rect x="2" y="5"    width="16" height="1.4"></rect>
-				<rect x="2" y="9.3"  width="16" height="1.4"></rect>
-				<rect x="2" y="13.6" width="16" height="1.4"></rect>
-			</svg>
-		</button>
-		<a class="cf-shell-name" href="/app">
-			${company ? `<span class="cf-shell-prefix">${esc(company)}</span> ` : ""}
-			<span class="cf-shell-product">${esc(app)}</span>
-		</a>
-		<div class="cf-shell-spacer"></div>
-		<div class="cf-shell-actions"></div>
+		<a class="cds--skip-to-content" href="#body" tabindex="0">${esc(translate("Skip to main content"))}</a>
+		<button class="cds--header__action cds--header__menu-trigger cds--header__menu-toggle" type="button"
+			aria-label="${esc(toggleLabel)}" title="${esc(toggleLabel)}" aria-expanded="false">${menu20}</button>
+		<a class="cds--header__name" href="/desk"></a>
+		<div class="cds--header__global"></div>
 	`;
+	// The skip link's target: desk.html:40's #body is the content column. The
+	// click is handled here and STOPPED: frappe's body-level router rewrites
+	// every same-host <a> click into `set_route(pathname)` (router.js:26-70)
+	// and does not consult `defaultPrevented`, so a plain `#body` fragment
+	// would re-route the current page instead of moving focus.
+	const body = document.getElementById("body");
+	if (body && !body.hasAttribute("tabindex")) body.tabIndex = -1;
+	required(header, ".cds--skip-to-content").addEventListener("click", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const target = document.getElementById("body");
+		if (target) target.focus();
+	});
 
-	required(header, ".cf-shell-menu").addEventListener("click", () => {
+	const menu = required(header, ".cds--header__menu-toggle");
+	const name = required(header, ".cds--header__name");
+	const global = required(header, ".cds--header__global");
+	if (!(menu instanceof HTMLButtonElement) || !(name instanceof HTMLAnchorElement)) {
+		throw new Error("carbon_frappe: UI Shell header template drifted");
+	}
+
+	const nav = mountNav(header);
+	header.insertBefore(nav.el, global);
+	const switcher = mountSwitcher(header, global);
+	switcher.onOpen(() => {
+		nav.closeAll();
+		const panel = global.querySelector(".dropdown-notifications");
+		if (panel) panel.classList.add("hidden");
+	});
+
+	menu.addEventListener("click", () => {
+		const sidebar = window.frappe && frappe.app && frappe.app.sidebar;
+		if (sidebar && typeof sidebar.toggle_width === "function") {
+			sidebar.toggle_width();
+			return;
+		}
 		// `querySelector<HTMLElement>`: `.click()` is HTMLElement's, and the
-		// toggle is a <button> in both of frappe's templates (ui/page.html:5,
-		// ui/sidebar/sidebar.html:71).
-		const btn = document.querySelector<HTMLElement>(".sidebar-toggle-btn");
+		// toggle is a <button> in frappe's template (ui/sidebar/sidebar.html:71).
+		const btn = document.querySelector<HTMLElement>(".body-sidebar .sidebar-toggle-btn");
 		if (btn) btn.click();
 	});
 
-	harvestUtilities(required(header, ".cf-shell-actions"));
+	shell = { header, menu, name, nav, global, switcher, lastSignature: "" };
+	project();
+
+	// the bar's fit depends on the viewport and on what the global bar holds;
+	// both are observed, coalesced to one layout per frame
+	if (typeof ResizeObserver === "function") {
+		let frame = 0;
+		const ro = new ResizeObserver(() => {
+			if (frame) return;
+			frame = requestAnimationFrame(() => {
+				frame = 0;
+				nav.layout();
+			});
+		});
+		ro.observe(header);
+		ro.observe(global);
+	}
+	// IBM Plex may land after the first render; the cached widths are then wrong
+	if (document.fonts && document.fonts.ready) {
+		document.fonts.ready.then(() => nav.layout(true)).catch(() => undefined);
+	}
 	return true;
 }
 
-// The desk boots asynchronously, so retry until the header exists.
+// -- hooks, bound at bundle load -------------------------------------------
+
+// 1. re-project after every sidebar render
+safePatch(
+	() => window.frappe && frappe.ui && frappe.ui.Sidebar && frappe.ui.Sidebar.prototype,
+	"make_sidebar",
+	(orig) =>
+		function (this: FrappeSidebar): void {
+			orig.call(this);
+			project();
+		},
+	"Carbon UI Shell header (Sidebar.make_sidebar → project)"
+);
+
+// 2. route changes — deferred, because the sidebar's own "change" handler
+//    (sidebar.js:327-334) is registered after ours (it binds in its constructor,
+//    ours at bundle load) and must run set_workspace_sidebar() first; and
+//    re-harvest late, because a route can rebuild the utilities' hosts
+if (window.frappe && frappe.router && typeof frappe.router.on === "function") {
+	frappe.router.on("change", () => {
+		setTimeout(refreshRoute, 0);
+		setTimeout(() => {
+			const s = shell;
+			if (!s) return;
+			harvestUtilities(s.global, () => s.switcher.close());
+			s.global.appendChild(s.switcher.button);
+			s.nav.layout();
+		}, 200);
+	});
+	record("Carbon UI Shell header (router change)", true);
+} else {
+	record("Carbon UI Shell header (router change)", false);
+}
+
+// 3. hamburger state follows the sidebar (sidebar.js:623-625)
+$(document).on("sidebar-expand", (_e: JQuery.TriggeredEvent, data: { sidebar_expand?: boolean } | undefined) => {
+	const s = shell;
+	if (!s) return;
+	syncMenuButton(s, !!(data && data.sidebar_expand), s.menu.disabled);
+});
+record("Carbon UI Shell header (sidebar-expand sync)", true);
+
+// 4. The desk boots asynchronously, so retry until the header can mount. Ten
+//    seconds is generous. Once the app is up, a <header> that frappe replaced
+//    (`$("header").replaceWith`, toolbar.js:9-21 — the element is GONE, not
+//    filled) or filled itself is "not applicable", not a failure; only a
+//    template drift or a timeout is.
+const MOUNT_ID = "Carbon UI Shell header (<header> mount)";
 let tries = 0;
 const timer = setInterval(() => {
-	if (mount() || ++tries > 40) {
+	let mounted = false;
+	try {
+		mounted = mount();
+	} catch (e) {
 		clearInterval(timer);
-		record("Carbon UI Shell header (<header> mount)", tries <= 40);
+		record(MOUNT_ID, false);
+		console.error(e);
+		return;
+	}
+	if (mounted) {
+		clearInterval(timer);
+		record(MOUNT_ID, true);
+		return;
+	}
+	const appUp = !!(window.frappe && frappe.app && frappe.app.sidebar);
+	const header = document.querySelector<HTMLElement>("body > .main-section > header");
+	const notApplicable = appUp && (!header || (header.children.length > 0 && !header.classList.contains(MOUNTED)));
+	if (notApplicable || ++tries > 100) {
+		clearInterval(timer);
+		record(MOUNT_ID, notApplicable);
 	}
 }, 100);
 
-const actionSlot = (): Element | null =>
-	document.querySelector(".cf-shell-header .cf-shell-actions");
-
-// Route changes re-render the side nav, which can re-create the utilities we
-// moved. Re-harvest so they do not reappear in the sidebar.
-if (window.frappe && frappe.router && typeof frappe.router.on === "function") {
-	frappe.router.on("change", () => {
-		const slot = actionSlot();
-		if (slot) setTimeout(() => harvestUtilities(slot), 200);
-	});
-}
-
-// The landing page rebuilds .desktop-navbar on every visit, and it does so from
-// a server round-trip's callback (desk/page/desktop/desktop.js make()), so the
-// fixed delay above races it — too early and the navbar lands afterwards, alone
-// and unstyled, under our header. Watch for it instead of guessing.
+// 5. The landing page rebuilds .desktop-navbar on every visit, and it does so
+//    from a server round-trip's callback (desk/page/desktop/desktop.js make()),
+//    so the fixed delay above races it — too early and the navbar lands
+//    afterwards, alone and unstyled, under our header. Watch for it instead of
+//    guessing.
 //
-// Scoped to the template's own root so this stays O(added nodes) and never
-// walks a freshly rendered datatable subtree.
+//    Scoped to the template's own root so this stays O(added nodes) and never
+//    walks a freshly rendered datatable subtree.
 if (typeof MutationObserver === "function") {
 	const observer = new MutationObserver((records) => {
 		for (const rec of records) {
 			for (const node of rec.addedNodes) {
-				if (!isElementNode(node) || !node.matches(".desktop-wrapper, .desktop-navbar")) continue;
-				const slot = actionSlot();
-				if (slot) harvestUtilities(slot);
-				else dropDesktopNavbar();
+				if (!(node instanceof Element) || !node.matches(".desktop-wrapper, .desktop-navbar")) continue;
+				// unmounted (mobile, frappe-filled header): the landing navbar
+				// is frappe's to keep
+				const s = shell;
+				if (!s) return;
+				harvestUtilities(s.global, () => s.switcher.close());
+				s.global.appendChild(s.switcher.button);
+				s.nav.layout();
 				return;
 			}
 		}

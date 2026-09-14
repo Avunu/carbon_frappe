@@ -1,0 +1,57 @@
+// Carbon component CSS — every `@carbon/styles` component mixin the desk
+// bundle includes, in ONE partial.
+//
+// Carbon's component styles are pulled in as MIXINS rather than through
+// `@carbon/styles/scss/components/index`, so this emits exactly the families
+// the theme renders — no reset, no unrelated components.
+//
+// Why one partial and not a `@use` block in each consumer: the desk bundle is
+// assembled with `@import` (frappe's own pipeline), and Sass re-emits the CSS
+// of every module a file `@use`s for EACH `@import`ed file that uses it —
+// "all the CSS transitively loaded by @use will be included in the resulting
+// stylesheet, even if it's already been included by another @import"
+// (sass-lang.com/documentation/at-rules/import). Splitting these includes
+// across _carbon-table.scss and _ui-shell.scss shipped the shared button and
+// layer modules twice (+80 KB). Here they are loaded once; the consumers hold
+// only their own overrides, which need no Carbon module at all.
+//
+// Order matters for the cascade: the overrides in _carbon-table.scss and
+// _ui-shell.scss are imported after this and expect to win at equal
+// specificity.
+
+// -- Carbon Tables engine (desk/_carbon-table.scss, carbon_tables.bundle.js) --
+// The light-DOM data table the engine renders for the Grid, List view and
+// Report/Query views. Why light DOM at all: `@carbon/web-components` would give
+// the same visuals, but its shadow roots put row and cell internals out of
+// reach of `datatable.style.setStyle()` (13 call sites across frappe/erpnext/
+// avunu) and of every third-party report stylesheet. The engine therefore
+// renders plain `cds--data-table` markup, exactly as @carbon/react does.
+@use "@carbon/styles/scss/components/data-table/data-table";
+@use "@carbon/styles/scss/components/data-table/sort/data-table-sort";
+@use "@carbon/styles/scss/components/data-table/action/data-table-action";
+@use "@carbon/styles/scss/components/data-table/expandable/data-table-expandable";
+@use "@carbon/styles/scss/components/data-table/skeleton/data-table-skeleton";
+@use "@carbon/styles/scss/components/pagination/pagination";
+@use "@carbon/styles/scss/components/overflow-menu/overflow-menu";
+
+// -- Carbon UI Shell header (desk/_ui-shell.scss, carbon_anatomy.bundle.js) --
+// Header, right header panel, switcher, and the notification badge. `side-nav`
+// is deliberately absent (frappe's own `.body-sidebar` stays the left panel)
+// and so is `content` (`.main-section` is the content).
+@use "@carbon/styles/scss/components/ui-shell/header/header";
+@use "@carbon/styles/scss/components/ui-shell/header-panel/header-panel";
+@use "@carbon/styles/scss/components/ui-shell/switcher/switcher";
+@use "@carbon/styles/scss/components/badge-indicator/badge-indicator";
+
+@include data-table.data-table;
+@include data-table-sort.data-table-sort;
+@include data-table-action.data-table-action;
+@include data-table-expandable.data-table-expandable;
+@include data-table-skeleton.data-table-skeleton;
+@include pagination.pagination;
+@include overflow-menu.overflow-menu;
+
+@include header.header;
+@include header-panel.header-panel;
+@include switcher.switcher;
+@include badge-indicator.badge-indicator;
