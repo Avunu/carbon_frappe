@@ -29,7 +29,7 @@
   "devDependencies": {
     "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
-    "@types/node": "^26.5.0",
+    "@types/node": "^26.5.1",
     "frappe-types": "^16.1.1",
     "sass": "1.104.0",
     "typescript": "^7.0.2"
