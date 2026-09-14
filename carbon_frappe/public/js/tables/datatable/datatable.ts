@@ -664,6 +664,9 @@ export default class CarbonDataTable {
 				},
 			},
 		});
+		// The engine's constructor already rendered once, with `this.engine`
+		// still unassigned — see the guard in {@link CarbonDataTable.syncCheckboxes}.
+		this.syncCheckboxes();
 	}
 
 	colIndexOfEngineColumn(column: EngineColumnRef): DataTableColIndex {
@@ -944,6 +947,13 @@ export default class CarbonDataTable {
 	 */
 	syncCheckboxes(): void {
 		if (!this.options.checkboxColumn) return;
+		// The engine renders from inside its own constructor, so the very first
+		// `onRender` fires while `buildEngine`'s `this.engine = new CarbonTable(...)`
+		// is still evaluating its right-hand side — the field is not written
+		// until that returns. `emit` catches what a handler throws, so this cost
+		// nothing but a console error; the guard says so instead. `buildEngine`
+		// runs the skipped sync itself once the assignment has landed.
+		if (!this.engine) return;
 		const checkMap = this.rowmanager.checkMap;
 		const renderer = this.engine.renderer;
 

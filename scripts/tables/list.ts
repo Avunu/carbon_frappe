@@ -91,7 +91,10 @@ interface CheckedProbe {
 
 /** `rv` — the ReportView subclass, which must still render its own way. */
 interface ReportViewProbe {
+	/** Diagnostic only. esbuild lowers the class, so this is NOT `"CarbonDataTable"`. */
 	ctor: string;
+	/** The identity test: our class, carrying a real engine. */
+	isCarbon: boolean;
 	rows: number;
 	view: string;
 }
@@ -326,8 +329,8 @@ try {
   await page.goto(`${BASE}/app/todo/view/report`);
   await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
   await new Promise(r=>setTimeout(r,2000));
-  const rv = await page.eval<ReportViewProbe>(`(() => ({ ctor: cur_list.datatable.constructor.name, rows: document.querySelectorAll('tbody .dt-row').length, view: cur_list.view_name }))()`);
-  ok("ReportView subclass still renders its own way", rv.ctor === "CarbonDataTable" && rv.view === "Report", JSON.stringify(rv));
+  const rv = await page.eval<ReportViewProbe>(`(() => ({ ctor: cur_list.datatable.constructor.name, isCarbon: cur_list.datatable.constructor === window.DataTable && !!cur_list.datatable.engine, rows: document.querySelectorAll('tbody .dt-row').length, view: cur_list.view_name }))()`);
+  ok("ReportView subclass still renders its own way", rv.isCarbon && rv.view === "Report" && rv.rows > 0, JSON.stringify(rv));
 
   const errs = page.consoleErrors();
   ok("no console errors", errs.length === 0, errs.slice(0,4).join(" | "));

@@ -650,6 +650,31 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 			enableRowSelection: !!o.selectable,
 			enableSubRowSelection: false,
 			manualPagination: true,
+			// Expansion is the ADAPTER's state, not TanStack's to revoke.
+			//
+			// v9 defaults `autoResetExpanded` to `!manualExpanding` and — unlike
+			// the sorting/pagination resets — performs it ASYNCHRONOUSLY:
+			// `createCoreRowModel`'s `onAfterUpdate` calls
+			// `table_autoResetExpanded`, which hands `table_resetExpanded` to
+			// `_reactivity.schedule` (a `queueMicrotask`). So the wipe lands
+			// AFTER the caller that changed the data has finished, and there is
+			// no synchronous point at which an adapter could re-apply.
+			//
+			// query_report.js is exactly that caller: on every filter change it
+			// runs `datatable.refresh(data, columns)` and then, one statement
+			// later, `rowmanager.setTreeDepth(report_settings.initial_depth)`.
+			// Both are synchronous, both completed, and the scheduled reset then
+			// emptied `expanded` — collapsing a 69-row tree report back to its 11
+			// roots on the first filter change and every one after. (The initial
+			// load survived only because `skipFirstRun` suppresses the hook on
+			// the core row model's first computation.)
+			//
+			// Nothing here wants the auto-reset: `setTreeDepth`,
+			// `expandAllNodes`, `collapseAllNodes` and the Grid's
+			// `setExpandedRow` are the only writers of expanded state, and a
+			// stale id for a row that a refresh removed is inert — TanStack
+			// reads `expanded[row.id]` per row and never enumerates the map.
+			autoResetExpanded: false,
 			initialState: this.initialState(),
 		};
 		if (o.getRowId) opts.getRowId = o.getRowId;

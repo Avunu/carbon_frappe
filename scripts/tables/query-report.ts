@@ -13,7 +13,9 @@ import { assertCarbonStylesheet, launch, newPage, login } from "./cdp.ts";
 
 /** The datatable QueryReport builds for us, before any report script is installed. */
 interface BaseProbe {
+	/** Diagnostic only. esbuild lowers the class, so this is NOT `"CarbonDataTable"`. */
 	ctor: string;
+	/** The identity test: `window.DataTable` itself, carrying a real engine. */
 	viaWindow: boolean;
 	rows: number;
 	cols: number;
@@ -84,7 +86,7 @@ try {
     const qr = frappe.query_report;
     return {
       ctor: qr.datatable.constructor.name,
-      viaWindow: qr.datatable instanceof window.DataTable,
+      viaWindow: qr.datatable.constructor === window.DataTable && !!qr.datatable.engine,
       rows: qr.datatable.datamanager.rowCount,
       cols: qr.datatable.datamanager.getColumns().length,
       dtRows: document.querySelectorAll('tbody .dt-row').length,
@@ -92,7 +94,7 @@ try {
     };
   })()`);
   console.log(JSON.stringify(base));
-  ok("QueryReport constructs CarbonDataTable via window.DataTable", base.ctor === "CarbonDataTable" && base.viaWindow, base.ctor);
+  ok("QueryReport constructs CarbonDataTable via window.DataTable", base.viaWindow, base.ctor);
   ok("report data rendered as a Carbon table", base.carbon && base.dtRows > 0, `rows=${base.dtRows}/${base.rows}`);
 
   // Install a timesheet_review-shaped consumer and re-render through it.
