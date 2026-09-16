@@ -187,6 +187,10 @@ jobs:
           diagnostic-endpoint: ""
           use-flakehub: false
       - run: nix develop --no-pure-eval -c bash ci/integration.sh
+      # what the bench itself said — the web runtime's and workers' logs
+      - name: Bench logs
+        if: failure()
+        run: for f in .frappe-nix/bench/logs/*.log; do echo "::group::$f"; tail -n 200 "$f"; echo "::endgroup::"; done
       - uses: actions/upload-artifact@v7
         if: always()
         with:
