@@ -126,6 +126,23 @@
         "type": "github"
       }
     },
+    "erpnext": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789497971,
+        "narHash": "sha256-Ag0PI+TWSAY2HB3EOWsynWGanLjwrzIUElh9XxQzo3E=",
+        "owner": "frappe",
+        "repo": "erpnext",
+        "rev": "12cd563fb9a79731f75ae2a45b1446a0a2dd9e74",
+        "type": "github"
+      },
+      "original": {
+        "owner": "frappe",
+        "ref": "version-16",
+        "repo": "erpnext",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -314,11 +331,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1789405295,
-        "narHash": "sha256-WilMOZ4cnsTlsII188jt8YZQngKSsf/9abSUd6BF2u8=",
+        "lastModified": 1789413761,
+        "narHash": "sha256-rXV4j1ojouzbyf8EKMuYySYZCNJy/aBBuqN6AbhnPF4=",
         "owner": "Avunu",
         "repo": "frappe-nix",
-        "rev": "8cc5ce5b8f6f586aa5daf5a7bba662d3f16c447a",
+        "rev": "af41190ecd1c6bc1153c06b0c0195f0efdc790a1",
         "type": "github"
       },
       "original": {
@@ -433,6 +450,23 @@
       "original": {
         "owner": "hercules-ci",
         "repo": "gitignore.nix",
+        "type": "github"
+      }
+    },
+    "hrms": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788929373,
+        "narHash": "sha256-DHfb8aG16f0t6XJzzPCd0h9Iji0e9D+xxqg6ZwBwCfQ=",
+        "owner": "frappe",
+        "repo": "hrms",
+        "rev": "a4768b441cff346def505e27f2a2229ee1e05b9b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "frappe",
+        "ref": "version-16",
+        "repo": "hrms",
         "type": "github"
       }
     },
@@ -906,8 +940,10 @@
     },
     "root": {
       "inputs": {
+        "erpnext": "erpnext",
         "frappe": "frappe",
         "frappe-nix": "frappe-nix",
+        "hrms": "hrms",
         "nixpkgs": [
           "frappe-nix",
           "nixpkgs"

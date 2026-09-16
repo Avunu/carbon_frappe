@@ -13,6 +13,18 @@
       url = "github:frappe/frappe/version-16";
       flake = false;
     };
+    # The two apps the browser suites' fixtures live in (scripts/test-shell.ts
+    # reads ERPNext's Projects and HRMS's Recruitment sidebars). Not runtime
+    # requirements of the theme — hooks.py declares none — but the CI bench
+    # and the dev bench carry them so the suites run the same everywhere.
+    erpnext = {
+      url = "github:frappe/erpnext/version-16";
+      flake = false;
+    };
+    hrms = {
+      url = "github:frappe/hrms/version-16";
+      flake = false;
+    };
   };
 
   nixConfig = {
@@ -40,21 +52,37 @@
           "x86_64-linux"
         ];
 
-        perSystem = _: {
-          frappe-nix = {
-            enable = true;
-            siteName = "carbon.localhost";
+        perSystem =
+          { pkgs, ... }:
+          {
+            # `nix fmt` — nixpkgs' own formatter (RFC 166)
+            formatter = pkgs.nixfmt;
 
-            app = {
+            frappe-nix = {
               enable = true;
-              frappeVersion = "version-16";
-              frappe = inputs.frappe;
-              # src defaults to `self`, name to [project].name ("carbon_frappe"),
-              # benchName to "carbon-frappe", python/nodejs to the version-16
-              # preset, and lockDir to ./nix.
+              siteName = "carbon.localhost";
+
+              app = {
+                enable = true;
+                frappeVersion = "version-16";
+                inherit (inputs) frappe;
+                # in this order: erpnext installs before hrms
+                siblings = [
+                  {
+                    name = "erpnext";
+                    src = inputs.erpnext;
+                  }
+                  {
+                    name = "hrms";
+                    src = inputs.hrms;
+                  }
+                ];
+                # src defaults to `self`, name to [project].name ("carbon_frappe"),
+                # benchName to "carbon-frappe", python/nodejs to the version-16
+                # preset, and lockDir to ./nix.
+              };
             };
           };
-        };
       }
     );
 }
