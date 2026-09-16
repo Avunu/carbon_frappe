@@ -121,6 +121,10 @@ jobs:
           git clone --filter=blob:none --no-checkout https://github.com/frappe/frappe.git ../frappe
           git -C ../frappe checkout --quiet "$rev"
           echo "FRAPPE_PATH=$(cd ../frappe && pwd)" >> "$GITHUB_ENV"
+      # frappe's sass pipeline resolves `~frappe-charts` and friends from
+      # frappe's OWN node_modules, which a bare checkout does not have.
+      - name: Install frappe's node_modules
+        run: yarn --cwd ../frappe install --frozen-lockfile --ignore-scripts --non-interactive
       - run: yarn compile
       - run: yarn audit
 
