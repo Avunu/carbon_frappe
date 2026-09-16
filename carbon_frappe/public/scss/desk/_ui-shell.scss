@@ -516,7 +516,70 @@ body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__n
 	}
 }
 
-// -- 6. The theme-switcher preview strip -------------------------------------
+// -- 6. Switcher: expandable rows --------------------------------------------
+// js/anatomy/shell/switcher.ts renders a desktop Folder (or an App icon with
+// workspaces under it) as a disclosure row Carbon's Switcher does not have: a
+// `<button aria-expanded>` in the item-link's clothes, then a nested list.
+// Everything below is what Carbon's switcher mixin does NOT cover for that:
+// its `--switcher__item` is a fixed 2rem row, so the group row must grow; its
+// item-link is a bare `display: block`, so the chevron needs a flex row; and
+// the first-child top margin it gives the list must not repeat inside a group.
+.cds--header-panel .cds--switcher {
+	.cf-switcher__group {
+		block-size: auto;
+	}
+
+	.cf-switcher__toggle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		inline-size: 100%;
+		border: 0;
+		background: none;
+		// only the family: the UA gives buttons system-ui, and a full `font`
+		// reset here would outrank the item-link's own heading-compact-01
+		font-family: inherit;
+		text-align: start;
+		// the item-link's `color: $text-secondary` is inherited by the glyph
+		// through `fill="currentColor"`
+
+		.cf-switcher__toggle-label {
+			min-inline-size: 0;
+			@include text-truncate.text-truncate-end;
+		}
+
+		.cf-switcher__arrow {
+			flex: none;
+			// $duration-fast-02 (SCSS-only; Carbon emits no motion custom property)
+			transition: transform 110ms cubic-bezier(0.2, 0, 0.38, 0.9);
+		}
+
+		&[aria-expanded="true"] .cf-switcher__arrow {
+			transform: rotate(180deg);
+		}
+	}
+
+	.cf-switcher__submenu {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		&[hidden] {
+			display: none !important;
+		}
+
+		> .cds--switcher__item:nth-child(1) {
+			margin-block-start: 0;
+		}
+
+		// one level in: the Folder's icons, as the desktop's modal lists them
+		.cds--switcher__item-link {
+			padding-inline-start: 2rem;
+		}
+	}
+}
+
+// -- 7. The theme-switcher preview strip -------------------------------------
 // The one `.navbar` left in the desk (ui/theme_switcher.js): keep its preview
 // tiles showing a g100 bar.
 .theme-grid .navbar {

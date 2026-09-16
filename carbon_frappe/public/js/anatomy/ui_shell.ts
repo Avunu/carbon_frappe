@@ -16,7 +16,8 @@
 //   4 Sub-menu     — its Section Breaks, plus a measured "More" overflow
 //   5 Utilities    — frappe's search / notifications / account, MOVED in
 //                    (shell/utilities.ts)
-//   6 Switcher     — installed apps, in a right header panel (shell/switcher.ts)
+//   6 Switcher     — the desktop's icons (apps + workspaces, nested as on
+//                    /desk), in a right header panel (shell/switcher.ts)
 //
 // Everything the header shows is read from `frappe.app.sidebar` (shell/model.ts):
 // frappe's Workspace Sidebar is what resolves a route to a workspace, names the
@@ -112,7 +113,7 @@ function project(): void {
 	s.lastSignature = model.signature;
 	renderName(s, model);
 	s.nav.render(model);
-	s.switcher.render(model.app);
+	s.switcher.render(model);
 	syncMenuButton(s, model.expanded, model.menuDisabled);
 	harvestUtilities(s.global, () => s.switcher.close());
 	// the harvest appends; the switcher is Carbon's "furthest right icon"

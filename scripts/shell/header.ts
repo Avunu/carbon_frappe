@@ -184,25 +184,86 @@ try {
 	ok("at 2560px every row is back in the bar and More is gone", !widest.more && widest.hidden === 0, JSON.stringify(widest));
 
 	// -- 6. switcher ---------------------------------------------------------------
+	// The panel is the desktop's icon list (shell/desktop.ts): the current
+	// workspace selected, a Folder / App-with-workspaces as a disclosure row.
 	await page.goto(`${BASE}/desk/projects`);
 	await ready(page, "Projects");
 	await page.eval(`document.querySelector('#cf-switcher-button').click()`);
 	await sleep(400);
-	const sw = await page.eval<{ expanded: string | null; panel: boolean; width: string; selected: string[]; tab: string | null; active: boolean }>(`(() => {
+	interface SwitcherState {
+		expanded: string | null;
+		panel: boolean;
+		width: string;
+		selected: string[];
+		tab: string | null;
+		active: boolean;
+		rows: string[];
+		groups: string[];
+	}
+	const SWITCHER = `(() => {
 		const b = document.querySelector('#cf-switcher-button'); const p = document.querySelector('#cf-switcher-panel');
+		const top = [...p.querySelectorAll('.cds--switcher > .cds--switcher__item > .cds--switcher__item-link')];
 		return { expanded: b.getAttribute('aria-expanded'), panel: p.classList.contains('cds--header-panel--expanded'), width: getComputedStyle(p).width,
-			selected: [...p.querySelectorAll('.cds--switcher__item-link--selected')].map(a => a.textContent), tab: p.querySelector('.cds--switcher__item-link').getAttribute('tabindex'), active: b.classList.contains('cds--header__action--active') };
+			selected: [...p.querySelectorAll('.cds--switcher__item-link--selected')].map(a => a.textContent.trim()), tab: p.querySelector('.cds--switcher__item-link').getAttribute('tabindex'), active: b.classList.contains('cds--header__action--active'),
+			rows: top.map(a => a.textContent.trim()), groups: [...p.querySelectorAll('.cf-switcher__toggle')].map(t => t.dataset.group) };
+	})()`;
+	const sw = await page.eval<SwitcherState>(SWITCHER);
+	ok("switcher opens a 256px header panel with the current workspace selected", sw.expanded === "true" && sw.panel && sw.width === "256px" && sw.selected.join() === "Projects" && sw.tab === "0" && sw.active, JSON.stringify(sw));
+	// the desktop's own top level, from boot: visible icons whose parent is absent or hidden
+	const expectedRows = await page.eval<string[]>(`(() => {
+		const icons = frappe.boot.desktop_icons.filter(i => i.hidden !== 1); const visible = new Set(icons.map(i => i.label));
+		const kids = new Set(icons.filter(i => i.parent_icon && visible.has(i.parent_icon)).map(i => i.parent_icon));
+		return icons.filter(i => !(i.parent_icon && visible.has(i.parent_icon))).filter(i => i.icon_type !== 'Folder' || kids.has(i.label)).map(i => __(i.label)).concat([__('Desktop')]);
 	})()`);
-	ok("switcher opens a 256px header panel with the current app selected", sw.expanded === "true" && sw.panel && sw.width === "256px" && sw.selected.join() === "ERPNext" && sw.tab === "0" && sw.active, JSON.stringify(sw));
+	ok("switcher rows are the desktop's icons in the desktop's order, then Desktop", sw.rows.join("|") === expectedRows.join("|"), `${sw.rows.join("|")} vs ${expectedRows.join("|")}`);
+	ok("Accounting is a disclosure row (a Folder), Framework too (an App with workspaces)", sw.groups.includes("Accounting") && sw.groups.includes("Framework"), sw.groups.join());
 	await page.screenshot(SHOT + "/shell-switcher.png");
+
+	interface GroupState { expanded: string | null; hidden: boolean; controls: boolean; children: string[]; childTabs: string[]; }
+	const GROUP = (label: string): string => `(() => {
+		const t = document.querySelector('.cf-switcher__toggle[data-group=${JSON.stringify(label)}]'); const sub = document.getElementById(t.getAttribute('aria-controls'));
+		return { expanded: t.getAttribute('aria-expanded'), hidden: sub.hidden, controls: sub.classList.contains('cf-switcher__submenu'),
+			children: [...sub.querySelectorAll('.cds--switcher__item-link')].map(a => a.textContent.trim()), childTabs: [...sub.querySelectorAll('.cds--switcher__item-link')].map(a => a.getAttribute('tabindex')) };
+	})()`;
+	const expectedKids = await page.eval<string[]>(`frappe.boot.desktop_icons.filter(i => i.parent_icon === 'Accounting' && i.hidden !== 1).map(i => __(i.label))`);
+	const closed = await page.eval<GroupState>(GROUP("Accounting"));
+	ok("Accounting starts collapsed: aria-expanded false, submenu hidden, children untabbable", closed.expanded === "false" && closed.hidden && closed.controls && closed.children.join("|") === expectedKids.join("|") && closed.childTabs.every((t) => t === "-1"), JSON.stringify(closed));
+	await page.eval(`document.querySelector('.cf-switcher__toggle[data-group="Accounting"]').click()`);
+	await sleep(200);
+	const groupOpened = await page.eval<GroupState>(GROUP("Accounting"));
+	const stillOpen = await page.eval<boolean>(`document.querySelector('#cf-switcher-panel').classList.contains('cds--header-panel--expanded')`);
+	ok("clicking Accounting expands it in place and keeps the panel open", groupOpened.expanded === "true" && !groupOpened.hidden && groupOpened.childTabs.every((t) => t === "0") && stillOpen, JSON.stringify(groupOpened));
+	await page.screenshot(SHOT + "/shell-switcher-expanded.png");
+
+	await page.eval(`document.querySelector('.cf-switcher__toggle[data-group="Accounting"]').focus()`);
+	await key(page, "ArrowDown");
+	const intoGroup = await page.eval<string>(`document.activeElement.textContent.trim()`);
+	ok("ArrowDown from an expanded toggle enters its first child", intoGroup === expectedKids[0], intoGroup);
+	await key(page, "ArrowUp");
+	await key(page, "ArrowLeft");
+	await key(page, "ArrowDown");
+	const overGroup = await page.eval<{ collapsed: string | null; next: string }>(`({ collapsed: document.querySelector('.cf-switcher__toggle[data-group="Accounting"]').getAttribute('aria-expanded'), next: document.activeElement.textContent.trim() })`);
+	ok("ArrowLeft collapses the toggle and ArrowDown then skips its children", overGroup.collapsed === "false" && overGroup.next === expectedRows[expectedRows.indexOf("Accounting") + 1], JSON.stringify(overGroup));
 
 	await page.eval(`document.querySelector('#cf-switcher-panel .cds--switcher__item-link').focus()`);
 	await key(page, "ArrowDown");
-	const moved = await page.eval<string>(`document.activeElement.textContent`);
-	ok("ArrowDown moves focus through the switcher", moved !== "Frappe Framework" && moved.length > 0, moved);
+	const moved = await page.eval<string>(`document.activeElement.textContent.trim()`);
+	ok("ArrowDown moves focus through the switcher", moved === expectedRows[1], moved);
 	await key(page, "Escape");
 	const swClosed = await page.eval<{ expanded: string | null; focused: boolean }>(`(() => { const b = document.querySelector('#cf-switcher-button'); return { expanded: b.getAttribute('aria-expanded'), focused: document.activeElement === b }; })()`);
 	ok("Escape closes the switcher and refocuses its button", swClosed.expanded === "false" && swClosed.focused, JSON.stringify(swClosed));
+
+	// a nested workspace: its row is selected and its group opens itself
+	await page.goto(`${BASE}/desk/invoicing`);
+	await ready(page, "Invoicing");
+	await page.eval(`document.querySelector('#cf-switcher-button').click()`);
+	await sleep(400);
+	const onInvoicing = await page.eval<SwitcherState>(SWITCHER);
+	const nestedGroup = await page.eval<GroupState>(GROUP("Accounting"));
+	ok("on Invoicing the nested row is selected and Accounting is pre-expanded", onInvoicing.selected.join() === "Invoicing" && nestedGroup.expanded === "true" && !nestedGroup.hidden, JSON.stringify({ selected: onInvoicing.selected, group: nestedGroup.expanded }));
+	await key(page, "Escape");
+	await page.goto(`${BASE}/desk/projects`);
+	await ready(page, "Projects");
 
 	// -- 7. hamburger ------------------------------------------------------------
 	const before = await page.eval<{ expanded: boolean; aria: string | null }>(`(() => ({ expanded: document.querySelector('.body-sidebar-container').classList.contains('expanded'), aria: document.querySelector('.cds--header__menu-toggle').getAttribute('aria-expanded') }))()`);
@@ -283,6 +344,13 @@ try {
 			searches: h.querySelectorAll('#navbar-modal-search, #desktop-navbar-modal-search').length, bells: h.querySelectorAll('.sidebar-notification, .desktop-notification-icon').length, navbars: document.querySelectorAll('.desktop-navbar').length };
 	})()`);
 	ok("landing page: name 'Desktop', nav hidden, hamburger disabled, one search + one bell, no stray navbar", landing.name === "Desktop" && landing.navHidden && landing.menuDisabled && landing.searches === 1 && landing.bells === 1 && landing.navbars === 0, JSON.stringify(landing));
+	// the desktop itself is the reference: its rendered top-level icons, in order
+	const parity = await page.eval<{ desktop: string[]; switcher: string[] }>(`(() => {
+		const desktop = [...document.querySelectorAll('.desktop-container .desktop-icon')].filter(i => !i.parentElement.closest('.desktop-icon')).map(i => i.querySelector('.icon-title')?.textContent.trim()).filter(Boolean);
+		const top = [...document.querySelectorAll('#cf-switcher-panel .cds--switcher > .cds--switcher__item > .cds--switcher__item-link')].map(a => a.textContent.trim());
+		return { desktop, switcher: top.slice(0, -1) };
+	})()`);
+	ok("switcher rows equal the rendered desktop's top-level icons", parity.desktop.length > 0 && parity.switcher.join("|") === parity.desktop.join("|"), `${parity.switcher.join("|")} vs ${parity.desktop.join("|")}`);
 
 	// -- 11. mobile: frappe fills <header>, the shell stays out ----------------------
 	await page.send("Emulation.setDeviceMetricsOverride", { width: 767, height: 900, deviceScaleFactor: 1, mobile: true });

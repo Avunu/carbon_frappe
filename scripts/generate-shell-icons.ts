@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Dev-time codegen: render the four @carbon/icons glyphs the UI Shell header
- * inlines — Menu 20, Close 20, Switcher 20, ChevronDown 16 — to SVG strings
+ * Dev-time codegen: render the @carbon/icons glyphs the UI Shell header
+ * inlines — Menu 20, Close 20, Switcher 20, ChevronDown 16 (twice) — to SVG strings
  * and emit:
  *   - carbon_frappe/public/js/generated/shell-icons.ts
  * The output is committed. Run via `npm run codegen` after Carbon bumps.
@@ -99,6 +99,15 @@ const GLYPHS: readonly Glyph[] = [
 		// header/_header.scss rotates and tints it through that class.
 		attrs: { class: "cds--header__menu-arrow" },
 		role: "the sub-menu chevron (HeaderMenu), pre-classed `cds--header__menu-arrow`",
+	},
+	{
+		exportName: "chevronDown16Switcher",
+		icon: "chevron--down",
+		size: 16,
+		// The switcher's expandable rows (shell/switcher.ts) rotate it through
+		// their own class; header/_header.scss's rules must not reach it.
+		attrs: { class: "cf-switcher__arrow" },
+		role: "the expandable-row chevron in the switcher panel, pre-classed `cf-switcher__arrow`",
 	},
 ];
 
