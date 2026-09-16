@@ -518,7 +518,7 @@ export default class CarbonGrid extends Grid {
 		const page_index = this.grid_pagination.page_index;
 		const page_length = this.grid_pagination.page_length;
 		const page_start = (page_index - 1) * page_length;
-		if (!this.grid_rows) this.grid_rows = [];
+		if (!this.grid_rows) return;
 
 		const rows_by_doc = new Map<GridRowData, CarbonGridRow>();
 		for (const row of this.grid_rows) {
