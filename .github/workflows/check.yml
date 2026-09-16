@@ -54,7 +54,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-          cache: yarn
+      # Not setup-node's `cache: yarn`: its post-job save fails on this runner
+      # ("path does not exist" for yarn 1's cache dir) and fails the job with it.
+      - uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           enable-cache: true
@@ -73,9 +78,11 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # not HEAD: on pull_request the checkout is the synthetic merge commit
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          uv run --frozen --project tools committed "$BASE_SHA..HEAD" --no-merge-commit
+          uv run --frozen --project tools committed "$BASE_SHA..$HEAD_SHA" --no-merge-commit
           node scripts/check-commit-subject.ts --subject "$PR_TITLE"
           uv run --frozen --project tools committed --commit-file <(printf '%s\n' "$PR_TITLE")
 
@@ -97,7 +104,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-          cache: yarn
+      - uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
       - run: yarn install --frozen-lockfile
       - run: yarn typecheck
       - run: yarn check:major
@@ -121,6 +131,10 @@ jobs:
           git clone --filter=blob:none --no-checkout https://github.com/frappe/frappe.git ../frappe
           git -C ../frappe checkout --quiet "$rev"
           echo "FRAPPE_PATH=$(cd ../frappe && pwd)" >> "$GITHUB_ENV"
+      # frappe's sass pipeline resolves `~frappe-charts` and friends from
+      # frappe's OWN node_modules, which a bare checkout does not have.
+      - name: Install frappe's node_modules
+        run: yarn --cwd ../frappe install --frozen-lockfile --ignore-scripts --non-interactive
       - run: yarn compile
       - run: yarn audit
 

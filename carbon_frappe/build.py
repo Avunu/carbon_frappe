@@ -42,6 +42,9 @@ def patch_assets(app_name=None):
 	this app (e.g. `bench build --apps frappe`). Also re-points this app's own
 	`*.bundle.js` keys, which a `.ts` entry point leaves stale — see JS_BUNDLES.
 	"""
+	# The `# nosemgrep` marks below: frappe's file-traversal rule flags every
+	# `open()`; these paths are built from the bench's own sites/assets, never
+	# from user input.
 	assets_dir = os.path.abspath(os.path.join(frappe.local.sites_path, "assets"))
 	patched = False
 
@@ -54,7 +57,7 @@ def patch_assets(app_name=None):
 		if not (os.path.exists(json_path) and os.path.isdir(dist_dir)):
 			continue
 
-		with open(json_path) as f:
+		with open(json_path) as f:  # nosemgrep
 			assets = json.load(f)
 
 		changed = False
@@ -72,7 +75,7 @@ def patch_assets(app_name=None):
 				changed = True
 
 		if changed:
-			with open(json_path, "w") as f:
+			with open(json_path, "w") as f:  # nosemgrep
 				json.dump(assets, f, indent=4)
 			patched = True
 
@@ -80,7 +83,7 @@ def patch_assets(app_name=None):
 	json_path = os.path.join(assets_dir, "assets.json")
 	dist_dir = os.path.join(assets_dir, "carbon_frappe", "dist", "js")
 	if os.path.exists(json_path) and os.path.isdir(dist_dir):
-		with open(json_path) as f:
+		with open(json_path) as f:  # nosemgrep
 			assets = json.load(f)
 
 		changed = False
@@ -99,7 +102,7 @@ def patch_assets(app_name=None):
 				changed = True
 
 		if changed:
-			with open(json_path, "w") as f:
+			with open(json_path, "w") as f:  # nosemgrep
 				json.dump(assets, f, indent=4)
 			patched = True
 
