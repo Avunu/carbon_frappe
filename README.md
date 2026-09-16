@@ -152,26 +152,70 @@ Apps that build their own bundles (CRM, Helpdesk, custom portals) can't be reach
 
 ## Development
 
+The repo is a [frappe-nix](https://github.com/Avunu/frappe-nix) app: `direnv allow` (or `nix develop --no-pure-eval`) gives a shell with Node 24, yarn, uv, chromium and a bench — frappe, erpnext and hrms from the flake's pinned inputs, this app symlinked in — and `devenv up` + `provision-site` bring the site up. Every check below runs there, and CI runs the same commands.
+
 ```sh
-yarn run compile      # compile all bundles against a sibling ../frappe checkout (.dev-dist/)
-yarn run codegen      # refresh vendored IBM Plex fonts, @carbon/charts palettes, @carbon/icons shell glyphs
-yarn run audit        # strict drift audit (CI)
-yarn run test:tables  # browser tests for the table engine and its adapters
-yarn run test:shell   # browser tests for the UI Shell header
+yarn check            # format, lint, types, the frappe-major guard, unit tests — what `lint`/`typecheck` gate
+yarn format           # oxfmt: TS, JSON, SCSS, YAML, TOML, Markdown (tabs, 110 columns)
+yarn lint             # oxlint + stylelint
+yarn lint:py          # ruff check + ruff format --check
+yarn typecheck        # tsc --build, all three projects
+yarn typecheck:py     # ty, against the bench's interpreter (where `frappe` is importable)
+yarn test:unit        # node:test over the pure modules, with a 50% line-coverage floor
+yarn compile          # compile all bundles against the pinned frappe (.dev-dist/)
+yarn audit            # strict drift audit against frappe's source
+yarn codegen          # refresh vendored IBM Plex fonts, @carbon/charts palettes, @carbon/icons shell glyphs
+yarn test:tables      # browser tests for the table engine and its adapters (needs the bench up)
+yarn test:shell       # browser tests for the UI Shell header (needs the bench up)
+bash ci/integration.sh              # what CI's `integration` job runs: the site-backed suites end to end
 node scripts/dev-table.ts --serve   # the engine alone, on :8123, with no bench
 ```
 
+### Conventions, and what enforces them
+
+| Surface                              | Format             | Lint                                                                                          | Types                                        | Tests                                          |
+| ------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------- |
+| TypeScript (browser, scripts, tests) | oxfmt              | oxlint — `no-explicit-any` and `ban-ts-comment` are errors: no escape hatches                 | `tsc --build`, strict, `skipLibCheck: false` | `node --test` (unit), CDP suites (integration) |
+| SCSS                                 | oxfmt              | stylelint (standard-scss) + `audit-tokens`                                                    | —                                            | compiled by `nix build` and `yarn compile`     |
+| Python                               | ruff format (tabs) | ruff — frappe's set at pequea's strictness + SIM/C4/PIE/PERF/T20; semgrep with frappe's rules | ty                                           | `bench run-tests --app carbon_frappe`          |
+| JSON / YAML / TOML / Markdown        | oxfmt              | —                                                                                             | —                                            | —                                              |
+| Workflows                            | oxfmt              | actionlint + zizmor (third-party actions hash-pinned)                                         | —                                            | —                                              |
+| Nix                                  | `nix fmt`          | statix + deadnix, `nix flake check`                                                           | —                                            | `nix build`                                    |
+| Commits                              | —                  | committed (conventional, frappe's types); no `!`/`BREAKING CHANGE` — see Releasing            | —                                            | —                                              |
+
+Doctype JSON is left exactly as frappe's exporter writes it. Generated files (`public/js/generated`, `public/scss/generated`, the fonts) are formatted by their generators and CI fails if `yarn codegen` would change them.
+
+The git hooks are [prek](https://prek.j178.dev)'s (`uv run --frozen --project tools prek install`, once per clone; `prek run --all-files` is what CI runs). Every hook calls a binary this repo pins — the JS tools through `package.json`, the Python ones through `tools/pyproject.toml` — so a developer's shell, the hook and CI run one version, and dependabot is the only thing that moves it. In a nix shell without a CA bundle exported, `uv sync` may need `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`.
+
 `scripts/test-shell.ts` runs the same harness over the header: the name and links against the Projects sidebar, sub-menu keyboard behaviour, `aria-current`, the overflow against the 13-row Recruitment sidebar, the switcher, the hamburger, the moved bell and its badge, g100 parity in both themes, the dialog z-order, the landing page, and the mobile no-mount case.
 
-`scripts/test-tables.ts` drives headless Chromium over the DevTools Protocol (no dependencies beyond Node 22+ and `chromium` on PATH) against a running bench. It covers the engine in isolation, then each adapter's frappe contract: the `dt-*` selectors, `style.setStyle`, `rowmanager.getCheckedRows`, a report script's `get_datatable_options` / `formatter` / `after_datatable_render` / `getEditor` hooks, the Grid's inherited API and its >10-column layout, the List view's bulk actions, and g100 parity. Most of those assertions exist because that exact thing regressed once — several are specificity guards against frappe-datatable's, Bootstrap's or Carbon's own stylesheet quietly winning.
+`scripts/test-tables.ts` drives headless Chromium over the DevTools Protocol (no dependencies beyond Node 24 and `chromium` on PATH) against a running bench. It covers the engine in isolation, then each adapter's frappe contract: the `dt-*` selectors, `style.setStyle`, `rowmanager.getCheckedRows`, a report script's `get_datatable_options` / `formatter` / `after_datatable_render` / `getEditor` hooks, the Grid's inherited API and its >10-column layout, the List view's bulk actions, editing (the Check editor, the multi-line popover, paste), and g100 parity. Most of those assertions exist because that exact thing regressed once — several are specificity guards against frappe-datatable's, Bootstrap's or Carbon's own stylesheet quietly winning.
 
 `scripts/dev-table.ts` builds the engine and a fixture page into `.dev-dist/` with no frappe present at all, which is where engine behaviour is verified before any adapter is involved.
 
-`scripts/dev-compile.ts` replicates frappe's exact sass pipeline (legacy API, `includePaths` = app roots + node\_modules, `~` importer), so bundles can be smoke-tested without a bench. Set `FRAPPE_PATH` if frappe isn't at `../frappe`.
+`scripts/dev-compile.ts` replicates frappe's exact sass pipeline (legacy API, `includePaths` = app roots + node\_modules, `~` importer), so bundles can be smoke-tested without a bench. The shell exports `FRAPPE_PATH`; set it yourself outside one.
+
+### CI
+
+`.github/workflows/check.yml`, on every pull request and push to `develop`: `lint` (prek over the whole tree, commit subjects, semgrep, the tools lock), `typecheck` (tsc, unit tests, codegen freshness, then `yarn compile` and `yarn audit` against frappe at the revision `flake.lock` pins — checked out with git, no nix), `bench` (`nix fmt`, statix/deadnix, `nix flake check`, `nix build` — the app compiled in a clean bench — and ty). Those three are the required checks on `develop`. `integration` runs `ci/integration.sh` on push, nightly and on demand — a whole bench closure through the Actions cache is a daily cost, not a per-commit one.
+
+Dependencies are on autopilot: dependabot covers npm, `tools/uv.lock`, the workflows' actions and the flake inputs (frappe, erpnext, hrms and frappe-nix themselves), and `dependabot-auto-merge.yml` merges each pull request once the required checks are green. A frappe bump can legitimately fail the drift audits and need a follow-up commit; auto-merge simply waits.
 
 ### Upgrading Carbon
 
-Bump the exact-pinned `@carbon/*` versions, then `npm install && npm run codegen && npm run audit && npm run compile`, review the diff, and do a visual pass in both themes.
+Bump the exact-pinned `@carbon/*` versions, then `yarn install && yarn codegen && yarn audit && yarn compile`, review the diff, and do a visual pass in both themes.
+
+## Releasing
+
+Releases are cut by [release-please](https://github.com/googleapis/release-please). Nobody edits the version by hand, and nobody pushes to `version-16`.
+
+1. Land conventional commits on `develop` (`fix:` → patch, `feat:` → minor; the other types are left out of the changelog). Pull requests are squash-merged, so the title is the commit subject and is linted as one.
+2. release-please keeps an open **release pull request** against `develop` with the next version and the accumulated changelog. Merging it _is_ the release: `release-please.yml` tags `v16.x.y`, cuts the GitHub release, and fast-forwards **`version-16`** — the production branch, what `bench get-app https://github.com/Avunu/carbon_frappe --branch version-16` installs — to the release commit. `develop` carries `CHANGELOG.md` and the version; `version-16` is always exactly the latest release.
+3. There is no artifact to publish: a frappe app installs from git, and `bench build` compiles the assets on the target.
+
+**The major never moves on its own.** `carbon_frappe@16.x.y` means "the theme for frappe v16" — the major is the frappe major, the way erpnext, hrms and frappe-types are versioned — so a `feat!:` subject or a `BREAKING CHANGE:` footer proposing 17.0.0 is a bug, not a release. The commit-msg hook refuses both; `release-please.yml`'s `guard-major` job checks the version release-please actually proposes, on the release branch it writes, and posts a `frappe-major (release PR)` status on the pull request; `yarn check:major` runs on every push and also cross-checks `frappe.major` in `package.json` against the flake's frappe pin. Breaking changes ship as `feat:` on the line they belong to. Moving to frappe v17 is a new `version-17` branch: point the flake input at `version-17`, set `frappe.major`/`frappe.branch`, and land a `Release-As: 17.0.0` commit. `scripts/check-frappe-major.ts` has the full rationale and the recovery for a stray `!` (an empty commit with a `Release-As:` footer).
+
+Repository settings this relies on: "Allow auto-merge" and "Allow GitHub Actions to create and approve pull requests" ON; `develop` protected with `lint`, `typecheck` and `bench` required; `version-16` protected against force-pushes and deletion only — a "require pull request" rule there would block the token's fast-forward, and `github-actions[bot]` cannot be a ruleset bypass actor. `check.yml`'s `version-16` job is the alarm: the token's ref updates raise no workflow runs, so any run on that branch is a human push, and it fails unless the head is the newest `v*` tag.
 
 ## License
 
