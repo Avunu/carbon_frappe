@@ -337,7 +337,8 @@ function defaults(): CarbonDataTableResolvedOptions {
 		treeView: false,
 		checkedRowStatus: true,
 		dynamicRowHeight: false,
-		pasteFromClipboard: false,
+		// on by default here (upstream: off) — navigation.ts `onPaste`
+		pasteFromClipboard: true,
 		showTotalRow: false,
 		direction: "ltr",
 		disableReorderColumn: false,
@@ -899,6 +900,9 @@ export default class CarbonDataTable {
 		this.toastMessage.className = "dt-toast";
 		this.container.appendChild(this.toastMessage);
 
+		// frappe-datatable's hidden paste textarea, kept only because it is
+		// part of the `dt-*` DOM contract; paste itself reads the `paste`
+		// event on the viewport (navigation.ts `onPaste`).
 		this.pasteTarget = document.createElement("textarea");
 		this.pasteTarget.className = "dt-paste-target";
 		this.container.appendChild(this.pasteTarget);
@@ -1123,6 +1127,10 @@ export default class CarbonDataTable {
 
 	destroy(): void {
 		this.fireEvent("onDestroy");
+		// report_view.js rebuilds into the same wrapper; listeners left on it
+		// would keep steering this instance's stale selection
+		if (this.navigation) this.navigation.unbind();
+		if (this.editing) this.editing.unbind();
 		if (this.style) this.style.destroy();
 		if (this.engine) this.engine.destroy();
 		this.container.innerHTML = "";

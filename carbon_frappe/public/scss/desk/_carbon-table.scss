@@ -1227,16 +1227,27 @@
 
 	.dt-cell__edit {
 		position: absolute;
-		// `inset: 0` resolves against the cell's PADDING box, so the editor is
-		// already inset by Carbon's 16px. Adding its own padding on top left a
-		// 120px column with ~30px of usable text width.
+		// `inset: 0` resolves against the cell's padding box, whose edge is the
+		// cell's BORDER edge — the mount spans Carbon's 16px padding rather than
+		// sitting inside it. It carries no padding of its own: a 120px column
+		// with the control's trailing inset plus 16px more left ~30px of text.
 		inset: 0;
 		display: flex;
 		align-items: center;
 		padding: 0;
+		// frappe_datatable.scss:94-96 frames the mount with a 2px #9bccf8
+		// border under Carbon's focus outline; the outline is the frame here,
+		// and the border was also what pushed a Check editor's box 2px off
+		// the static cell's.
+		border: 0;
 		background-color: var(--cds-field-01);
 
-		input,
+		// NOT the checkbox: frappe's and Carbon's checkboxes are
+		// `appearance: none` boxes that exist only as a border and a
+		// background (frappe/public/scss/element/checkbox.scss:4-32,
+		// _controls.scss), so this reset used to leave the Check editor
+		// present, clickable and invisible.
+		input:not([type="checkbox"]),
 		textarea,
 		select,
 		.dt-input {
@@ -1257,11 +1268,81 @@
 			}
 		}
 
+		// The Check editor: frappe's `.form-group > .checkbox > label >
+		// .input-area > input` (form/controls/check.js:1-17). The wrapper
+		// chain is stripped of the form's spacing (`.form-group`'s 8px bottom
+		// margin, the label's 2.5px top padding) and centred, and the box is
+		// pushed in by the cell's 16px so it sits exactly where the static
+		// cell's box does. The label is already hidden by
+		// `.datatable .checkbox .label-area` (frappe_datatable.scss:82-88).
+		> .frappe-control[data-fieldtype="Check"] {
+			display: flex;
+			align-items: center;
+			block-size: 100%;
+			margin: 0;
+			padding-inline-start: 1rem;
+		}
+
+		.checkbox {
+			display: flex;
+			align-items: center;
+			margin: 0;
+
+			label {
+				display: flex;
+				align-items: center;
+				margin: 0;
+				padding: 0;
+			}
+		}
+
+		input[type="checkbox"] {
+			flex: none;
+			inline-size: 16px;
+			block-size: 16px;
+			margin: 0;
+		}
+
 		// Keep the control's trailing button inside the cell.
 		.link-btn,
 		.select-icon {
 			inset-inline-end: 0;
 		}
+	}
+
+	// A multi-line editor (js/tables/datatable/editing.ts marks a mount whose
+	// control is a <textarea>) is a popover anchored to the cell's top edge:
+	// it keeps the cell's width, grows downward, and carries the focus frame
+	// and a shadow itself, because the td's inset outline only frames the
+	// 48px row. `align-items: stretch` so frappe's wrapper chain
+	// (`.frappe-control > .form-group > .control-input-wrapper`) fills it.
+	.dt-cell__edit--multiline {
+		inset-block-end: auto;
+		block-size: auto;
+		min-block-size: 100%;
+		align-items: stretch;
+		z-index: 3;
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+		box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+
+		> .frappe-control {
+			flex: 1 1 auto;
+			min-inline-size: 0;
+		}
+
+		textarea {
+			block-size: 7.5rem;
+			min-block-size: 3rem;
+			padding: 0.5rem 1rem;
+			resize: vertical;
+			white-space: pre-wrap;
+			line-height: 1.25rem;
+		}
+	}
+
+	tbody .dt-cell--editing:has(> .dt-cell__edit--multiline) {
+		outline: none;
 	}
 
 	// Hide the static content while its editor is open, as frappe-datatable did.

@@ -1030,10 +1030,10 @@ dompurify@^3.4.14:
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
-frappe-types@^16.2.0:
-  version "16.2.0"
-  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.2.0.tgz#c23970fea454c9513b2bd2b136245338a099f5f1"
-  integrity sha512-ixyDEfGM65+tD+acyMMtzzFR1ktVY5GoURJ7Ofsl/QUe135wUIegfdKqtgevw+Z/67uLJaT8XARLlNSWMan6yw==
+frappe-types@^16.3.0:
+  version "16.3.0"
+  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.3.0.tgz#9c4efe15ae43578eb457d1ee3a9db6573a999eeb"
+  integrity sha512-YJcyuYKADdWuzA34ISIrXdABNQAWneNVcVKkWVJXIrKNo4r1nv1cpOJUMrE+T6bxLMlS5e7Kq1LEzxpswlXNOA==
   dependencies:
     "@types/jquery" "^3.5"
 

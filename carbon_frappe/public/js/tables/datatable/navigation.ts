@@ -18,19 +18,30 @@
 //   ctrl + ← ↑ → ↓       jump to the edge of the row or column
 //   shift + ← ↑ → ↓      extend the selection rectangle
 //   enter                edit the focused cell, or commit the open one
+//                        (in a multi-line editor Enter is a newline and
+//                        ctrl+enter commits — see ./editing.ts)
 //   esc                  cancel editing and close the filter row
 //   ctrl+c               copy the selection as TSV, with a toast
 //   ctrl+f               focus the inline filter for the focused column
 //
-// Paste is deliberately absent: `pasteFromClipboard` defaults to false and
-// `report_view.js` never enables it, so frappe-datatable did not paste here
-// either.
+// and two this adds, both of which write through the report view's own
+// editor contract (./paste.ts):
 //
-// The only import is a TYPE: `CarbonDataTableHost` describes the
-// `CarbonDataTable` this object steers, and lives in ./managers because that is
-// where the sub-managers it reaches through are defined. It erases completely,
-// so this module still has no runtime dependency on anything.
+//   ctrl+v               paste TSV over the selection — compatible values
+//                        only, with a toast counting what landed
+//   space                toggle a focused Check cell without opening it
+//
+// Paste arrives as the `paste` ClipboardEvent on the scroll viewport (the
+// element that holds keyboard focus), not as a ctrl+v keydown plus
+// `navigator.clipboard.readText()`: the event carries the text with no
+// permission prompt, and `readText` rejects in an unfocused tab and in
+// headless Chrome, where `writeClipboard` below already needs a fallback.
+// frappe-datatable's own paste was gated on `pasteFromClipboard`; the option
+// is still honoured, and now defaults on.
+import { inMultilineEditor } from "./editing";
 import type { CarbonDataTableHost } from "./managers";
+import { pasteIntoSelection, writeCell } from "./paste";
+import type { PasteResult } from "./paste";
 import type {
 	DataTableColIndex,
 	DataTableFocusedCell,
@@ -116,12 +127,17 @@ export default class CellNavigation {
 	container?: HTMLElement;
 	/** The document-level `mouseup` handler, kept so it stays identifiable. */
 	_onMouseUp?: () => void;
+	/** The in-flight (or last) paste, so a test can await its writes. */
+	lastPaste?: Promise<PasteResult>;
+	/** Aborts every listener {@link bind} added; see {@link unbind}. */
+	_abort: AbortController | null;
 
 	constructor(host: CarbonDataTableHost) {
 		this.host = host;
 		this.focused = null; // { colIndex, rowIndex }
 		this.cursor = null; // opposite corner of the selection rectangle
 		this._highlighted = [];
+		this._abort = null;
 	}
 
 	// ------------------------------------------------------------- addressing
@@ -298,6 +314,8 @@ export default class CellNavigation {
 
 	bind(container: HTMLElement): void {
 		this.container = container;
+		this._abort = new AbortController();
+		const signal = this._abort.signal;
 		const scroll = this.host.engine.renderer.scroll;
 		// The grid needs to receive keys without stealing them from the desk.
 		if (!scroll.hasAttribute("tabindex")) scroll.setAttribute("tabindex", "0");
@@ -318,7 +336,7 @@ export default class CellNavigation {
 			// for the duration instead.
 			this.dragging = true;
 			container.classList.add("cf-table--selecting");
-		});
+		}, { signal });
 
 		// `mouseover` rather than `mousemove`: it fires once per cell crossed,
 		// so the selection updates exactly when the rectangle changes instead of
@@ -343,13 +361,14 @@ export default class CellNavigation {
 				Number(td.getAttribute("data-row-index")),
 				{ extend: true }
 			);
-		});
+		}, { signal });
 
 		// On the document, so releasing outside the table still ends the drag.
 		this._onMouseUp = () => this.endDrag();
-		document.addEventListener("mouseup", this._onMouseUp);
+		document.addEventListener("mouseup", this._onMouseUp, { signal });
 
-		container.addEventListener("keydown", (e) => this.onKeyDown(e));
+		container.addEventListener("keydown", (e) => this.onKeyDown(e), { signal });
+		container.addEventListener("paste", (e) => this.onPaste(e), { signal });
 
 		// Rows recycle as they scroll; repaint selection on every render.
 		this.host.engine.on("onRender", () => this.render());
@@ -361,15 +380,32 @@ export default class CellNavigation {
 		const ctrl = e.ctrlKey || e.metaKey;
 
 		if (key === "Escape") {
-			if (editing) this.host.editing.deactivate(false);
+			if (editing) {
+				this.host.editing.deactivate(false);
+				// the desk's own Escape (frappe.ui.keys) must not also act on it
+				e.stopPropagation();
+			}
 			this.host.columnmanager.toggleFilter(false);
 			return;
 		}
 
 		if (key === "Enter") {
+			// a newline in a multi-line editor; ./editing.ts commits on ctrl+enter
+			if (editing && inMultilineEditor(e.target) && !ctrl) return;
 			e.preventDefault();
 			if (editing) this.host.editing.deactivate(true);
 			else if (this.focused) this.activateFocused();
+			return;
+		}
+
+		if (key === " " && !editing && this.focused) {
+			const { colIndex, rowIndex } = this.focused;
+			const column = this.host.datamanager.getColumn(colIndex);
+			const cell = this.host.datamanager.getCell(colIndex, rowIndex);
+			if (!column || !cell || !column.docfield || column.docfield.fieldtype !== "Check") return;
+			if (cell.editable === false || column.editable === false) return;
+			e.preventDefault();
+			void writeCell(this.host, colIndex, rowIndex, cint(cell.content) ? 0 : 1);
 			return;
 		}
 
@@ -409,6 +445,35 @@ export default class CellNavigation {
 		if (!this.focused) return;
 		e.preventDefault();
 		this.move(direction, { extend: e.shiftKey, toEdge: ctrl });
+	}
+
+	/**
+	 * Drop every listener {@link bind} added. `CarbonDataTable.destroy()` calls
+	 * this because report_view.js rebuilds the table INTO THE SAME wrapper
+	 * (`add_column_to_datatable` → `destroy()` → `refresh()`), and a listener
+	 * left behind keeps acting on the old instance's stale selection — with
+	 * paste, that meant writes to a column nobody had selected.
+	 */
+	unbind(): void {
+		if (this._abort) this._abort.abort();
+		this._abort = null;
+	}
+
+	/**
+	 * The grid owns a paste only when nothing else does: an open editor, its
+	 * floating UI, or the inline filter row's inputs take the native paste.
+	 * Bailing WITHOUT `preventDefault` is what lets them.
+	 */
+	onPaste(e: ClipboardEvent): void {
+		if (this.host.options.pasteFromClipboard === false) return;
+		if (this.host.editing.$editingCell || insideEditorUI(e.target)) return;
+		if (isElement(e.target) && e.target.closest("input, textarea, [contenteditable]")) return;
+		if (!this.focused) return;
+		const data = e.clipboardData;
+		const text = data ? data.getData("text/plain") : "";
+		if (!text) return;
+		e.preventDefault();
+		this.lastPaste = pasteIntoSelection(this.host, text);
 	}
 
 	endDrag(): void {

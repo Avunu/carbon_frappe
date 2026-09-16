@@ -12,6 +12,14 @@
 	--font-weight-semibold: 600;
 	--font-weight-bold: 600;
 	--font-weight-black: 600;
+	// frappe v16's espresso scale (espresso/_typography.scss:27-31) uses these
+	// names — `.frappe-control` reads `--weight-regular`, which is 420 there —
+	// so they are pinned to the same values.
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 600;
+	--weight-black: 600;
 
 	// Snap frappe's 16-step ramp onto Carbon's productive type scale, which has
 	// exactly eight sizes: 12 / 14 / 16 / 20 / 28 / 32 / 42 / 54. frappe's 11,

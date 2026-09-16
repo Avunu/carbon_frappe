@@ -249,6 +249,59 @@ interface DraggedProbe {
 	selectingClass: number;
 }
 
+/** The `enabled` / `bio` / `user_type` column indices once added, or why not. */
+interface EditColumnsProbe {
+	check: number;
+	text: number;
+	select: number;
+	data: number;
+	skipped?: string;
+}
+
+/** The Check editor's box: it must paint, not merely exist. */
+interface CheckEditorProbe {
+	present: boolean;
+	width: number;
+	height: number;
+	border: string;
+	background: string;
+	/** Editor box minus the static box one row down, x and y (y less the row height). */
+	dx: number;
+	dy: number;
+	weight: string;
+}
+
+/** Space on a focused Check cell: the write and the cell after it. */
+interface CheckToggleProbe {
+	before: unknown;
+	after: unknown;
+	calls: number;
+	payload: unknown;
+	focusKept: boolean;
+}
+
+/** The multi-line editor's geometry against its row. */
+interface MultilineProbe {
+	weight: string;
+	marked: boolean;
+	textareaHeight: number;
+	contained: boolean;
+	belowRowTop: boolean;
+	framed: boolean;
+	inlineHeight: string;
+}
+
+/** What one synthetic paste did. */
+interface PasteProbe {
+	prevented: boolean;
+	result: { pasted: number; skipped: number; rejected: number } | null;
+	calls: unknown[];
+	cells: unknown[];
+	bounds: Bounds | null;
+	toast: string;
+	dataValue?: unknown;
+}
+
 const BASE = process.env.CF_SITE_URL || "http://localhost:8794";
 const SHOT = process.env.CF_SHOT_DIR || new URL("../../.dev-dist/screenshots/", import.meta.url).pathname;
 fs.mkdirSync(SHOT, { recursive: true });
@@ -259,6 +312,14 @@ const results: string[] = [];
 // expression produced — a boolean, a string, a null out of `querySelector` —
 // and the only thing read of it is its truthiness.
 const ok = (n: string, c: unknown, x = "") => results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+/** A trusted key press through CDP; Enter/Space carry `text` so a textarea receives them. */
+async function key(keyName: string, code = keyName, modifiers = 0): Promise<void> {
+  const text = keyName === "Enter" ? "\r" : keyName === " " ? " " : undefined;
+  await page.send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", key: keyName, code, modifiers, ...(text ? { text } : {}) });
+  await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: keyName, code, modifiers });
+  await sleep(150);
+}
 try {
   await login(page, BASE);
   const who = await page.eval<string | undefined>(`(async () => (await (await fetch('/api/method/frappe.auth.get_logged_user')).json()).message)()`);
@@ -561,6 +622,194 @@ try {
     editorBox.input / editorBox.cell > 0.85,
     JSON.stringify(editorBox)
   );
+
+  // --- editing: Check, multi-line, paste ----------------------------------
+  // Four fixture columns on User, appended in this order so `bio` and
+  // `first_name` are adjacent for the block paste: `bio` (Small Text),
+  // `first_name` (Data), `mute_sounds` (Check — `enabled` is read_only and so
+  // never editable in a report view) and `desk_theme` (Select). Every
+  // write goes through report_view's `setValue` → `frappe.db.set_value`,
+  // which is stubbed in-page so the doctype is never mutated: the stub keeps
+  // report_view's contract (a thenable with `.fail`, resolving `{ message:
+  // <the whole doc> }`) and rejects when a value is `REJECT_ME`.
+  // The report view persists its columns in the user's settings on every
+  // refresh, so the fixture remembers which ones it added and removes them at
+  // the end (`__cfAddedFields`).
+  await page.eval(`(() => {
+    const rv = cur_list;
+    window.__cfAddedFields = [];
+    for (const f of ['bio', 'first_name', 'mute_sounds', 'desk_theme']) {
+      if (rv.fields.some((x) => x[0] === f)) continue;
+      window.__cfAddedFields.push(f);
+      rv.add_column_to_datatable(f, 'User', rv.fields.length);
+    }
+  })()`);
+  await page.waitFor(`!!cur_list.datatable && ['bio','first_name','mute_sounds','desk_theme'].every((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f)) && document.querySelectorAll('tbody .dt-cell').length > 0`, { timeout: 90000 });
+  await sleep(800);
+  const editCols = await page.eval<EditColumnsProbe>(`(() => {
+    const dt = cur_list.datatable;
+    const at = (f) => dt.columns.findIndex((c) => c.docfield && c.docfield.fieldname === f);
+    return { check: at('mute_sounds'), text: at('bio'), select: at('desk_theme'), data: at('first_name') };
+  })()`);
+  await page.eval(`(() => {
+    window.__cfSetValueCalls = [];
+    window.__cfRealSetValue = frappe.db.set_value;
+    frappe.db.set_value = (doctype, name, values) => {
+      window.__cfSetValueCalls.push({ doctype, name, values });
+      const d = $.Deferred();
+      const base = Object.assign({ doctype, name }, cur_list.data.find((r) => r.name === name) || {});
+      if (Object.values(values).some((v) => v === 'REJECT_ME')) setTimeout(() => d.reject(), 0);
+      else setTimeout(() => d.resolve({ message: Object.assign(base, values) }), 0);
+      return d.promise();
+    };
+  })()`);
+
+  // Check editor paints
+  const checkEditor = await page.eval<CheckEditorProbe>(`(() => {
+    const dt = cur_list.datatable;
+    dt.navigation.focus(${editCols.check}, 0);
+    dt.navigation.activateFocused();
+    const box = document.querySelector('tbody .dt-cell--editing .dt-cell__edit input[type="checkbox"]');
+    const cs = box ? getComputedStyle(box) : null;
+    const r = box ? box.getBoundingClientRect() : { width: 0, height: 0 };
+    const below = document.querySelector('tbody .dt-cell[data-col-index="${editCols.check}"][data-row-index="' + dt.datamanager.rowViewOrder[1] + '"] input[type="checkbox"]');
+    const b = below ? below.getBoundingClientRect() : { left: 0, top: 0 };
+    const rowH = document.querySelector('tbody tr.dt-row').getBoundingClientRect().height;
+    const res = { present: !!box, width: Math.round(r.width), height: Math.round(r.height), border: cs ? cs.borderTopWidth + ' ' + cs.borderTopColor : '', background: cs ? cs.backgroundColor + ' ' + cs.backgroundImage : '',
+                  dx: Math.round(r.left - b.left), dy: Math.round(r.top - (b.top - rowH)), weight: cs ? cs.fontWeight : '' };
+    dt.editing.deactivate(false);
+    return res;
+  })()`);
+  ok(
+    "the Check editor is a visible 16px box",
+    checkEditor.present && checkEditor.width === 16 && checkEditor.height === 16 && !/^0px/.test(checkEditor.border),
+    JSON.stringify(checkEditor)
+  );
+  // The editor's box is centred in the cell; the static box is an inline-block
+  // on a line box's baseline and so sits ~2px higher. Same column, same size.
+  ok("the Check editor sits where the static box sits", Math.abs(checkEditor.dx) <= 1 && Math.abs(checkEditor.dy) <= 2, JSON.stringify({ dx: checkEditor.dx, dy: checkEditor.dy }));
+
+  // Space toggles a focused Check cell through setValue
+  await page.eval(`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.check}, 0); dt.engine.renderer.scroll.focus(); window.__cfSetValueCalls.length = 0; window.__cfBefore = dt.datamanager.getCell(${editCols.check}, 0).content; })()`);
+  await key(" ", "Space");
+  await sleep(300);
+  const toggled = await page.eval<CheckToggleProbe>(`(() => {
+    const dt = cur_list.datatable;
+    const calls = window.__cfSetValueCalls;
+    return { before: window.__cfBefore, after: dt.datamanager.getCell(${editCols.check}, 0).content, calls: calls.length, payload: calls[0] && calls[0].values, focusKept: document.activeElement === dt.engine.renderer.scroll };
+  })()`);
+  ok(
+    "space flips a focused Check cell and saves it once",
+    toggled.calls === 1 && Number(toggled.after) === (Number(toggled.before) ? 0 : 1) && JSON.stringify(toggled.payload) === JSON.stringify({ mute_sounds: Number(toggled.after) }) && toggled.focusKept,
+    JSON.stringify(toggled)
+  );
+  await key(" ", "Space");
+  await sleep(300);
+
+  // multi-line editor is a contained popover; Enter is a newline; ctrl+Enter commits
+  await page.eval(`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.text}, 0); dt.navigation.activateFocused(); })()`);
+  // `initValue` → `control.set_value` lands asynchronously; let it, or it clobbers the typed text below
+  await sleep(400);
+  const multiline = await page.eval<MultilineProbe>(`(() => {
+    const td = document.querySelector('tbody .dt-cell--editing');
+    const mount = td && td.querySelector('.dt-cell__edit');
+    const ta = mount && mount.querySelector('textarea');
+    if (!td || !mount || !ta) return { weight: '', marked: false, textareaHeight: 0, contained: false, belowRowTop: false, framed: false, inlineHeight: '' };
+    const m = mount.getBoundingClientRect(), t = ta.getBoundingClientRect(), row = td.getBoundingClientRect();
+    return { weight: getComputedStyle(ta).fontWeight, marked: mount.classList.contains('dt-cell__edit--multiline'), textareaHeight: Math.round(t.height),
+             contained: t.top >= m.top - 1 && t.bottom <= m.bottom + 1, belowRowTop: m.top >= row.top - 1,
+             framed: getComputedStyle(mount).outlineStyle !== 'none' && getComputedStyle(mount).boxShadow !== 'none', inlineHeight: ta.style.height };
+  })()`);
+  ok(
+    "a Small Text editor is a framed popover that contains its textarea",
+    multiline.marked && multiline.textareaHeight >= 100 && multiline.contained && multiline.belowRowTop && multiline.framed && multiline.inlineHeight === "",
+    JSON.stringify(multiline)
+  );
+  // frappe v16's espresso scale sets `--weight-regular: 420` on `.frappe-control`; the theme pins it to 400
+  ok("the editor's text weighs the same as the cell's", multiline.weight === "400", multiline.weight);
+  await page.eval(`(() => { const ta = document.querySelector('tbody .dt-cell--editing textarea'); ta.focus(); ta.value = 'line one'; ta.setSelectionRange(8, 8); window.__cfSetValueCalls.length = 0; })()`);
+  await key("Enter");
+  const afterEnter = await page.eval<{ editing: boolean; value: string }>(`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, value: (document.querySelector('tbody .dt-cell--editing textarea') || {}).value || '' }))()`);
+  ok("enter in a multi-line editor inserts a newline and keeps editing", afterEnter.editing && afterEnter.value === "line one\n", JSON.stringify(afterEnter));
+  await key("Enter", "Enter", 2);
+  await sleep(300);
+  const afterCtrlEnter = await page.eval<{ editing: boolean; calls: number; value: unknown }>(`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, calls: window.__cfSetValueCalls.length, value: window.__cfSetValueCalls[0] && window.__cfSetValueCalls[0].values.bio }))()`);
+  ok("ctrl+enter commits the multi-line editor", !afterCtrlEnter.editing && afterCtrlEnter.calls === 1 && afterCtrlEnter.value === "line one\n", JSON.stringify(afterCtrlEnter));
+
+  // paste
+  const PASTE = (tsv: string, focus: string, after = "") => `(async () => {
+    const dt = cur_list.datatable;
+    window.__cfSetValueCalls.length = 0;
+    ${focus}
+    const data = new DataTransfer(); data.setData('text/plain', ${JSON.stringify(tsv)});
+    const ev = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+    const target = dt.editing.$editingCell ? dt.editing.$editingCell.querySelector('input, textarea') : dt.engine.renderer.scroll;
+    target.dispatchEvent(ev);
+    const result = dt.navigation.lastPaste ? await dt.navigation.lastPaste : null;
+    const toast = (document.querySelector('.dt-toast') || {}).textContent || '';
+    ${after}
+    return { prevented: ev.defaultPrevented, result, calls: window.__cfSetValueCalls.map((c) => c.values), cells: window.__cfCells ? window.__cfCells() : [], bounds: dt.navigation.bounds(), toast, dataValue: window.__cfDataValue };
+  })()`;
+  await page.eval(`window.__cfCells = () => { const dt = cur_list.datatable; const b = dt.navigation.bounds(); const out = []; for (let p = b.p1; p <= b.p2; p++) for (let c = b.c1; c <= b.c2; c++) out.push(dt.datamanager.getCell(c, dt.datamanager.rowViewOrder[p]).content); return out; }`);
+
+  const rowCount = await page.eval<number>(`cur_list.datatable.datamanager.rowViewOrder.length`);
+  if (rowCount >= 3) {
+    const fill = await page.eval<PasteProbe>(PASTE("Pasted", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[2], { extend: true }); dt.navigation.lastPaste = undefined;`, `window.__cfDataValue = cur_list.data[0].first_name;`));
+    ok(
+      "a single value pasted over a 1x3 selection fills all three cells",
+      fill.prevented && fill.result && fill.result.pasted === 3 && fill.calls.length === 3 && fill.calls.every((v) => JSON.stringify(v) === '{"first_name":"Pasted"}') && fill.cells.join("|") === "Pasted|Pasted|Pasted",
+      JSON.stringify(fill)
+    );
+    ok("the report view's own data reflects the pasted value", fill.dataValue === "Pasted", String(fill.dataValue));
+  } else {
+    ok("a single value pasted over a 1x3 selection fills all three cells", false, "fewer than 3 rows");
+  }
+
+  const block = await page.eval<PasteProbe>(PASTE("A\tB\nC\tD\n", `dt.navigation.focus(${editCols.text}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
+  ok(
+    "a 2x2 block pasted on one cell extends past it and selects what landed",
+    block.result && block.result.pasted === 4 && block.calls.length === 4 && block.cells.join("|") === "A|B|C|D" && !!block.bounds && block.bounds.p2 - block.bounds.p1 === 1 && block.bounds.c2 - block.bounds.c1 === 1,
+    JSON.stringify(block)
+  );
+
+  const checkPaste = await page.eval<PasteProbe>(PASTE("yes\nmaybe\n", `dt.navigation.focus(${editCols.check}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
+  ok(
+    "\"yes\" into a Check column arrives as 1 and \"maybe\" is skipped",
+    checkPaste.result && checkPaste.result.pasted === 1 && checkPaste.cells[0] === 1 && (checkPaste.calls.length === 0 || JSON.stringify(checkPaste.calls[0]) === '{"mute_sounds":1}') && checkPaste.result.skipped === 1 && /skipped/.test(checkPaste.toast),
+    JSON.stringify(checkPaste)
+  );
+
+  const selectPaste = await page.eval<PasteProbe>(PASTE("dark\nNope\n", `dt.navigation.focus(${editCols.select}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
+  ok(
+    "a Select accepts an option (case-insensitively, canonical spelling) and refuses a non-option",
+    selectPaste.result && selectPaste.calls.length === 1 && JSON.stringify(selectPaste.calls[0]) === '{"desk_theme":"Dark"}' && selectPaste.result.skipped === 1,
+    JSON.stringify(selectPaste)
+  );
+
+  const rejected = await page.eval<PasteProbe>(PASTE("REJECT_ME", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); window.__cfOld = dt.datamanager.getCell(${editCols.data}, dt.datamanager.rowViewOrder[0]).content; dt.navigation.lastPaste = undefined;`, `window.__cfDataValue = window.__cfOld;`));
+  ok(
+    "a value the server rejects is reverted in the cell",
+    rejected.result && rejected.result.rejected === 1 && rejected.cells[0] === rejected.dataValue,
+    JSON.stringify(rejected)
+  );
+
+  const whileEditing = await page.eval<PasteProbe>(PASTE("X", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.activateFocused(); dt.navigation.lastPaste = undefined;`, `dt.editing.deactivate(false);`));
+  ok("a paste while an editor is open belongs to the editor", !whileEditing.prevented && whileEditing.calls.length === 0 && whileEditing.result === null, JSON.stringify(whileEditing));
+
+  await page.eval(`(() => {
+    frappe.db.set_value = window.__cfRealSetValue;
+    const rv = cur_list;
+    const added = window.__cfAddedFields || [];
+    if (!added.length) return;
+    rv.fields = rv.fields.filter((f) => !added.includes(f[0]));
+    rv.build_fields();
+    rv.setup_columns();
+    if (rv.datatable) rv.datatable.destroy();
+    rv.datatable = null;
+    rv.refresh();
+  })()`);
+  await page.waitFor(`!!cur_list.datatable && document.querySelectorAll('tbody .dt-cell').length > 0 && !(window.__cfAddedFields || []).some((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f))`, { timeout: 90000 });
+  await sleep(600);
 
   // --- frozen columns must be opaque -------------------------------------
   const frozen = await page.eval<FrozenProbe>(`(() => {

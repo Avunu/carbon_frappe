@@ -18,7 +18,20 @@
 //   * `submitEditing` is OPTIMISTIC: it writes the new value into the cell
 //     immediately and reverts only if `setValue` returns a rejected promise.
 //     report_view.js relies on that to keep the grid responsive while
-//     `frappe.db.set_value` is in flight.
+//     `frappe.db.set_value` is in flight. That write-then-revert is
+//     `commitValue()` below, exported so ./paste.ts can persist a value
+//     through the same editor contract without ever showing an editor.
+//
+// Two things this adds on top of the contract:
+//
+//   * A MULTI-LINE editor (frappe's ControlText / ControlSmallText mount a
+//     <textarea> with an inline `height: 150px`/`300px`, form/controls/text.js
+//     :15, :25) is marked `dt-cell__edit--multiline` and has that inline
+//     height cleared, so the stylesheet can grow the mount below the cell as
+//     a framed popover instead of letting a 150px control spill out of a 48px
+//     cell with no backdrop.
+//   * Enter inside that textarea inserts a newline; Ctrl/Cmd+Enter commits.
+//     Single-line editors keep frappe-datatable's Enter = commit.
 
 import { insideEditorUI } from "./navigation";
 import type { CarbonDataTableHost } from "./managers";
@@ -55,6 +68,47 @@ function isElement(target: EventTarget | null | undefined): target is Element {
 	return !!target && "closest" in target && typeof target.closest === "function";
 }
 
+/** `true` when the event target is the textarea of an open multi-line editor. */
+export function inMultilineEditor(target: EventTarget | null | undefined): boolean {
+	return isElement(target) && target.matches(".dt-cell__edit--multiline textarea");
+}
+
+/**
+ * frappe-datatable's optimistic commit, as one reusable step: write `value`
+ * into the cell now, hand it to the editor's `setValue`, and put `oldValue`
+ * back if that rejects. Resolves `true` when the write stuck.
+ *
+ * The editor object comes from a THIRD PARTY's `getEditor`, so `setValue` is
+ * read through a binding that admits `undefined` even though the declared
+ * contract makes it required — the JS guarded the call for exactly that
+ * reason, and the declaration must not talk the compiler out of it.
+ */
+export function commitValue(
+	host: CarbonDataTableHost,
+	colIndex: DataTableColIndex,
+	rowIndex: DataTableRowIndex,
+	column: DataTableColumn,
+	editor: DataTableEditor,
+	value: DataTableCellValue,
+	oldValue: DataTableCellValue
+): Promise<boolean> {
+	const setValue: DataTableEditor["setValue"] | undefined = editor.setValue;
+	host.updateCell(colIndex, rowIndex, { content: value }, true);
+	let result: unknown;
+	try {
+		result = setValue ? setValue.call(editor, value, rowIndex, column) : undefined;
+	} catch (e) {
+		result = Promise.reject(e);
+	}
+	return Promise.resolve(result).then(
+		() => true,
+		() => {
+			host.updateCell(colIndex, rowIndex, { content: oldValue }, true);
+			return false;
+		}
+	);
+}
+
 export default class CellEditing {
 	host: CarbonDataTableHost;
 	/** The `.dt-cell` with an open editor, or `null`. */
@@ -74,6 +128,8 @@ export default class CellEditing {
 	 * way.
 	 */
 	focused?: HTMLElement | null;
+	/** Aborts every listener {@link bind} added; see {@link unbind}. */
+	_abort: AbortController | null;
 
 	constructor(host: CarbonDataTableHost) {
 		this.host = host;
@@ -82,6 +138,7 @@ export default class CellEditing {
 		this.editParent = null;
 		this.oldValue = undefined;
 		this.context = null;
+		this._abort = null;
 	}
 
 	/** The `.dt-cell__edit` mount point, created on demand inside the cell. */
@@ -127,6 +184,13 @@ export default class CellEditing {
 			}
 		}
 		if (!editor) editor = this.defaultEditor(parent);
+
+		const textarea = parent.querySelector<HTMLTextAreaElement>("textarea");
+		if (textarea) {
+			parent.classList.add("dt-cell__edit--multiline");
+			// the control's inline height; the stylesheet owns the geometry
+			textarea.style.height = "";
+		}
 
 		this.$editingCell = td;
 		this.editor = editor;
@@ -181,30 +245,20 @@ export default class CellEditing {
 		const host = this.host;
 		const oldValue = this.oldValue;
 		const editor = this.editor;
-		// Widened deliberately. `DataTableEditor` declares `setValue` required —
-		// which is right, it is part of the published contract — but the object
-		// comes from a THIRD PARTY's `getEditor`, and the JS guarded the call
-		// for exactly that reason. Reading the member through a binding that
-		// admits `undefined` keeps the runtime guard meaningful instead of
-		// letting the declaration talk the compiler out of it.
-		const setValue: DataTableEditor["setValue"] | undefined = editor.setValue;
 
 		Promise.resolve(editor.getValue()).then((value) => {
 			// Upstream short-circuits on an unchanged value; report scripts rely
 			// on `setValue` NOT firing (and therefore not calling the server)
 			// when a user tabs through a cell without touching it.
 			if (value === oldValue) return;
-			host.updateCell(colIndex, rowIndex, { content: value }, true);
-			let result: unknown;
-			try {
-				result = setValue ? setValue.call(editor, value, rowIndex, column) : undefined;
-			} catch (e) {
-				result = Promise.reject(e);
-			}
-			Promise.resolve(result).catch(() => {
-				host.updateCell(colIndex, rowIndex, { content: oldValue }, true);
-			});
+			void commitValue(host, colIndex, rowIndex, column, editor, value, oldValue);
 		});
+	}
+
+	/** Drop every listener {@link bind} added — see `CellNavigation.unbind`. */
+	unbind(): void {
+		if (this._abort) this._abort.abort();
+		this._abort = null;
 	}
 
 	focus(td: HTMLElement | null): void {
@@ -222,6 +276,8 @@ export default class CellEditing {
 
 	/** Wire double-click-to-edit and the Enter/Escape pair onto the container. */
 	bind(container: HTMLElement): void {
+		this._abort = new AbortController();
+		const signal = this._abort.signal;
 		container.addEventListener("dblclick", (e) => {
 			// A double click inside an open editor belongs to the control (text
 			// selection, a date picker's day), not to the grid.
@@ -229,7 +285,7 @@ export default class CellEditing {
 			const td = isElement(e.target) && e.target.closest<HTMLElement>(".dt-cell");
 			if (!td || td.classList.contains("dt-cell--header")) return;
 			this.activate(td);
-		});
+		}, { signal });
 		container.addEventListener("click", (e) => {
 			// Likewise: clicking an awesomplete option or a picker day must not
 			// be read as "the user clicked a cell" and commit the editor out
@@ -239,18 +295,11 @@ export default class CellEditing {
 			if (!td || td.classList.contains("dt-cell--header")) return;
 			if (td !== this.$editingCell) this.deactivate(true);
 			this.focus(td);
-		});
-		container.addEventListener("keydown", (e) => {
-			if (e.key === "Escape" && this.$editingCell) {
-				this.deactivate(false);
-				e.stopPropagation();
-			} else if (e.key === "Enter" && this.$editingCell) {
-				this.deactivate(true);
-				e.stopPropagation();
-			} else if (e.key === "Enter" && this.focused) {
-				this.activate(this.focused);
-				e.preventDefault();
-			}
-		});
+		}, { signal });
+		// Keys are ./navigation.ts's (`onKeyDown`): Escape cancels, Enter
+		// commits or opens, Tab commits and moves. This module used to bind
+		// its own Enter/Escape too, which ran FIRST (bound earlier on the same
+		// container) and closed the editor — so navigation's handler then saw
+		// no editor open and re-opened it on the same keystroke.
 	}
 }
