@@ -24,19 +24,19 @@ import type {
 	TableOptions,
 	TableState,
 } from "@tanstack/table-core";
-import { CARBON, ROW_SIZES, makeProfile, nearestRowSize, sizeClass } from "./classes";
+import { CARBON, ROW_SIZES, makeProfile, nearestRowSize, sizeClass } from "./classes.ts";
 import type {
 	CarbonRowSize,
 	CarbonRowSizeClass,
 	ResolvedTableClassProfile,
 	TableClassProfile,
-} from "./classes";
-import { buildFeatures } from "./features";
-import type { CarbonTableFeatures } from "./features";
-import { attr, el, raf, toggleClass } from "./dom";
-import type { RafScheduler } from "./dom";
-import { sortIcon } from "./icons";
-import TableRenderer from "./render";
+} from "./classes.ts";
+import { buildFeatures } from "./features.ts";
+import type { CarbonTableFeatures } from "./features.ts";
+import { attr, el, raf, toggleClass } from "./dom.ts";
+import type { RafScheduler } from "./dom.ts";
+import { sortIcon } from "./icons.ts";
+import TableRenderer from "./render.ts";
 import type {
 	FilterCellEntry,
 	HeaderCellEntry,
@@ -47,9 +47,9 @@ import type {
 	RowEntry,
 	TableRendererHost,
 	TotalCellEntry,
-} from "./render";
-import RowVirtualizer, { VIRTUAL_THRESHOLD } from "./virtual";
-import type { RowScrollToOptions, RowVirtualizerHost } from "./virtual";
+} from "./render.ts";
+import RowVirtualizer, { VIRTUAL_THRESHOLD } from "./virtual.ts";
+import type { RowScrollToOptions, RowVirtualizerHost } from "./virtual.ts";
 
 // The column spec is carried on the TanStack column def's `meta` bag —
 // `toColumnDef` writes it, `getSpec` reads it back, and that round trip is the

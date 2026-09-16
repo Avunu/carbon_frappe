@@ -18,10 +18,10 @@
 // Subclasses are safe by construction: ReportView, KanbanView, CalendarView,
 // GanttView, ImageView, MapView, InboxView and FileView all override `render()`
 // and never reach `render_list()`.
-import { safePatch } from "../../anatomy/patch";
-import CarbonTable from "../engine/table";
-import { listProfile } from "./classes";
-import type { CarbonColumnSpec } from "../engine/table";
+import { safePatch } from "../../anatomy/patch.ts";
+import CarbonTable from "../engine/table.ts";
+import { listProfile } from "./classes.ts";
+import type { CarbonColumnSpec } from "../engine/table.ts";
 import type { FrappeListDoc, ListColumn, ListView } from "frappe-types";
 
 // `carbon_table` is this app's, not frappe's, so it is merged onto frappe-types'

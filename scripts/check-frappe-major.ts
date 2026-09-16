@@ -50,7 +50,9 @@ const problems: string[] = [];
 if (!/^\d+$/.test(versionMajor)) problems.push(`version "${version}" has no numeric major`);
 if (!/^\d+$/.test(major)) problems.push(`frappe.major "${major}" is missing or not numeric`);
 if (!problems.length && versionMajor !== major) {
-	problems.push(`version ${version} claims to be the frappe v${versionMajor} theme, but frappe.major says v${major}`);
+	problems.push(
+		`version ${version} claims to be the frappe v${versionMajor} theme, but frappe.major says v${major}`,
+	);
 }
 if (branch && branch !== `version-${major}`) {
 	problems.push(`frappe.branch "${branch}" does not match frappe.major "${major}"`);

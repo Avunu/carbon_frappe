@@ -14,9 +14,9 @@
 // So rows are keyed by `row.id`, cells by `column.id`, nodes are reused across
 // renders, and content is written only when it differs. A cell whose columnDef
 // returns a Node (the Grid's case) keeps that exact Node forever.
-import { attr, el, reconcileOrder, setStyles, toggleClass } from "./dom";
-import { CARBON, applyProfile } from "./classes";
-import type { CarbonRowSizeClass, ResolvedTableClassProfile } from "./classes";
+import { attr, el, reconcileOrder, setStyles, toggleClass } from "./dom.ts";
+import { CARBON, applyProfile } from "./classes.ts";
+import type { CarbonRowSizeClass, ResolvedTableClassProfile } from "./classes.ts";
 
 /** Marker on nodes we own, so adapters can tell engine DOM from their own. */
 const OWNED = "__carbon_table_node";

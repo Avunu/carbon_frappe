@@ -27,7 +27,7 @@
 // walks the same selector to rewrite `idx` after a drag. A permanently
 // present child row carrying that class would be draggable and would corrupt
 // row order. It carries no frappe classes at all.
-import { CARBON } from "../engine/classes";
+import { CARBON } from "../engine/classes.ts";
 import type Grid from "frappe/public/js/frappe/form/grid";
 import type GridRow from "frappe/public/js/frappe/form/grid_row";
 

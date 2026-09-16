@@ -27,7 +27,7 @@
 // on its wrapper (sidebar_item.js:369). Those become "actions" that delegate
 // the click back to frappe's element.
 import type { FrappeBootAppEntry, FrappeSidebar } from "frappe-types";
-import { text } from "./dom";
+import { text } from "./dom.ts";
 
 /** A navigable item: frappe computed an href for it. */
 export interface ShellLink {

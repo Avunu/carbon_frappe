@@ -32,8 +32,8 @@
 //    tooltips globally when the rail collapses (sidebar.js:600-604). Stripped
 //    on harvest; the cell's `title` is its tooltip.
 import type { FrappeNotificationsView } from "frappe-types";
-import { safePatch } from "../patch";
-import { isHTMLElement } from "./dom";
+import { safePatch } from "../patch.ts";
+import { isHTMLElement } from "./dom.ts";
 
 const BADGE = "cds--badge-indicator cds--badge-indicator--count";
 

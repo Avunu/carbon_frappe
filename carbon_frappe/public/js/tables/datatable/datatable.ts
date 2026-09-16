@@ -23,11 +23,11 @@
 // ({@link EngineColumnRef}, {@link TotalCellTarget}, {@link TotalCellHost}),
 // which exists because two of this file's methods are called with FABRICATED
 // arguments — see {@link CarbonDataTable.getTotalRow}.
-import CarbonTable from "../engine/table";
-import { nearestRowSize } from "../engine/classes";
-import { datatableProfile, nextScopeClass } from "./classes";
-import CellEditing from "./editing";
-import CellNavigation from "./navigation";
+import CarbonTable from "../engine/table.ts";
+import { nearestRowSize } from "../engine/classes.ts";
+import { datatableProfile, nextScopeClass } from "./classes.ts";
+import CellEditing from "./editing.ts";
+import CellNavigation from "./navigation.ts";
 import {
 	BASE_CELL,
 	BodyRendererShim,
@@ -38,11 +38,11 @@ import {
 	RowManagerShim,
 	StyleShim,
 	rowIndexOf,
-} from "./managers";
-import type { CarbonDataTableOptions } from "./managers";
-import type { CarbonColumnSpec, CarbonRow } from "../engine/table";
-import type { RenderedContentEntry } from "../engine/render";
-import type { CarbonRowSize } from "../engine/classes";
+} from "./managers.ts";
+import type { CarbonDataTableOptions } from "./managers.ts";
+import type { CarbonColumnSpec, CarbonRow } from "../engine/table.ts";
+import type { RenderedContentEntry } from "../engine/render.ts";
+import type { CarbonRowSize } from "../engine/classes.ts";
 import type {
 	DataTableAppliedFilters,
 	DataTableCell,

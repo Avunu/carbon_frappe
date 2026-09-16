@@ -48,16 +48,16 @@
 // `make_sidebar()` converges: the hook re-projects if the header exists, the
 // mount reads whatever sidebar state exists.
 import type { FrappeSidebar } from "frappe-types";
-import { record, safePatch } from "./patch";
-import { menu20 } from "../generated/shell-icons";
-import { esc, required } from "./shell/dom";
-import { readModel } from "./shell/model";
-import type { ShellModel } from "./shell/model";
-import { mountNav } from "./shell/nav";
-import type { ShellNav } from "./shell/nav";
-import { mountSwitcher } from "./shell/switcher";
-import type { ShellSwitcher } from "./shell/switcher";
-import { harvestUtilities } from "./shell/utilities";
+import { record, safePatch } from "./patch.ts";
+import { menu20 } from "../generated/shell-icons.ts";
+import { esc, required } from "./shell/dom.ts";
+import { readModel } from "./shell/model.ts";
+import type { ShellModel } from "./shell/model.ts";
+import { mountNav } from "./shell/nav.ts";
+import type { ShellNav } from "./shell/nav.ts";
+import { mountSwitcher } from "./shell/switcher.ts";
+import type { ShellSwitcher } from "./shell/switcher.ts";
+import { harvestUtilities } from "./shell/utilities.ts";
 
 const MOUNTED = "cf-shell-mounted";
 // Set on <body> only when the header actually mounts, because the CSS that

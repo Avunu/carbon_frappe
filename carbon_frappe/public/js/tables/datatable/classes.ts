@@ -19,9 +19,9 @@
 // because frappe-datatable's does: `datamanager.columns` includes them, and
 // callers iterate that array to build selectors.
 
-import { rowIndexOf } from "./managers";
-import type { CarbonEngineRow } from "./managers";
-import type { TableClassProfile, TableClassRow } from "../engine/classes";
+import { rowIndexOf } from "./managers.ts";
+import type { CarbonEngineRow } from "./managers.ts";
+import type { TableClassProfile, TableClassRow } from "../engine/classes.ts";
 import type { DataTableInstanceClass, DataTableRowIndex } from "frappe-types";
 
 /** What {@link nextScopeClass} hands back: the counter, and the class built from it. */

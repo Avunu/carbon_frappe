@@ -17,8 +17,8 @@
 // Not reached, deliberately: `frappe/data_import/import_preview.js` and
 // `system_console.js` also hold module-local imports. They are low-traffic,
 // internal, and keep working on stock frappe-datatable; noted in the README.
-import { safePatch } from "../../anatomy/patch";
-import CarbonDataTable from "./datatable";
+import { safePatch } from "../../anatomy/patch.ts";
+import CarbonDataTable from "./datatable.ts";
 import type { FrappeListDoc, ReportView } from "frappe-types";
 
 export default function installDataTable(): void {

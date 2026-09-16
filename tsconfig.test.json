@@ -1,0 +1,14 @@
+{
+	// The node:test unit tests. They import the browser modules directly —
+	// which is why those carry `.ts` on their relative imports — and stub the
+	// handful of desk globals the pure functions read at call time.
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"composite": true,
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"types": ["node", "frappe-types/global"],
+		"allowImportingTsExtensions": true
+	},
+	"include": ["test/**/*.ts", "carbon_frappe/public/js/**/*.ts"],
+	"exclude": ["node_modules", "carbon_frappe/public/dist"]
+}

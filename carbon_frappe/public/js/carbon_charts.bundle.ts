@@ -1,7 +1,7 @@
 // carbon_frappe chart shim — puts every frappe.Chart series on an
 // @carbon/charts categorical palette, and re-themes them when the desk theme
 // changes. Loaded via app_include_js after frappe's desk bundles.
-import { light, dark, heatmap } from "./generated/chart-palettes";
+import { light, dark, heatmap } from "./generated/chart-palettes.ts";
 import type {
 	FrappeBaseChart,
 	FrappeChartColor,

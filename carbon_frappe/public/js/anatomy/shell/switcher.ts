@@ -47,11 +47,11 @@
 // Expansion is remembered for the session, and the group holding the current
 // workspace opens itself on every render — the panel is rebuilt on each
 // `project()`, and a fresh one should show where the user is.
-import type { ShellModel } from "./model";
-import { buildDesktopTree } from "./desktop";
-import type { DesktopEntry } from "./desktop";
-import { chevronDown16Switcher, switcher20 } from "../../generated/shell-icons";
-import { esc, isHTMLElement } from "./dom";
+import type { ShellModel } from "./model.ts";
+import { buildDesktopTree } from "./desktop.ts";
+import type { DesktopEntry } from "./desktop.ts";
+import { chevronDown16Switcher, switcher20 } from "../../generated/shell-icons.ts";
+import { esc, isHTMLElement } from "./dom.ts";
 
 export interface ShellSwitcher {
 	/** The action button, so the orchestrator can keep it last in the global bar. */

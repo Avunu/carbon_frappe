@@ -25,9 +25,9 @@
 // `.grid-static-col[...]` selector still matches.
 import GridRow from "frappe/public/js/frappe/form/grid_row";
 import GridRowForm from "frappe/public/js/frappe/form/grid_row_form";
-import { ensureChildRow, expandButton, syncExpandState } from "./expand";
-import { rowMenuButton } from "./row_menu";
-import type { CarbonGridEngine, CarbonGridHost, CarbonGridRow as CarbonGridRowShape } from "./expand";
+import { ensureChildRow, expandButton, syncExpandState } from "./expand.ts";
+import { rowMenuButton } from "./row_menu.ts";
+import type { CarbonGridEngine, CarbonGridHost, CarbonGridRow as CarbonGridRowShape } from "./expand.ts";
 import type { JQueryRegion } from "frappe-types";
 
 // ------------------------------------------------------- the engine seam here

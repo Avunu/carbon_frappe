@@ -14,7 +14,7 @@
 // and it does `element.off("click").on("click", ...)`, so re-running it is
 // safe. The sidebar pencil keeps working exactly as before — this adds a second
 // route to the same dialog, it does not replace one.
-import { record } from "./patch";
+import { record } from "./patch.ts";
 
 function bind(): boolean {
 	const frm = window.cur_frm;

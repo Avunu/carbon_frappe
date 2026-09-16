@@ -32,10 +32,10 @@
 // dict lookup with no extension fallback (frappe/utils/jinja_globals.py:151-156),
 // so without that step the `.js` key silently keeps whatever stale hash an
 // older build left in assets.json.
-import { assertPatches } from "./anatomy/patch";
-import installDataTable from "./tables/datatable/install";
-import installGrid from "./tables/grid/install";
-import installListView from "./tables/list/list_view";
+import { assertPatches } from "./anatomy/patch.ts";
+import installDataTable from "./tables/datatable/install.ts";
+import installGrid from "./tables/grid/install.ts";
+import installListView from "./tables/list/list_view.ts";
 
 function install() {
 	installDataTable();

@@ -14,8 +14,8 @@
 // Everything else in `ControlTable.make()` is inherited, including the ~90-line
 // clipboard-paste handler — which reads `this.grid` at event time rather than
 // closing over it, so it picks up CarbonGrid without modification.
-import { safePatch } from "../../anatomy/patch";
-import CarbonGrid, { frmOption } from "./grid";
+import { safePatch } from "../../anatomy/patch.ts";
+import CarbonGrid, { frmOption } from "./grid.ts";
 import type { ControlTable } from "frappe-types";
 
 export default function installGrid(): void {

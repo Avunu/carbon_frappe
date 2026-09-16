@@ -32,8 +32,8 @@
 // race both.
 //
 // `writeCell` is also how Space toggles a focused Check cell (./navigation.ts).
-import { commitValue } from "./editing";
-import type { CarbonDataTableHost } from "./managers";
+import { commitValue } from "./editing.ts";
+import type { CarbonDataTableHost } from "./managers.ts";
 import type {
 	DataTableCellValue,
 	DataTableColIndex,
@@ -247,10 +247,18 @@ export async function writeCell(
 }
 
 /** Where a paste lands: one target per clipboard cell that maps onto the grid. */
-interface Target {
+export interface PasteTarget {
 	colIndex: DataTableColIndex;
 	rowIndex: DataTableRowIndex;
 	text: string;
+}
+
+/** The two facts about the grid a fill plan needs — `CellNavigation`'s, decoupled so the plan is testable. */
+export interface PasteView {
+	/** Display order of data row indices (`navigation.viewOrder`). */
+	viewOrder: readonly DataTableRowIndex[];
+	/** Column indices the caret may land on, in order (`navigation.focusableColumns()`). */
+	focusableColumns: readonly DataTableColIndex[];
 }
 
 /**
@@ -260,15 +268,14 @@ interface Target {
  * positions and column indices), which becomes the new selection.
  */
 export function planFill(
-	host: CarbonDataTableHost,
-	block: string[][],
+	view: PasteView,
+	block: readonly (readonly string[])[],
 	bounds: DataTableSelectionBounds,
-): { targets: Target[]; rect: DataTableSelectionBounds } {
-	const nav = host.navigation;
-	const order = nav.viewOrder;
-	const cols = nav.focusableColumns();
+): { targets: PasteTarget[]; rect: DataTableSelectionBounds } {
+	const order = view.viewOrder;
+	const cols = view.focusableColumns;
+	const targets: PasteTarget[] = [];
 	const startCol = cols.indexOf(bounds.c1);
-	const targets: Target[] = [];
 	if (startCol === -1 || !block.length) return { targets, rect: bounds };
 
 	const single = block.length === 1 && (block[0] ?? []).length === 1;
@@ -311,7 +318,11 @@ export async function pasteIntoSelection(host: CarbonDataTableHost, text: string
 	const bounds = nav.bounds();
 	if (!bounds) return result;
 	const block = parseClipboard(text);
-	const { targets, rect } = planFill(host, block, bounds);
+	const { targets, rect } = planFill(
+		{ viewOrder: nav.viewOrder, focusableColumns: nav.focusableColumns() },
+		block,
+		bounds,
+	);
 	if (!targets.length) return result;
 
 	for (const target of targets) {

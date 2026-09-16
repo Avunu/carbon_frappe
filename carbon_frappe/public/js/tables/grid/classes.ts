@@ -18,8 +18,8 @@
 // engine (see engine/render.js `createRowNode`), so this profile only decorates
 // the scaffolding around them.
 
-import { CARBON } from "../engine/classes";
-import type { TableClassColumn, TableClassProfile } from "../engine/classes";
+import { CARBON } from "../engine/classes.ts";
+import type { TableClassColumn, TableClassProfile } from "../engine/classes.ts";
 
 function add(node: Element, ...names: string[]): void {
 	for (const n of names) if (n && !node.classList.contains(n)) node.classList.add(n);

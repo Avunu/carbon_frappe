@@ -2,8 +2,8 @@
 // Runs OUTSIDE a bench: no frappe global, no jQuery, no desk bundle. That is the
 // point — it proves the engine has no hidden dependency on the desk, and it is
 // where engine behaviour is exercised before any adapter exists.
-import CarbonTable from "../carbon_frappe/public/js/tables/engine/table";
-import type { CarbonColumnSpec } from "../carbon_frappe/public/js/tables/engine/table";
+import CarbonTable from "../carbon_frappe/public/js/tables/engine/table.ts";
+import type { CarbonColumnSpec } from "../carbon_frappe/public/js/tables/engine/table.ts";
 
 /**
  * One fabricated row.

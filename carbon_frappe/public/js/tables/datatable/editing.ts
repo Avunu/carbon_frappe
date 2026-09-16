@@ -33,8 +33,8 @@
 //   * Enter inside that textarea inserts a newline; Ctrl/Cmd+Enter commits.
 //     Single-line editors keep frappe-datatable's Enter = commit.
 
-import { insideEditorUI } from "./navigation";
-import type { CarbonDataTableHost } from "./managers";
+import { insideEditorUI } from "./navigation.ts";
+import type { CarbonDataTableHost } from "./managers.ts";
 import type {
 	DataTableCell,
 	DataTableCellValue,

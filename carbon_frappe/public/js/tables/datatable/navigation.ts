@@ -38,10 +38,10 @@
 // headless Chrome, where `writeClipboard` below already needs a fallback.
 // frappe-datatable's own paste was gated on `pasteFromClipboard`; the option
 // is still honoured, and now defaults on.
-import { inMultilineEditor } from "./editing";
-import type { CarbonDataTableHost } from "./managers";
-import { pasteIntoSelection, writeCell } from "./paste";
-import type { PasteResult } from "./paste";
+import { inMultilineEditor } from "./editing.ts";
+import type { CarbonDataTableHost } from "./managers.ts";
+import { pasteIntoSelection, writeCell } from "./paste.ts";
+import type { PasteResult } from "./paste.ts";
 import type {
 	DataTableColIndex,
 	DataTableFocusedCell,

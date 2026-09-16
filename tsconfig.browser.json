@@ -10,7 +10,9 @@
 		// only the .tsbuildinfo cache is written.
 		"composite": true,
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
-		"types": ["frappe-types/global"]
+		"types": ["frappe-types/global"],
+		// relative imports carry `.ts` so Node (the unit tests) resolves them; esbuild does too
+		"allowImportingTsExtensions": true
 	},
 	"include": ["carbon_frappe/public/js/**/*.ts", "carbon_frappe/public/js/**/*.d.ts", "dev/**/*.ts"],
 	// `carbon_frappe/public/js/generated` is deliberately NOT excluded: its one

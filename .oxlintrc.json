@@ -36,7 +36,7 @@
 	],
 	"overrides": [
 		{
-			"files": ["carbon_frappe/public/js/*.bundle.ts"],
+			"files": ["carbon_frappe/public/js/*.bundle.ts", "test/**"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}

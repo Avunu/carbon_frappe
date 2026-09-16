@@ -29,8 +29,8 @@
 // dict lookup with no extension fallback (frappe/utils/jinja_globals.py:151-156),
 // so without that step the `.js` key silently keeps whatever stale hash an
 // older build left in assets.json.
-import { assertPatches } from "./anatomy/patch";
-import "./anatomy/editable_title";
-import "./anatomy/ui_shell";
+import { assertPatches } from "./anatomy/patch.ts";
+import "./anatomy/editable_title.ts";
+import "./anatomy/ui_shell.ts";
 
 $(document).ready(assertPatches);

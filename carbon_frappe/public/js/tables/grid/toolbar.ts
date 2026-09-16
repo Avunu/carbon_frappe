@@ -20,8 +20,8 @@
 // through `this.wrapper.find(...)` — `this.wrapper` is `.grid-field`, which
 // still contains the toolbar. Rebuilding the buttons would have thrown all of
 // that away and left `setup_allow_bulk_edit()` un-hiding orphaned nodes.
-import { CARBON } from "../engine/classes";
-import { icon } from "../engine/icons";
+import { CARBON } from "../engine/classes.ts";
+import { icon } from "../engine/icons.ts";
 import type Grid from "frappe/public/js/frappe/form/grid";
 
 declare global {

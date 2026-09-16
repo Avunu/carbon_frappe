@@ -20,12 +20,12 @@
 // 51 `get_field`, 44 `refresh`, 35 `grid_rows`, ...) are therefore inherited
 // implementations operating on new DOM, not reimplementations.
 import Grid from "frappe/public/js/frappe/form/grid";
-import CarbonTable from "../engine/table";
-import { gridProfile } from "./classes";
-import { ensureChildRow } from "./expand";
-import CarbonGridRow from "./grid_row";
-import GridToolbar, { mountFooter } from "./toolbar";
-import type { CarbonColumnSpec, CarbonTableOptions } from "../engine/table";
+import CarbonTable from "../engine/table.ts";
+import { gridProfile } from "./classes.ts";
+import { ensureChildRow } from "./expand.ts";
+import CarbonGridRow from "./grid_row.ts";
+import GridToolbar, { mountFooter } from "./toolbar.ts";
+import type { CarbonColumnSpec, CarbonTableOptions } from "../engine/table.ts";
 import type { Form, GridChildDoc, GridDataRow, GridDocField } from "frappe-types";
 
 /**

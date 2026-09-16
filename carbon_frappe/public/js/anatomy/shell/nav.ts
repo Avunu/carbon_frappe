@@ -37,10 +37,10 @@
 // Sub-menu titles are `href="#"`. frappe's body-level click router returns
 // early for that href WITHOUT preventDefault (router.js:52), so the title
 // handler here prevents it itself — it runs first, being bound deeper.
-import { chevronDown16 } from "../../generated/shell-icons";
-import { esc, isHTMLElement } from "./dom";
-import { isCurrentHref } from "./model";
-import type { ShellItem, ShellLeaf, ShellModel } from "./model";
+import { chevronDown16 } from "../../generated/shell-icons.ts";
+import { esc, isHTMLElement } from "./dom.ts";
+import { isCurrentHref } from "./model.ts";
+import type { ShellItem, ShellLeaf, ShellModel } from "./model.ts";
 
 export interface ShellNav {
 	/** The `<nav>` element, for the orchestrator to place. */
