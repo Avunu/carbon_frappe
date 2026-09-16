@@ -213,7 +213,7 @@ export async function writeCell(
 	host: CarbonDataTableHost,
 	colIndex: DataTableColIndex,
 	rowIndex: DataTableRowIndex,
-	value: DataTableCellValue
+	value: DataTableCellValue,
 ): Promise<"pasted" | "rejected" | "skipped"> {
 	const column = host.datamanager.getColumn(colIndex);
 	const cell = host.datamanager.getCell(colIndex, rowIndex);
@@ -238,7 +238,7 @@ export async function writeCell(
 		parent,
 		column,
 		host.datamanager.getRow(rowIndex),
-		host.datamanager.getData(rowIndex)
+		host.datamanager.getData(rowIndex),
 	);
 	if (!editor) return "skipped";
 	if (value === cell.content) return "pasted";
@@ -262,7 +262,7 @@ interface Target {
 export function planFill(
 	host: CarbonDataTableHost,
 	block: string[][],
-	bounds: DataTableSelectionBounds
+	bounds: DataTableSelectionBounds,
 ): { targets: Target[]; rect: DataTableSelectionBounds } {
 	const nav = host.navigation;
 	const order = nav.viewOrder;
@@ -294,7 +294,7 @@ export function planFill(
 		for (let c = 0; c < width; c++) {
 			const colIndex = cols[startCol + c];
 			if (colIndex === undefined) break;
-			const text = single ? (line && line[0]) ?? "" : (line && line[c]) ?? "";
+			const text = single ? ((line && line[0]) ?? "") : ((line && line[c]) ?? "");
 			targets.push({ colIndex, rowIndex, text });
 			lastPos = pos;
 			lastColAt = startCol + c;

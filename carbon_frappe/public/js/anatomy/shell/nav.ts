@@ -81,7 +81,10 @@ function submenuHtml(label: string, inner: string, extraClass: string, hidden: b
 
 function topHtml(item: ShellItem, index: number): string {
 	if (item.kind === "group") {
-		return submenuHtml(item.label, item.items.map(itemHtml).join(""), "", false).replace("<li ", `<li data-cf-index="${index}" `);
+		return submenuHtml(item.label, item.items.map(itemHtml).join(""), "", false).replace(
+			"<li ",
+			`<li data-cf-index="${index}" `,
+		);
 	}
 	return itemHtml(item).replace("<li>", `<li data-cf-index="${index}">`);
 }
@@ -167,7 +170,8 @@ export function mountNav(header: HTMLElement): ShellNav {
 		const map = new Map<string, HTMLElement>();
 		for (const item of items) {
 			if (item.kind === "action") map.set(item.key, item.source);
-			else if (item.kind === "group") for (const k of item.items) if (k.kind === "action") map.set(k.key, k.source);
+			else if (item.kind === "group")
+				for (const k of item.items) if (k.kind === "action") map.set(k.key, k.source);
 		}
 		return map;
 	}
@@ -218,7 +222,8 @@ export function mountNav(header: HTMLElement): ShellNav {
 		// width (48px cells) is what the bar must leave room for
 		const global = header.querySelector<HTMLElement>(".cds--header__global");
 		let actionsWidth = 0;
-		if (global) for (const child of global.children) if (isHTMLElement(child)) actionsWidth += child.offsetWidth;
+		if (global)
+			for (const child of global.children) if (isHTMLElement(child)) actionsWidth += child.offsetWidth;
 		const isRtl = getComputedStyle(header).direction === "rtl";
 		const navStart = isRtl ? headerRect.right - navRect.right : navRect.left - headerRect.left;
 		const budget = headerRect.width - navStart - padStart - actionsWidth;

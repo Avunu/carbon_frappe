@@ -192,16 +192,18 @@ if (patched) {
 	try {
 		const require = createRequire(path.join(benchRoot, "apps", "frappe", "package.json"));
 		const nodeUtils: unknown = require("./node_utils.js");
-		if (!isNodeUtils(nodeUtils)) throw new Error("frappe's node_utils.js does not export get_redis_subscriber");
+		if (!isNodeUtils(nodeUtils))
+			throw new Error("frappe's node_utils.js does not export get_redis_subscriber");
 		const client: unknown = nodeUtils.get_redis_subscriber("redis_cache");
-		if (!isRedisCacheClient(client)) throw new Error("get_redis_subscriber('redis_cache') returned no redis client");
+		if (!isRedisCacheClient(client))
+			throw new Error("get_redis_subscriber('redis_cache') returned no redis client");
 		await client.connect();
 		await client.del("assets_json");
 		await client.quit();
 		log("cleared assets_json redis cache");
 	} catch (e) {
 		log(
-			`could not clear redis cache (${e instanceof Error ? e.message : String(e)}) — run \`bench --site all clear-website-cache\` or restart workers if styles look stale`
+			`could not clear redis cache (${e instanceof Error ? e.message : String(e)}) — run \`bench --site all clear-website-cache\` or restart workers if styles look stale`,
 		);
 	}
 } else {

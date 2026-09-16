@@ -1,49 +1,53 @@
 {
-  "name": "carbon-frappe",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Carbon Design System theme for Frappe",
-  "keywords": [
-    "frappe",
-    "erpnext",
-    "carbon",
-    "design"
-  ],
-  "homepage": "https://github.com/Avunu/carbon-frappe#readme",
-  "bugs": {
-    "url": "https://github.com/Avunu/carbon-frappe/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Avunu/carbon-frappe.git"
-  },
-  "license": "MIT",
-  "author": "Avunu LLC",
-  "type": "module",
-  "dependencies": {
-    "@carbon/charts": "1.27.19",
-    "@carbon/styles": "1.115.0",
-    "@tanstack/table-core": "9.2.4",
-    "@tanstack/virtual-core": "3.17.11"
-  },
-  "devDependencies": {
-    "@carbon/icon-helpers": "^10.82.0",
-    "@carbon/icons": "11.88.0",
-    "@ibm/plex-mono": "2.5.0",
-    "@ibm/plex-sans": "1.1.0",
-    "@types/node": "^26.5.1",
-    "frappe-types": "^16.3.0",
-    "sass": "1.104.1",
-    "typescript": "^7.0.2"
-  },
-  "scripts": {
-    "build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only",
-    "codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts && node scripts/generate-shell-icons.ts",
-    "audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
-    "compile": "node scripts/dev-compile.ts",
-    "typecheck": "tsc --build",
-    "upgrade": "npx npm-check-updates -u && yarn install && yarn build",
-    "test:tables": "node scripts/test-tables.ts",
-    "test:shell": "node scripts/test-shell.ts"
-  }
+	"name": "carbon-frappe",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Carbon Design System theme for Frappe",
+	"keywords": [
+		"carbon",
+		"design",
+		"erpnext",
+		"frappe"
+	],
+	"homepage": "https://github.com/Avunu/carbon-frappe#readme",
+	"bugs": {
+		"url": "https://github.com/Avunu/carbon-frappe/issues"
+	},
+	"license": "MIT",
+	"author": "Avunu LLC",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Avunu/carbon-frappe.git"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only",
+		"codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts && node scripts/generate-shell-icons.ts",
+		"audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
+		"compile": "node scripts/dev-compile.ts",
+		"typecheck": "tsc --build",
+		"upgrade": "npx npm-check-updates -u && yarn install && yarn build",
+		"test:tables": "node scripts/test-tables.ts",
+		"test:shell": "node scripts/test-shell.ts"
+	},
+	"dependencies": {
+		"@carbon/charts": "1.27.19",
+		"@carbon/styles": "1.115.0",
+		"@tanstack/table-core": "9.2.4",
+		"@tanstack/virtual-core": "3.17.11"
+	},
+	"devDependencies": {
+		"@carbon/icon-helpers": "^10.82.0",
+		"@carbon/icons": "11.88.0",
+		"@ibm/plex-mono": "2.5.0",
+		"@ibm/plex-sans": "1.1.0",
+		"@types/node": "^26.5.1",
+		"frappe-types": "^16.3.0",
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0",
+		"sass": "1.104.1",
+		"stylelint": "^17.15.0",
+		"stylelint-config-standard-scss": "^17.0.0",
+		"typescript": "^7.0.2"
+	}
 }

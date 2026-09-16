@@ -1,8 +1,6 @@
 [project]
 name = "carbon_frappe"
-authors = [
-    { name = "Avunu LLC", email = "mail@avu.nu" },
-]
+authors = [{ name = "Avunu LLC", email = "mail@avu.nu" }]
 description = "Carbon Design System theme for Frappe"
 requires-python = ">=3.10"
 readme = "README.md"

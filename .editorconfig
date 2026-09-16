@@ -1,0 +1,24 @@
+# erpnext's .editorconfig, verbatim in substance: tabs everywhere frappe uses
+# them, 110 columns, and frappe's 1-space doctype JSON left as the exporter
+# writes it. oxfmt/ruff enforce this; the file is for editors.
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+[{*.py,*.ts,*.js,*.mjs,*.css,*.scss,*.html,*.yml,*.yaml,*.toml,*.jsonc,*.nix}]
+indent_style = tab
+indent_size = 4
+max_line_length = 110
+
+# doctype schema files, as frappe's exporter writes them
+[*.json]
+insert_final_newline = false
+indent_style = space
+indent_size = 1
+
+[*.md]
+trim_trailing_whitespace = false

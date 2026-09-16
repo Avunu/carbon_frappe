@@ -166,9 +166,9 @@ export default class CellNavigation {
 	nextFocusable(colIndex: DataTableColIndex, step: number): DataTableColIndex | null {
 		const cols = this.focusableColumns();
 		const at = cols.indexOf(colIndex);
-		if (at === -1) return cols.length ? cols[0] ?? null : null;
+		if (at === -1) return cols.length ? (cols[0] ?? null) : null;
 		const next = at + step;
-		return next >= 0 && next < cols.length ? cols[next] ?? null : null;
+		return next >= 0 && next < cols.length ? (cols[next] ?? null) : null;
 	}
 
 	// ------------------------------------------------------------------ focus
@@ -176,7 +176,7 @@ export default class CellNavigation {
 	focus(
 		colIndex: DataTableColIndex,
 		rowIndex: DataTableRowIndex,
-		{ extend = false }: CellFocusOptions = {}
+		{ extend = false }: CellFocusOptions = {},
 	): boolean {
 		if (colIndex == null || rowIndex == null) return false;
 		const col = this.host.columns[colIndex];
@@ -196,7 +196,7 @@ export default class CellNavigation {
 
 	move(
 		direction: CellNavigationDirection,
-		{ extend = false, toEdge = false }: CellMoveOptions = {}
+		{ extend = false, toEdge = false }: CellMoveOptions = {},
 	): boolean {
 		const from = extend ? this.cursor : this.focused;
 		if (!from) return false;
@@ -267,13 +267,9 @@ export default class CellNavigation {
 			// the loop body simply finds no node.
 			const rowIndex = order[p] ?? -1;
 			for (let c = b.c1; c <= b.c2; c++) {
-				const node = this.host.engine.getCellNode(
-					this.host.rowIdFor(rowIndex),
-					this.host.engineColumnId(c)
-				);
+				const node = this.host.engine.getCellNode(this.host.rowIdFor(rowIndex), this.host.engineColumnId(c));
 				if (!node) continue;
-				const isFocus =
-					this.focused && this.focused.colIndex === c && this.focused.rowIndex === rowIndex;
+				const isFocus = this.focused && this.focused.colIndex === c && this.focused.rowIndex === rowIndex;
 				node.classList.add(isFocus ? "dt-cell--focus" : "dt-cell--highlight");
 				this._highlighted.push(node);
 			}
@@ -320,48 +316,54 @@ export default class CellNavigation {
 		// The grid needs to receive keys without stealing them from the desk.
 		if (!scroll.hasAttribute("tabindex")) scroll.setAttribute("tabindex", "0");
 
-		container.addEventListener("mousedown", (e) => {
-			if (e.button !== 0) return;
-			if (insideEditorUI(e.target)) return;
-			const td = isElement(e.target) && e.target.closest(".dt-cell");
-			if (!td || td.closest("thead")) return;
-			const colIndex = Number(td.getAttribute("data-col-index"));
-			const rowIndex = Number(td.getAttribute("data-row-index"));
-			this.focus(colIndex, rowIndex, { extend: e.shiftKey });
-			scroll.focus({ preventScroll: true });
+		container.addEventListener(
+			"mousedown",
+			(e) => {
+				if (e.button !== 0) return;
+				if (insideEditorUI(e.target)) return;
+				const td = isElement(e.target) && e.target.closest(".dt-cell");
+				if (!td || td.closest("thead")) return;
+				const colIndex = Number(td.getAttribute("data-col-index"));
+				const rowIndex = Number(td.getAttribute("data-row-index"));
+				this.focus(colIndex, rowIndex, { extend: e.shiftKey });
+				scroll.focus({ preventScroll: true });
 
-			// Begin a drag-selection. `mousedown` is NOT prevented: doing so
-			// would stop links in cells from being clicked and stop an editor's
-			// input from taking focus. Text selection is suppressed with a class
-			// for the duration instead.
-			this.dragging = true;
-			container.classList.add("cf-table--selecting");
-		}, { signal });
+				// Begin a drag-selection. `mousedown` is NOT prevented: doing so
+				// would stop links in cells from being clicked and stop an editor's
+				// input from taking focus. Text selection is suppressed with a class
+				// for the duration instead.
+				this.dragging = true;
+				container.classList.add("cf-table--selecting");
+			},
+			{ signal },
+		);
 
 		// `mouseover` rather than `mousemove`: it fires once per cell crossed,
 		// so the selection updates exactly when the rectangle changes instead of
 		// on every pixel. frappe-datatable had to throttle mousemove at 50ms.
-		container.addEventListener("mouseover", (e) => {
-			if (!this.dragging) return;
-			// Self-heal a lost mouseup. The button can be released where we never
-			// see it — outside the window, over a dialog that opened mid-drag, or
-			// swallowed by another handler — and the grid would then keep
-			// extending the selection on every later pointer move with no button
-			// held. `buttons` is authoritative about what is held right now, so a
-			// zero means the drag is over regardless of what we observed.
-			if (!e.buttons) {
-				this.endDrag();
-				return;
-			}
-			if (insideEditorUI(e.target)) return;
-			const td = isElement(e.target) && e.target.closest(".dt-cell");
-			if (!td || td.closest("thead")) return;
-			this.focus(
-				Number(td.getAttribute("data-col-index")),
-				Number(td.getAttribute("data-row-index")),
-				{ extend: true }
-			);
-		}, { signal });
+		container.addEventListener(
+			"mouseover",
+			(e) => {
+				if (!this.dragging) return;
+				// Self-heal a lost mouseup. The button can be released where we never
+				// see it — outside the window, over a dialog that opened mid-drag, or
+				// swallowed by another handler — and the grid would then keep
+				// extending the selection on every later pointer move with no button
+				// held. `buttons` is authoritative about what is held right now, so a
+				// zero means the drag is over regardless of what we observed.
+				if (!e.buttons) {
+					this.endDrag();
+					return;
+				}
+				if (insideEditorUI(e.target)) return;
+				const td = isElement(e.target) && e.target.closest(".dt-cell");
+				if (!td || td.closest("thead")) return;
+				this.focus(Number(td.getAttribute("data-col-index")), Number(td.getAttribute("data-row-index")), {
+					extend: true,
+				});
+			},
+			{ signal },
+		);
 
 		// On the document, so releasing outside the table still ends the drag.
 		this._onMouseUp = () => this.endDrag();
@@ -424,7 +426,7 @@ export default class CellNavigation {
 			if (n) {
 				this.host.showToastMessage(
 					this.host.translate("{count} cells copied").replace("{count}", String(n)),
-					2
+					2,
 				);
 			}
 			return;
@@ -490,7 +492,7 @@ export default class CellNavigation {
 		if (!focused) return;
 		const node = this.host.engine.getCellNode(
 			this.host.rowIdFor(focused.rowIndex),
-			this.host.engineColumnId(focused.colIndex)
+			this.host.engineColumnId(focused.colIndex),
 		);
 		if (node) this.host.editing.activate(node);
 	}

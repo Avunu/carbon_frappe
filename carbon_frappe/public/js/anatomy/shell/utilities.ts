@@ -72,9 +72,15 @@ function dressSidebarRows(slot: Element): void {
 		row.removeAttribute("data-placement");
 	}
 	const search = slot.querySelector("#navbar-modal-search");
-	markAction(search && search.querySelector(".standard-sidebar-item > .item-anchor"), search && search.getAttribute("title"));
+	markAction(
+		search && search.querySelector(".standard-sidebar-item > .item-anchor"),
+		search && search.getAttribute("title"),
+	);
 	const bell = slot.querySelector(".sidebar-notification");
-	markAction(bell && bell.querySelector(".standard-sidebar-item > .item-anchor"), bell && bell.getAttribute("title"));
+	markAction(
+		bell && bell.querySelector(".standard-sidebar-item > .item-anchor"),
+		bell && bell.getAttribute("title"),
+	);
 	const count = slot.querySelector(".sidebar-notification-count");
 	if (count) for (const cls of BADGE.split(" ")) count.classList.add(cls);
 	markAction(slot.querySelector(".dropdown-navbar-user .sidebar-user-button"), null);
@@ -228,7 +234,7 @@ function rehomeBadge(slot: Element): void {
 					$suffix.removeAttr("aria-label").addClass("hidden");
 				}
 			},
-		"Carbon UI Shell header (notification badge re-home)"
+		"Carbon UI Shell header (notification badge re-home)",
 	);
 	view.update_count_badge(view.unread_count);
 }

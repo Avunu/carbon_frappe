@@ -52,10 +52,7 @@ function bind(): boolean {
 	// stack a second one.
 	if (!$title.children(".cf-title-edit").length && frappe.utils?.icon) {
 		$title.append(
-			`<span class="cf-title-edit" aria-hidden="true">${frappe.utils.icon(
-				"square-pen",
-				"sm"
-			)}</span>`
+			`<span class="cf-title-edit" aria-hidden="true">${frappe.utils.icon("square-pen", "sm")}</span>`,
 		);
 	}
 

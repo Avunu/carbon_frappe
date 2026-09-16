@@ -191,12 +191,14 @@ function signatureOf(
 	workspace: string,
 	home: string,
 	navHidden: boolean,
-	items: ShellItem[]
+	items: ShellItem[],
 ): string {
 	const parts: string[] = [prefix, name, workspace, home, navHidden ? "hidden" : "shown"];
 	for (const item of items) {
 		if (item.kind === "group") {
-			parts.push(`group:${item.label}[${item.items.map((k) => `${k.kind}:${k.label}:${k.kind === "link" ? k.href : ""}`).join("|")}]`);
+			parts.push(
+				`group:${item.label}[${item.items.map((k) => `${k.kind}:${k.label}:${k.kind === "link" ? k.href : ""}`).join("|")}]`,
+			);
 		} else {
 			parts.push(`${item.kind}:${item.label}:${item.kind === "link" ? item.href : ""}`);
 		}

@@ -64,7 +64,7 @@ function esc(text: unknown): string {
 function el<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
 	className?: string | null,
-	attrs?: Record<string, string>
+	attrs?: Record<string, string>,
 ): HTMLElementTagNameMap[K] {
 	const node = document.createElement(tag);
 	if (className) node.className = className;
@@ -276,8 +276,7 @@ export default class GridToolbar {
 	refreshBatch(): void {
 		const n = (this.grid.get_selected() || []).length;
 		const active = n > 0;
-		this.count.textContent =
-			n === 1 ? __("1 item selected") : __("{0} items selected", [n]);
+		this.count.textContent = n === 1 ? __("1 item selected") : __("{0} items selected", [n]);
 		this.batch.classList.toggle(CARBON.batchActionsActive, active);
 		this.batch.setAttribute("aria-hidden", active ? "false" : "true");
 		this.content.setAttribute("aria-hidden", active ? "true" : "false");

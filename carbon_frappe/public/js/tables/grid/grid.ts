@@ -268,19 +268,11 @@ export default class CarbonGrid extends Grid {
 				// `get_perm` reached `this.perm[undefined]` and came back
 				// `null`, so an absent permlevel already excluded the column;
 				// the explicit test says that instead of relying on it.
-				((this.frm &&
-					df.permlevel !== undefined &&
-					this.frm.get_perm(df.permlevel, "read")) ||
-					!this.frm) &&
+				((this.frm && df.permlevel !== undefined && this.frm.get_perm(df.permlevel, "read")) || !this.frm) &&
 				!frappe.model.layout_fields.includes(df.fieldtype)
 			) {
 				// attach formatter on refresh (frappe does the same)
-				if (
-					df.fieldtype == "Link" &&
-					!df.formatter &&
-					df.parent &&
-					frappe.meta.docfield_map[df.parent]
-				) {
+				if (df.fieldtype == "Link" && !df.formatter && df.parent && frappe.meta.docfield_map[df.parent]) {
 					// Read the parent's map into a local first: TypeScript only
 					// carries a truthiness narrowing through an element access
 					// whose key is a literal, and `df.parent` is a plain
@@ -427,7 +419,7 @@ export default class CarbonGrid extends Grid {
 	build_engine_columns(): CarbonColumnSpec<GridRowData>[] {
 		const node_of = (
 			rowOriginal: GridRowData,
-			pick: (r: CarbonGridRow) => GridNodeContent
+			pick: (r: CarbonGridRow) => GridNodeContent,
 		): GridNodeContent => {
 			const grid_row = this.grid_rows_by_docname[rowOriginal.name];
 			return grid_row ? pick(grid_row) : "";
@@ -478,8 +470,8 @@ export default class CarbonGrid extends Grid {
 				align: ["Int", "Currency", "Float", "Percent"].includes(df.fieldtype)
 					? "right"
 					: df.fieldtype === "Check"
-					? "center"
-					: "left",
+						? "center"
+						: "left",
 				sortable: false,
 				filterable: true,
 				pinned: df.sticky ? "start" : undefined,

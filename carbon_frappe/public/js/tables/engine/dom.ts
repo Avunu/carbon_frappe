@@ -52,7 +52,7 @@ export interface ElOptions {
  */
 export function el<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
-	opts: ElOptions = {}
+	opts: ElOptions = {},
 ): HTMLElementTagNameMap[K] {
 	const node = document.createElement(tag);
 	if (opts.className) node.className = opts.className;
@@ -97,7 +97,7 @@ export function toggleClass(node: Element, name: string | null | undefined, on: 
  */
 export function setStyles<K extends StyleProperty>(
 	node: HTMLElement,
-	styles: { [P in K]?: string | number | null | undefined }
+	styles: { [P in K]?: string | number | null | undefined },
 ): void {
 	for (const k in styles) {
 		const v = styles[k];
@@ -112,11 +112,7 @@ export function setStyles<K extends StyleProperty>(
  * them, because only the caller knows whether a detached row is being recycled
  * or destroyed.
  */
-export function reconcileOrder(
-	parent: Node,
-	desired: readonly Node[],
-	before: Node | null = null
-): void {
+export function reconcileOrder(parent: Node, desired: readonly Node[], before: Node | null = null): void {
 	let cursor = before;
 	for (let i = desired.length - 1; i >= 0; i--) {
 		const node = desired[i];

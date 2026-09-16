@@ -1,8 +1,9 @@
 // Typography remap: IBM Plex + frappe's --text-* scale snapped onto Carbon's
 // productive type scale. Body is 14px (Carbon body-compact-01).
 :root {
-	--font-stack: "IBM Plex Sans", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto",
-		"Helvetica Neue", "Arial", sans-serif;
+	--font-stack:
+		"IBM Plex Sans", -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial",
+		sans-serif;
 	--font-family-mono: "IBM Plex Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
 
 	// Plex has no 420 optical weight and Carbon's idiom caps emphasis at

@@ -101,11 +101,10 @@ function buildColumns(listview: ListView): CarbonColumnSpec<FrappeListDoc>[] {
 				// `?? ""` only to keep the index expression a `string`: a column
 				// with no `df` is a Status or Tag column, which `get_column_html`
 				// never writes a width for under any key.
-				listview.column_max_widths[col.df?.fieldname ?? ""] ||
-					(col.type === "Subject" ? 280 : 160),
-				col.type === "Tag" ? 40 : 110
+				listview.column_max_widths[col.df?.fieldname ?? ""] || (col.type === "Subject" ? 280 : 160),
+				col.type === "Tag" ? 40 : 110,
 			),
-			560
+			560,
 		),
 		align: frappe.model.is_numeric_field(col.df) ? "right" : "left",
 		sortable: false, // sorting is the page's sort selector, via [data-sort-by]
@@ -214,7 +213,7 @@ export default function installListView(): void {
 				// TypeError on `this.$checks.length`. `on_row_checked` resolves
 				// it lazily from the overlay's `<header>` ancestor anyway.
 			},
-		"frappe.views.ListView.prototype.render_header (Carbon batch-actions overlay)"
+		"frappe.views.ListView.prototype.render_header (Carbon batch-actions overlay)",
 	);
 
 	safePatch(
@@ -258,7 +257,7 @@ export default function installListView(): void {
 						const len = Array.isArray(assigned) ? assigned.length : 0;
 						assign_to_count = Math.max(
 							assign_to_count,
-							len > this.max_number_of_avatars ? this.max_number_of_avatars : len
+							len > this.max_number_of_avatars ? this.max_number_of_avatars : len,
 						);
 						has_assignto = true;
 					}
@@ -305,7 +304,7 @@ export default function installListView(): void {
 
 				this.update_listview_classes(has_assignto, assign_to_count);
 			},
-		"frappe.views.ListView.prototype.render_list (CarbonTable)"
+		"frappe.views.ListView.prototype.render_list (CarbonTable)",
 	);
 
 	/**
@@ -317,6 +316,6 @@ export default function installListView(): void {
 		() => frappe.views.ListView && frappe.views.ListView.prototype,
 		"apply_column_widths",
 		() => function () {},
-		"frappe.views.ListView.prototype.apply_column_widths (no-op; TanStack owns widths)"
+		"frappe.views.ListView.prototype.apply_column_widths (no-op; TanStack owns widths)",
 	);
 }

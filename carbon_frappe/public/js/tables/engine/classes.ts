@@ -285,7 +285,7 @@ export type TableClassHookContext<
 /** One profile hook. */
 export type TableClassHook<K extends TableClassProfileHook, THost = unknown> = (
 	node: TableClassHookNode<K>,
-	ctx: TableClassHookContext<K, THost>
+	ctx: TableClassHookContext<K, THost>,
 ) => void;
 
 /**
@@ -326,7 +326,7 @@ export const NOOP_PROFILE: ResolvedTableClassProfile = {
 
 /** Merge an adapter profile over the no-op defaults. */
 export function makeProfile<THost>(
-	profile: TableClassProfile<THost> | null | undefined
+	profile: TableClassProfile<THost> | null | undefined,
 ): ResolvedTableClassProfile<THost> {
 	return Object.assign({}, NOOP_PROFILE, profile || {});
 }
@@ -336,7 +336,7 @@ export function applyProfile<THost, K extends TableClassProfileHook>(
 	profile: TableClassProfile<THost> | null | undefined,
 	hook: K,
 	node: TableClassHookNode<K>,
-	ctx: TableClassHookContext<K, THost>
+	ctx: TableClassHookContext<K, THost>,
 ): void {
 	const fn = profile && profile[hook];
 	if (typeof fn !== "function") return;

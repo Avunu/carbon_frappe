@@ -251,21 +251,13 @@ export interface TableRendererHost<THost> {
 		entry: HeaderCellEntry,
 		header: RenderHeader | undefined,
 		column: RenderColumn,
-		colIndex: number
+		colIndex: number,
 	): void;
-	renderCellContent(
-		cell: RowCellEntry,
-		row: RenderRow,
-		column: RenderColumn,
-		colIndex: number
-	): void;
+	renderCellContent(cell: RowCellEntry, row: RenderRow, column: RenderColumn, colIndex: number): void;
 	renderTotalContent(entry: TotalCellEntry, column: RenderColumn, colIndex: number): void;
 
 	/** The adapter's extra `<tr>` for this row, placed immediately after it. */
-	renderRowAddendum(
-		row: RenderRow,
-		leaf: readonly RenderColumn[]
-	): HTMLTableRowElement | null | undefined;
+	renderRowAddendum(row: RenderRow, leaf: readonly RenderColumn[]): HTMLTableRowElement | null | undefined;
 
 	/** The adapter's own `<tr>`, or nullish to let the engine build one. */
 	createRowNode(row: RenderRow): HTMLTableRowElement | null | undefined;
@@ -273,7 +265,7 @@ export interface TableRendererHost<THost> {
 	createCellNode(
 		row: RenderRow,
 		column: RenderColumn,
-		colIndex: number
+		colIndex: number,
 	): HTMLTableCellElement | null | undefined;
 	/**
 	 * Let the adapter fill a filter cell. Only the TRUTHINESS of the result is
@@ -513,16 +505,8 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 		toggleClass(node, "cf-table__cell--pinned-end", pinned === "end");
 		// The last start-pinned / first end-pinned column carries the divider
 		// shadow, matching tanstack-carbon's sticky-columns example.
-		toggleClass(
-			node,
-			"cf-table__cell--pinned-last",
-			pinned === "start" && column.getIsLastColumn("start")
-		);
-		toggleClass(
-			node,
-			"cf-table__cell--pinned-first",
-			pinned === "end" && column.getIsFirstColumn("end")
-		);
+		toggleClass(node, "cf-table__cell--pinned-last", pinned === "start" && column.getIsLastColumn("start"));
+		toggleClass(node, "cf-table__cell--pinned-first", pinned === "end" && column.getIsFirstColumn("end"));
 	}
 
 	renderHeader(leaf: readonly RenderColumn[]): void {
@@ -887,7 +871,7 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 	prune<TEntry>(
 		map: Map<string, TEntry>,
 		desired: readonly Element[],
-		pick: (entry: TEntry) => Element
+		pick: (entry: TEntry) => Element,
 	): void {
 		for (const [key, entry] of map) {
 			const node = pick(entry);

@@ -229,7 +229,7 @@ safePatch(
 			orig.call(this);
 			project();
 		},
-	"Carbon UI Shell header (Sidebar.make_sidebar → project)"
+	"Carbon UI Shell header (Sidebar.make_sidebar → project)",
 );
 
 // 2. route changes — deferred, because the sidebar's own "change" handler
@@ -253,11 +253,14 @@ if (window.frappe && frappe.router && typeof frappe.router.on === "function") {
 }
 
 // 3. hamburger state follows the sidebar (sidebar.js:623-625)
-$(document).on("sidebar-expand", (_e: JQuery.TriggeredEvent, data: { sidebar_expand?: boolean } | undefined) => {
-	const s = shell;
-	if (!s) return;
-	syncMenuButton(s, !!(data && data.sidebar_expand), s.menu.disabled);
-});
+$(document).on(
+	"sidebar-expand",
+	(_e: JQuery.TriggeredEvent, data: { sidebar_expand?: boolean } | undefined) => {
+		const s = shell;
+		if (!s) return;
+		syncMenuButton(s, !!(data && data.sidebar_expand), s.menu.disabled);
+	},
+);
 record("Carbon UI Shell header (sidebar-expand sync)", true);
 
 // 4. The desk boots asynchronously, so retry until the header can mount. Ten
@@ -284,7 +287,8 @@ const timer = setInterval(() => {
 	}
 	const appUp = !!(window.frappe && frappe.app && frappe.app.sidebar);
 	const header = document.querySelector<HTMLElement>("body > .main-section > header");
-	const notApplicable = appUp && (!header || (header.children.length > 0 && !header.classList.contains(MOUNTED)));
+	const notApplicable =
+		appUp && (!header || (header.children.length > 0 && !header.classList.contains(MOUNTED)));
 	if (notApplicable || ++tries > 100) {
 		clearInterval(timer);
 		record(MOUNT_ID, notApplicable);

@@ -78,7 +78,9 @@ if (!/@include\s+theme\.theme\(\s*themes\.\$g10\s*\)/.test(allScssText)) {
 // a second `theme.theme()` emission would also cost ~20 KB, and a dropped
 // selector would leave the header on the page theme with no error anywhere.
 if (!/\.cf-zone-g100\s*\{\s*@include\s+theme\.theme\(\s*themes\.\$g100\s*\)/.test(allScssText)) {
-	warn("`.cf-zone-g100` does not share the themes.$g100 emission in scss/carbon/_themes.scss — the UI Shell header would render in the page theme");
+	warn(
+		"`.cf-zone-g100` does not share the themes.$g100 emission in scss/carbon/_themes.scss — the UI Shell header would render in the page theme",
+	);
 }
 
 // ---- Check 6: Carbon class names still exist in @carbon/styles -----------
@@ -113,7 +115,9 @@ if (!/\.cf-zone-g100\s*\{\s*@include\s+theme\.theme\(\s*themes\.\$g100\s*\)/.tes
 			if (suffix === undefined || seen.has(suffix) || allow.has(suffix)) continue;
 			seen.add(suffix);
 			if (!carbonScss.includes(`--${suffix}`)) {
-				warn(`cds--${suffix} is not emitted by @carbon/styles — Carbon renamed or removed it; the markup that carries it is now unstyled`);
+				warn(
+					`cds--${suffix} is not emitted by @carbon/styles — Carbon renamed or removed it; the markup that carries it is now unstyled`,
+				);
 			}
 		}
 	}
@@ -148,7 +152,10 @@ const jsHooks: readonly JsHook[] = [
 		file: "frappe/public/js/frappe/form/formatters.js",
 		tests: [
 			[/_right:\s*function/, "frappe.form.formatters._right (carbon_desk.bundle.js tags its output)"],
-			[/text-align:\s*right/, "_right's inline-style wrapper (the CSS fallback selector matches it literally)"],
+			[
+				/text-align:\s*right/,
+				"_right's inline-style wrapper (the CSS fallback selector matches it literally)",
+			],
 			[/\bDate:\s*function/, "frappe.form.formatters.Date (wrapped for mono dates)"],
 		],
 	},
@@ -316,7 +323,7 @@ for (const m of mirrored) {
 
 const frappeDesk = fs.readFileSync(
 	path.join(frappeRoot, "frappe", "public", "scss", "desk.bundle.scss"),
-	"utf-8"
+	"utf-8",
 );
 const ourDesk = fs.readFileSync(path.join(scssRoot, "desk.bundle.scss"), "utf-8");
 for (const m of frappeDesk.matchAll(/@import\s+"([^"]+)"/g)) {

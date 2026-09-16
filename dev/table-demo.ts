@@ -104,7 +104,15 @@ const columns: CarbonColumnSpec<DemoRow>[] = [
 	{ id: "extra1", label: "Extra 1", size: 120, accessor: (r) => r.qty * 2 },
 	{ id: "extra2", label: "Extra 2", size: 120, accessor: (r) => r.rate * 2 },
 	{ id: "extra3", label: "Extra 3", size: 120, accessor: (r) => r.qty + r.rate },
-	{ id: "actions", label: "Actions", size: 110, pinned: "end", sortable: false, filterable: false, cell: () => `<button class="row-action" type="button">Open</button>` },
+	{
+		id: "actions",
+		label: "Actions",
+		size: 110,
+		pinned: "end",
+		sortable: false,
+		filterable: false,
+		cell: () => `<button class="row-action" type="button">Open</button>`,
+	},
 ];
 
 const table = new CarbonTable<DemoRow>(document.getElementById("host"), {

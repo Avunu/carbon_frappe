@@ -87,7 +87,7 @@ function routeFor(icon: FrappeDesktopIconRecord): { href: string; target: string
 export function buildDesktopTree(
 	icons: readonly FrappeDesktopIconRecord[],
 	sidebars: Readonly<Record<string, FrappeWorkspaceSidebar>>,
-	current: string
+	current: string,
 ): DesktopEntry[] {
 	// prepare(): the visible icons, by label — a parent must be in here to nest
 	const visible = new Map<string, FrappeDesktopIconRecord>();

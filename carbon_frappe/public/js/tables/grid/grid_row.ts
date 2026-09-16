@@ -27,11 +27,7 @@ import GridRow from "frappe/public/js/frappe/form/grid_row";
 import GridRowForm from "frappe/public/js/frappe/form/grid_row_form";
 import { ensureChildRow, expandButton, syncExpandState } from "./expand";
 import { rowMenuButton } from "./row_menu";
-import type {
-	CarbonGridEngine,
-	CarbonGridHost,
-	CarbonGridRow as CarbonGridRowShape,
-} from "./expand";
+import type { CarbonGridEngine, CarbonGridHost, CarbonGridRow as CarbonGridRowShape } from "./expand";
 import type { JQueryRegion } from "frappe-types";
 
 // ------------------------------------------------------- the engine seam here
@@ -270,9 +266,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 					? this.open_form_cell.get(0)
 					: document.createElement("div");
 			if (!cell) {
-				throw new Error(
-					"CarbonGridRow.menu_node: open_form_cell reported a length but held no element"
-				);
+				throw new Error("CarbonGridRow.menu_node: open_form_cell reported a length but held no element");
 			}
 			this.menu_cell = cell;
 			this.menu_cell.classList.add("cf-grid__row-menu-cell");
@@ -308,7 +302,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 	override toggle_view(
 		show?: boolean | undefined,
 		callback?: (() => void) | null | undefined,
-		opts?: { modal?: boolean | undefined } | undefined
+		opts?: { modal?: boolean | undefined } | undefined,
 	): this | undefined {
 		if (opts && opts.modal !== undefined) this._request_modal = !!opts.modal;
 		else if (show === true) this._request_modal = false;
@@ -368,8 +362,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 
 		// super toggles these through `this.wrapper.find(...)`, which no longer
 		// contains the form. Re-apply against the host it actually lives in.
-		const cannot_add_rows =
-			this.grid.cannot_add_rows || (this.grid.df && this.grid.df.cannot_add_rows);
+		const cannot_add_rows = this.grid.cannot_add_rows || (this.grid.df && this.grid.df.cannot_add_rows);
 		$(host)
 			.find(".grid-insert-row-below, .grid-insert-row, .grid-duplicate-row, .grid-append-row")
 			.toggle(!cannot_add_rows);
@@ -428,6 +421,6 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// restates the `null` the same guard returns — it collapses jQuery's
 		// unavoidable `HTMLElement | undefined` onto this method's one "no
 		// cell" answer rather than inventing a second one.
-		return $col && $col.length ? $col.get(0) ?? null : null;
+		return $col && $col.length ? ($col.get(0) ?? null) : null;
 	}
 }

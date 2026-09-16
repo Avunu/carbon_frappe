@@ -20,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { formatFiles } from "./lib/format.ts";
 
 /**
  * Narrow a value whose properties can then be read by a key the code does not
@@ -45,7 +46,7 @@ const colors: Record<string, unknown> = colorsModule;
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = fs.readFileSync(
 	path.join(appRoot, "node_modules", "@carbon", "charts", "scss", "_color-palette.scss"),
-	"utf-8"
+	"utf-8",
 );
 
 // The two `'14': (` groups are the white-theme and dark-theme 14-series
@@ -119,7 +120,7 @@ fs.writeFileSync(
 // @carbon/charts 14-series categorical palettes.
 $chart-colors-light: (${light.join(", ")});
 $chart-colors-dark: (${dark.join(", ")});
-`
+`,
 );
 
 fs.writeFileSync(
@@ -131,7 +132,9 @@ fs.writeFileSync(
 export const light: string[] = ${JSON.stringify(light)};
 export const dark: string[] = ${JSON.stringify(dark)};
 export const heatmap: string[] = ${JSON.stringify(heatmap)};
-`
+`,
 );
+
+formatFiles(path.join(scssDir, "_chart-palettes.scss"), path.join(jsDir, "chart-palettes.ts"));
 
 console.log(`[chart-palettes] light: ${light.length} colors, dark: ${dark.length} colors`);

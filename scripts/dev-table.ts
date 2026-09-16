@@ -103,7 +103,12 @@ html, body { margin: 0; height: 100%; font-family: "IBM Plex Sans", system-ui, s
 `;
 const css = sass.renderSync({
 	data: scss,
-	includePaths: [path.join(appRoot, "node_modules"), path.join(frappeRoot, "node_modules"), appRoot, frappeRoot],
+	includePaths: [
+		path.join(appRoot, "node_modules"),
+		path.join(frappeRoot, "node_modules"),
+		appRoot,
+		frappeRoot,
+	],
 	quietDeps: true,
 	importer: (url) => ({ file: url.startsWith("~") ? url.slice(1) : url }),
 });
@@ -128,14 +133,21 @@ fs.writeFileSync(
   };
   document.getElementById('filters').onclick = () => window.demo.table.toggleFilters();
 </script>
-</body></html>`
+</body></html>`,
 );
 
-console.log(`✓ .dev-dist/table-demo.html (${(fs.statSync(path.join(outDir, "table-demo.js")).size / 1024).toFixed(0)} KB js)`);
+console.log(
+	`✓ .dev-dist/table-demo.html (${(fs.statSync(path.join(outDir, "table-demo.js")).size / 1024).toFixed(0)} KB js)`,
+);
 
 if (process.argv.includes("--serve")) {
 	const port = Number(process.env.PORT || 8123);
-	const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".map": "application/json" };
+	const types: Record<string, string> = {
+		".html": "text/html",
+		".js": "text/javascript",
+		".css": "text/css",
+		".map": "application/json",
+	};
 	http
 		.createServer((req, res) => {
 			// `split` always yields at least one element, but an index into it is

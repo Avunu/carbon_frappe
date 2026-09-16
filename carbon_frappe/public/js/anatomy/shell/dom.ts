@@ -33,7 +33,13 @@ export function isElementNode(node: Node): node is Element {
  * paths — every caller has already selected a `.item-anchor` / `<a>` / `<button>`.
  */
 export function isHTMLElement(node: Node | EventTarget | null | undefined): node is HTMLElement {
-	return !!node && node instanceof Node && isElementNode(node) && "focus" in node && typeof node.focus === "function";
+	return (
+		!!node &&
+		node instanceof Node &&
+		isElementNode(node) &&
+		"focus" in node &&
+		typeof node.focus === "function"
+	);
 }
 
 /** Trimmed `textContent` of an element, or `""` for none. */

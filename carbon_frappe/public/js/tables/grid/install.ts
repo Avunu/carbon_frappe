@@ -53,6 +53,6 @@ export default function installGrid(): void {
 					control: this,
 				});
 			},
-		"frappe.ui.form.ControlTable.prototype.make (CarbonGrid)"
+		"frappe.ui.form.ControlTable.prototype.make (CarbonGrid)",
 	);
 }

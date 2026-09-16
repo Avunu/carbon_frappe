@@ -66,7 +66,7 @@ export interface FrappeFilterColumnMeta {
 	compareValue?: (
 		row: FrappeFilterRow,
 		keyword: string,
-		columnId: string
+		columnId: string,
 	) => [FrappeCompareValue, FrappeCompareValue] | null | undefined | false;
 	/** The display text to match substrings against, when the raw value is not it. */
 	getFilterText?: (row: FrappeFilterRow, columnId: string) => string | null | undefined;
@@ -135,10 +135,8 @@ export function guessFilter(keyword = ""): FrappeInlineFilter | null {
 	if (lead !== undefined && [">", "<", "="].includes(lead)) compareString = keyword.slice(1);
 	else if (compareString.startsWith("!=")) compareString = keyword.slice(2);
 
-	if (keyword.startsWith(">") && compareString)
-		return { type: "greaterThan", text: compareString.trim() };
-	if (keyword.startsWith("<") && compareString)
-		return { type: "lessThan", text: compareString.trim() };
+	if (keyword.startsWith(">") && compareString) return { type: "greaterThan", text: compareString.trim() };
+	if (keyword.startsWith("<") && compareString) return { type: "lessThan", text: compareString.trim() };
 	if (keyword.startsWith("=") && isNumeric(compareString))
 		return { type: "equals", text: Number(keyword.slice(1).trim()) };
 	if (isNumeric(compareString)) return { type: "containsNumber", text: compareString };
@@ -171,7 +169,7 @@ function compareValues(
 	row: FrappeFilterRow,
 	columnId: string,
 	keyword: string,
-	meta: FrappeFilterColumnMeta | null
+	meta: FrappeFilterColumnMeta | null,
 ): [FrappeCompareValue, FrappeCompareValue] {
 	if (meta && typeof meta.compareValue === "function") {
 		const pair = meta.compareValue(row, keyword, columnId);
@@ -186,11 +184,7 @@ function compareValues(
 }
 
 /** HTML-stripped, lower-cased display text for a cell. */
-function filterText(
-	row: FrappeFilterRow,
-	columnId: string,
-	meta: FrappeFilterColumnMeta | null
-): string {
+function filterText(row: FrappeFilterRow, columnId: string, meta: FrappeFilterColumnMeta | null): string {
 	if (meta && typeof meta.getFilterText === "function") {
 		return String(meta.getFilterText(row, columnId) || "").toLowerCase();
 	}
@@ -203,7 +197,7 @@ export function filterFn_frappe(
 	columnId: string,
 	filterValue: unknown,
 	_addMeta?: unknown,
-	table?: FrappeFilterTable
+	table?: FrappeFilterTable,
 ): boolean {
 	const filter = guessFilter(String(filterValue == null ? "" : filterValue));
 	if (!filter) return true;
@@ -232,10 +226,7 @@ export function filterFn_frappe(
 		}
 		case "containsNumber": {
 			const number = parseFloat(filter.text);
-			return (
-				number === parseFloat(String(raw)) ||
-				filterText(row, columnId, meta).includes(filter.text)
-			);
+			return number === parseFloat(String(raw)) || filterText(row, columnId, meta).includes(filter.text);
 		}
 		default: {
 			const needle = filter.text;
@@ -255,7 +246,7 @@ export function filterFn_frappeGlobal(
 	columnId: string,
 	filterValue: unknown,
 	_addMeta?: unknown,
-	table?: FrappeFilterTable
+	table?: FrappeFilterTable,
 ): boolean {
 	const needle = String(filterValue == null ? "" : filterValue).toLowerCase();
 	if (!needle) return true;
@@ -269,11 +260,7 @@ export function filterFn_frappeGlobal(
  * numerically even when the underlying value arrived as a string (query report
  * results routinely do), everything else falls back to locale-aware text.
  */
-export function sortFn_frappe(
-	rowA: FrappeFilterRow,
-	rowB: FrappeFilterRow,
-	columnId: string
-): number {
+export function sortFn_frappe(rowA: FrappeFilterRow, rowB: FrappeFilterRow, columnId: string): number {
 	const a = rowA.getValue(columnId);
 	const b = rowB.getValue(columnId);
 	const na = parseFloat(String(a));

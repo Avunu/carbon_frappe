@@ -148,10 +148,7 @@ export interface CarbonEngine {
 	getRenderRows(): CarbonEngineRenderRows;
 	setColumnSize(columnId: string, px: number): void;
 	toggleFilters(show?: boolean): boolean;
-	scrollToRowIndex(
-		index: number,
-		opts?: { align?: "start" | "center" | "end" | "auto" }
-	): void;
+	scrollToRowIndex(index: number, opts?: { align?: "start" | "center" | "end" | "auto" }): void;
 	on(name: string, handler: (...args: unknown[]) => void): void;
 }
 
@@ -206,10 +203,7 @@ export interface CarbonDataTableHost {
 	engineColumnId(colIndex: DataTableColIndex): string | null;
 
 	/** Descendant ROWS of a tree node — see {@link DataManagerShim.getChildren}. */
-	getDescendants(
-		parentRowIndex: DataTableRowIndex,
-		immediateOnly?: boolean
-	): DataTableRow[];
+	getDescendants(parentRowIndex: DataTableRowIndex, immediateOnly?: boolean): DataTableRow[];
 	getTotalRow(): DataTableTotalCell[];
 
 	/**
@@ -226,7 +220,7 @@ export interface CarbonDataTableHost {
 		colIndex: DataTableColIndex,
 		rowIndex: DataTableRowIndex,
 		options: Partial<DataTableCell>,
-		refreshHtml?: boolean
+		refreshHtml?: boolean,
 	): DataTableCell | undefined;
 
 	applyFilters(filters: DataTableAppliedFilters): Promise<DataTableFilterResult>;
@@ -392,9 +386,7 @@ export class DataManagerShim {
 	}
 	/** `report_view.get_column_widths()` calls this with `true`. */
 	getColumns(skipStandardColumns?: boolean): DataTableColumn[] {
-		return skipStandardColumns
-			? this.host.columns.slice(this.getStandardColumnCount())
-			: this.host.columns;
+		return skipStandardColumns ? this.host.columns.slice(this.getStandardColumnCount()) : this.host.columns;
 	}
 	getFilteredRowIndices(): DataTableRowIndex[] {
 		return this.host.engine.table.getRowModel().rows.map(rowIndexOf);
@@ -425,7 +417,7 @@ export class DataManagerShim {
 	updateCell(
 		colIndex: DataTableColIndex,
 		rowIndex: DataTableRowIndex,
-		options: Partial<DataTableCell>
+		options: Partial<DataTableCell>,
 	): DataTableCell | undefined {
 		return this.host.updateCell(colIndex, rowIndex, options);
 	}
@@ -610,9 +602,7 @@ export class ColumnManagerShim {
 	}
 	focusFilter(colIndex: DataTableColIndex): string | null {
 		const column = this.host.engineColumnId(colIndex);
-		const input = this.host.container.querySelector<HTMLElement>(
-			`.dt-filter[data-col-index="${colIndex}"]`
-		);
+		const input = this.host.container.querySelector<HTMLElement>(`.dt-filter[data-col-index="${colIndex}"]`);
 		if (input) input.focus();
 		return column;
 	}
@@ -678,7 +668,7 @@ export class CellManagerShim {
 		if (!nav || !nav.focused) return null;
 		return this.host.engine.getCellNode(
 			this.host.rowIdFor(nav.focused.rowIndex),
-			this.host.engineColumnId(nav.focused.colIndex)
+			this.host.engineColumnId(nav.focused.colIndex),
 		);
 	}
 
@@ -691,7 +681,7 @@ export class CellManagerShim {
 		if (!nav || !nav.cursor) return null;
 		return this.host.engine.getCellNode(
 			this.host.rowIdFor(nav.cursor.rowIndex),
-			this.host.engineColumnId(nav.cursor.colIndex)
+			this.host.engineColumnId(nav.cursor.colIndex),
 		);
 	}
 
@@ -710,7 +700,7 @@ export class CellManagerShim {
 		if (!node) return false;
 		return this.host.navigation.focus(
 			Number(node.getAttribute("data-col-index")),
-			Number(node.getAttribute("data-row-index"))
+			Number(node.getAttribute("data-row-index")),
 		);
 	}
 	unfocusCell(): void {
@@ -746,14 +736,14 @@ export class CellManagerShim {
 		colIndex: DataTableColIndex,
 		rowIndex: DataTableRowIndex,
 		value: DataTableCellValue,
-		refreshHtml?: boolean
+		refreshHtml?: boolean,
 	): DataTableCell | undefined {
 		return this.host.updateCell(colIndex, rowIndex, { content: value }, refreshHtml);
 	}
 	getCell$(colIndex: DataTableColIndex, rowIndex: DataTableRowIndex): MaybeJQuery {
 		const node = this.host.engine.getCellNode(
 			this.host.rowIdFor(rowIndex),
-			this.host.engineColumnId(colIndex)
+			this.host.engineColumnId(colIndex),
 		);
 		return $of(node);
 	}
@@ -793,9 +783,7 @@ export class BodyRendererShim {
 		return this.host.engine.getRenderRows().rows.map(rowIndexOf);
 	}
 	get visibleRows(): Array<DataTableRow | undefined> {
-		return this.host.engine
-			.getRenderRows()
-			.rows.map((r) => this.host.rows[rowIndexOf(r)]);
+		return this.host.engine.getRenderRows().rows.map((r) => this.host.rows[rowIndexOf(r)]);
 	}
 	/**
 	 * `query_report.js` reads the computed totals row back out.

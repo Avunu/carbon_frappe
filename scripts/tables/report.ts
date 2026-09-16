@@ -311,27 +311,36 @@ const results: string[] = [];
 // The condition is `unknown` on purpose: assertions hand this whatever their
 // expression produced — a boolean, a string, a null out of `querySelector` —
 // and the only thing read of it is its truthiness.
-const ok = (n: string, c: unknown, x = "") => results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
+const ok = (n: string, c: unknown, x = "") =>
+	results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 /** A trusted key press through CDP; Enter/Space carry `text` so a textarea receives them. */
 async function key(keyName: string, code = keyName, modifiers = 0): Promise<void> {
-  const text = keyName === "Enter" ? "\r" : keyName === " " ? " " : undefined;
-  await page.send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", key: keyName, code, modifiers, ...(text ? { text } : {}) });
-  await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: keyName, code, modifiers });
-  await sleep(150);
+	const text = keyName === "Enter" ? "\r" : keyName === " " ? " " : undefined;
+	await page.send("Input.dispatchKeyEvent", {
+		type: text ? "keyDown" : "rawKeyDown",
+		key: keyName,
+		code,
+		modifiers,
+		...(text ? { text } : {}),
+	});
+	await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: keyName, code, modifiers });
+	await sleep(150);
 }
 try {
-  await login(page, BASE);
-  const who = await page.eval<string | undefined>(`(async () => (await (await fetch('/api/method/frappe.auth.get_logged_user')).json()).message)()`);
-  ok("logged in", who === "Administrator", String(who));
+	await login(page, BASE);
+	const who = await page.eval<string | undefined>(
+		`(async () => (await (await fetch('/api/method/frappe.auth.get_logged_user')).json()).message)()`,
+	);
+	ok("logged in", who === "Administrator", String(who));
 
-  await page.goto(`${BASE}/app/user/view/report`);
-  await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
-  // Guard: a stolen assets.json key means we would be measuring stock frappe.
-  await assertCarbonStylesheet(page);
-  await new Promise(r => setTimeout(r, 2500));
+	await page.goto(`${BASE}/app/user/view/report`);
+	await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
+	// Guard: a stolen assets.json key means we would be measuring stock frappe.
+	await assertCarbonStylesheet(page);
+	await new Promise((r) => setTimeout(r, 2500));
 
-  const info = await page.eval<ReportInfo>(`(() => {
+	const info = await page.eval<ReportInfo>(`(() => {
     const dt = cur_list.datatable;
     return {
       ctorName: dt.constructor.name,
@@ -352,20 +361,24 @@ try {
       inScope: !!document.querySelector('.' + dt.style.scopeClass + ' .dt-scrollable'),
     };
   })()`);
-  console.log(JSON.stringify(info, null, 2));
-  ok("ReportView uses CarbonDataTable", info.isCarbon, info.ctorName);
-  ok("frappe.DataTable === window.DataTable", info.frappeDataTableSame);
-  ok("renders Carbon light-DOM table", info.carbonTable);
-  ok("legacy .dt-row/.dt-cell emitted", info.hasDtRow > 0 && info.hasDtCell > 0, `rows=${info.hasDtRow} cells=${info.hasDtCell}`);
-  ok("per-cell .dt-cell--{c}-{r} target exists", info.cellIndexClass);
-  ok("per-column .dt-cell--col-{c} target exists", info.colClass);
-  ok("data-row-index on rows", info.rowIdxAttr);
-  ok(".dt-scrollable under scopeClass (ERPNext selector)", info.inScope, info.scopeClass);
-  ok("inline filter inputs are .dt-filter", info.dtFilter > 0, `n=${info.dtFilter}`);
-  ok("checkbox + serial standard columns present", info.nStd === 2, `std=${info.nStd}`);
+	console.log(JSON.stringify(info, null, 2));
+	ok("ReportView uses CarbonDataTable", info.isCarbon, info.ctorName);
+	ok("frappe.DataTable === window.DataTable", info.frappeDataTableSame);
+	ok("renders Carbon light-DOM table", info.carbonTable);
+	ok(
+		"legacy .dt-row/.dt-cell emitted",
+		info.hasDtRow > 0 && info.hasDtCell > 0,
+		`rows=${info.hasDtRow} cells=${info.hasDtCell}`,
+	);
+	ok("per-cell .dt-cell--{c}-{r} target exists", info.cellIndexClass);
+	ok("per-column .dt-cell--col-{c} target exists", info.colClass);
+	ok("data-row-index on rows", info.rowIdxAttr);
+	ok(".dt-scrollable under scopeClass (ERPNext selector)", info.inScope, info.scopeClass);
+	ok("inline filter inputs are .dt-filter", info.dtFilter > 0, `n=${info.dtFilter}`);
+	ok("checkbox + serial standard columns present", info.nStd === 2, `std=${info.nStd}`);
 
-  // style.setStyle — the 13-call-site API
-  const styled = await page.eval<StyledProbe>(`(() => {
+	// style.setStyle — the 13-call-site API
+	const styled = await page.eval<StyledProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.style.setStyle('.dt-cell--1-0', { backgroundColor: 'rgb(255, 0, 0)', fontWeight: '700' });
     return new Promise(res => setTimeout(() => {
@@ -374,20 +387,24 @@ try {
       res({ bg: cs && cs.backgroundColor, fw: cs && cs.fontWeight, found: !!cell });
     }, 300));
   })()`);
-  ok("style.setStyle applies to a cell", styled.found && styled.bg === "rgb(255, 0, 0)" && styled.fw === "700", JSON.stringify(styled));
+	ok(
+		"style.setStyle applies to a cell",
+		styled.found && styled.bg === "rgb(255, 0, 0)" && styled.fw === "700",
+		JSON.stringify(styled),
+	);
 
-  // rowmanager checked rows
-  const checked = await page.eval<CheckedProbe>(`(() => {
+	// rowmanager checked rows
+	const checked = await page.eval<CheckedProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.rowmanager.checkRow(0, true);
     dt.rowmanager.checkRow(1, true);
     return { checked: dt.rowmanager.getCheckedRows(), items: cur_list.get_checked_items().length };
   })()`);
-  ok("rowmanager.getCheckedRows()", JSON.stringify(checked.checked) === "[0,1]", JSON.stringify(checked));
-  ok("ReportView.get_checked_items() sees them", checked.items === 2, `n=${checked.items}`);
+	ok("rowmanager.getCheckedRows()", JSON.stringify(checked.checked) === "[0,1]", JSON.stringify(checked));
+	ok("ReportView.get_checked_items() sees them", checked.items === 2, `n=${checked.items}`);
 
-  // select-all, through the header box the user actually clicks
-  const checkAll = await page.eval<CheckAllProbe>(`(() => {
+	// select-all, through the header box the user actually clicks
+	const checkAll = await page.eval<CheckAllProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.rowmanager.checkAll(false);
     document.querySelector('.dt-row-header .dt-checkbox').click();
@@ -405,24 +422,24 @@ try {
     };
     return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(probe()))));
   })()`);
-  ok(
-    "select-all ticks every row's checkbox, not just the highlight",
-    checkAll.rendered > 0 && checkAll.ticked === checkAll.rendered,
-    JSON.stringify(checkAll)
-  );
-  ok(
-    "select-all highlights the same rows it ticks",
-    checkAll.highlighted === checkAll.rendered,
-    JSON.stringify(checkAll)
-  );
-  ok(
-    "select-all leaves the header box checked, not indeterminate",
-    checkAll.headChecked && !checkAll.headIndeterminate,
-    JSON.stringify(checkAll)
-  );
+	ok(
+		"select-all ticks every row's checkbox, not just the highlight",
+		checkAll.rendered > 0 && checkAll.ticked === checkAll.rendered,
+		JSON.stringify(checkAll),
+	);
+	ok(
+		"select-all highlights the same rows it ticks",
+		checkAll.highlighted === checkAll.rendered,
+		JSON.stringify(checkAll),
+	);
+	ok(
+		"select-all leaves the header box checked, not indeterminate",
+		checkAll.headChecked && !checkAll.headIndeterminate,
+		JSON.stringify(checkAll),
+	);
 
-  // ...and one row on its own leaves the header showing "some"
-  const partial = await page.eval<CheckAllProbe>(`(() => {
+	// ...and one row on its own leaves the header showing "some"
+	const partial = await page.eval<CheckAllProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.rowmanager.checkAll(false);
     dt.rowmanager.checkRow(1, true);
@@ -440,20 +457,20 @@ try {
     };
     return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(probe()))));
   })()`);
-  ok(
-    "rowmanager.checkRow ticks the box it checks",
-    partial.ticked === 1 && partial.mapChecked === 1,
-    JSON.stringify(partial)
-  );
-  ok(
-    "one checked row leaves the header box indeterminate",
-    partial.headIndeterminate && !partial.headChecked,
-    JSON.stringify(partial)
-  );
-  await page.eval(`(() => cur_list.datatable.rowmanager.checkAll(false))()`);
+	ok(
+		"rowmanager.checkRow ticks the box it checks",
+		partial.ticked === 1 && partial.mapChecked === 1,
+		JSON.stringify(partial),
+	);
+	ok(
+		"one checked row leaves the header box indeterminate",
+		partial.headIndeterminate && !partial.headChecked,
+		JSON.stringify(partial),
+	);
+	await page.eval(`(() => cur_list.datatable.rowmanager.checkAll(false))()`);
 
-  // datamanager surface used by reports
-  const dm = await page.eval<DataManagerProbe>(`(() => {
+	// datamanager surface used by reports
+	const dm = await page.eval<DataManagerProbe>(`(() => {
     const dt = cur_list.datatable;
     return {
       dataIsOriginal: !!dt.datamanager.getData(0),
@@ -466,28 +483,32 @@ try {
       visibleIdx: Array.isArray(dt.bodyRenderer.visibleRowIndices),
     };
   })()`);
-  ok("datamanager shape (rows/data/cells/viewOrder)", dm.dataIsOriginal && dm.rowsIsArrayOfArrays && dm.cellHasColumn && dm.viewOrderLen > 0, JSON.stringify(dm));
+	ok(
+		"datamanager shape (rows/data/cells/viewOrder)",
+		dm.dataIsOriginal && dm.rowsIsArrayOfArrays && dm.cellHasColumn && dm.viewOrderLen > 0,
+		JSON.stringify(dm),
+	);
 
-  // Carbon lg rows are 48px; a collapsed row height is the classic symptom of
-  // frappe-datatable's stylesheet winning over Carbon's cell padding.
-  const rowGeo = await page.eval<RowGeoProbe>(`(() => {
+	// Carbon lg rows are 48px; a collapsed row height is the classic symptom of
+	// frappe-datatable's stylesheet winning over Carbon's cell padding.
+	const rowGeo = await page.eval<RowGeoProbe>(`(() => {
     const tr = document.querySelector('.cf-table__body .dt-row');
     const th = document.querySelector('.dt-cell--header');
     return { rowH: Math.round(tr.getBoundingClientRect().height),
              headH: Math.round(th.getBoundingClientRect().height),
              sizeClass: document.querySelector('.cds--data-table').className.includes('cds--data-table--lg') };
   })()`);
-  ok("rows are Carbon lg (48px)", rowGeo.rowH >= 44 && rowGeo.rowH <= 52, JSON.stringify(rowGeo));
-  ok("header row matches body row size", Math.abs(rowGeo.headH - rowGeo.rowH) <= 4, JSON.stringify(rowGeo));
-  ok("cds--data-table--lg applied", rowGeo.sizeClass);
+	ok("rows are Carbon lg (48px)", rowGeo.rowH >= 44 && rowGeo.rowH <= 52, JSON.stringify(rowGeo));
+	ok("header row matches body row size", Math.abs(rowGeo.headH - rowGeo.rowH) <= 4, JSON.stringify(rowGeo));
+	ok("cds--data-table--lg applied", rowGeo.sizeClass);
 
-  // --- the Report view is a spreadsheet, not a list -----------------------
-  // Most columns come back editable and report_view.js supplies a getEditor, so
-  // the surface needs frappe-datatable's whole grid interaction: focus ring,
-  // arrow movement skipping non-focusable columns, shift-extend, ctrl-edge,
-  // enter-to-edit and ctrl+C. Reproduced from cellmanager.js:45-160.
-  // click a data cell to focus it
-  const firstFocus = await page.eval<FirstFocusProbe>(`(() => {
+	// --- the Report view is a spreadsheet, not a list -----------------------
+	// Most columns come back editable and report_view.js supplies a getEditor, so
+	// the surface needs frappe-datatable's whole grid interaction: focus ring,
+	// arrow movement skipping non-focusable columns, shift-extend, ctrl-edge,
+	// enter-to-edit and ctrl+C. Reproduced from cellmanager.js:45-160.
+	// click a data cell to focus it
+	const firstFocus = await page.eval<FirstFocusProbe>(`(() => {
     const dt = cur_list.datatable;
     const td = document.querySelector('tbody .dt-cell[data-col-index="3"][data-row-index="0"]');
     td.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
@@ -501,24 +522,24 @@ try {
       compatFocusedCell: dt.cellmanager.$focusedCell === td,
     };
   })()`);
-  ok("clicking a cell focuses it", firstFocus.hasRing && !!firstFocus.focused, JSON.stringify(firstFocus));
-  ok("cellmanager.$focusedCell reflects it", firstFocus.compatFocusedCell);
+	ok("clicking a cell focuses it", firstFocus.hasRing && !!firstFocus.focused, JSON.stringify(firstFocus));
+	ok("cellmanager.$focusedCell reflects it", firstFocus.compatFocusedCell);
 
-  const nav = await page.eval<NavProbe>(`(() => {
+	const nav = await page.eval<NavProbe>(`(() => {
     const dt = cur_list.datatable;
     const seen = [];
     const step = (dir, opts) => { dt.navigation.move(dir, opts || {}); seen.push({ ...dt.navigation.focused }); };
     step('right'); step('down'); step('left'); step('up');
     return { seen, cols: dt.columns.map((c, i) => [i, c.id, c.focusable !== false]) };
   })()`);
-  const focusable = nav.cols.filter((c) => c[2]).map((c) => c[0]);
-  ok(
-    "arrows move focus and skip non-focusable columns",
-    nav.seen.every((f) => focusable.includes(f.colIndex)),
-    JSON.stringify({ seen: nav.seen, focusable })
-  );
+	const focusable = nav.cols.filter((c) => c[2]).map((c) => c[0]);
+	ok(
+		"arrows move focus and skip non-focusable columns",
+		nav.seen.every((f) => focusable.includes(f.colIndex)),
+		JSON.stringify({ seen: nav.seen, focusable }),
+	);
 
-  const edge = await page.eval<EdgeProbe>(`(() => {
+	const edge = await page.eval<EdgeProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.navigation.focus(3, 0);
     dt.navigation.move('right', { toEdge: true });
@@ -528,11 +549,13 @@ try {
     return { right, bottom, lastCol: dt.columns.length - 1, lastRow: dt.datamanager.rowCount - 1,
              order: dt.datamanager.rowViewOrder };
   })()`);
-  ok("ctrl+arrow jumps to the row/column edge",
-     edge.right.colIndex === edge.lastCol && edge.bottom.rowIndex === edge.order[edge.order.length - 1],
-     JSON.stringify(edge));
+	ok(
+		"ctrl+arrow jumps to the row/column edge",
+		edge.right.colIndex === edge.lastCol && edge.bottom.rowIndex === edge.order[edge.order.length - 1],
+		JSON.stringify(edge),
+	);
 
-  const range = await page.eval<RangeProbe>(`(() => {
+	const range = await page.eval<RangeProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.navigation.focus(3, 0);
     dt.navigation.move('right', { extend: true });
@@ -543,23 +566,27 @@ try {
       focusRings: document.querySelectorAll('.dt-cell--focus').length,
       inRange: dt.cellmanager.getCellsInRange().length };
   })()`);
-  ok("shift+arrow extends a selection rectangle",
-     range.bounds && range.bounds.c2 > range.bounds.c1 && range.bounds.p2 > range.bounds.p1,
-     JSON.stringify(range.bounds));
-  ok("the range is painted and exactly one cell keeps the ring",
-     range.highlighted >= 3 && range.focusRings === 1,
-     JSON.stringify({ h: range.highlighted, f: range.focusRings, n: range.inRange }));
+	ok(
+		"shift+arrow extends a selection rectangle",
+		range.bounds && range.bounds.c2 > range.bounds.c1 && range.bounds.p2 > range.bounds.p1,
+		JSON.stringify(range.bounds),
+	);
+	ok(
+		"the range is painted and exactly one cell keeps the ring",
+		range.highlighted >= 3 && range.focusRings === 1,
+		JSON.stringify({ h: range.highlighted, f: range.focusRings, n: range.inRange }),
+	);
 
-  const copied = await page.eval<CopiedProbe>(`(() => {
+	const copied = await page.eval<CopiedProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.navigation.focus(3, 0);
     dt.navigation.move('down', { extend: true });
     const n = dt.navigation.copy();
     return { n, cells: dt.cellmanager.getCellsInRange().length };
   })()`);
-  ok("ctrl+C copies the selection as TSV", copied.n === copied.cells && copied.n > 1, JSON.stringify(copied));
+	ok("ctrl+C copies the selection as TSV", copied.n === copied.cells && copied.n > 1, JSON.stringify(copied));
 
-  const editable = await page.eval<EditableProbe>(`(() => {
+	const editable = await page.eval<EditableProbe>(`(() => {
     const dt = cur_list.datatable;
     // Editability is gated at BOTH levels, exactly as frappe-datatable gates it
     // (cellmanager.activateEditing checks the column, then the cell). On User,
@@ -586,22 +613,22 @@ try {
       compat: dt.cellmanager.$editingCell === td,
     };
   })()`);
-  console.log(JSON.stringify(editable));
-  ok(
-    "enter opens a real frappe editor in the cell",
-    editable.editing && editable.editingClass && editable.mount && editable.control,
-    JSON.stringify(editable)
-  );
-  ok("cellmanager.$editingCell reflects it", editable.compat, JSON.stringify(editable));
+	console.log(JSON.stringify(editable));
+	ok(
+		"enter opens a real frappe editor in the cell",
+		editable.editing && editable.editingClass && editable.mount && editable.control,
+		JSON.stringify(editable),
+	);
+	ok("cellmanager.$editingCell reflects it", editable.compat, JSON.stringify(editable));
 
-  await page.eval(`cur_list.datatable.editing.deactivate(false)`);
+	await page.eval(`cur_list.datatable.editing.deactivate(false)`);
 
-  // --- the editor must actually be usable --------------------------------
-  // `.dt-cell__edit` is positioned against the cell's PADDING box, so it is
-  // already inset by Carbon's 16px; its own padding on top left a 120px column
-  // with ~30px of usable width, and frappe's Link control reserves a further
-  // 44px for its open-record arrow.
-  const editorBox = await page.eval<EditorBoxProbe>(`(() => {
+	// --- the editor must actually be usable --------------------------------
+	// `.dt-cell__edit` is positioned against the cell's PADDING box, so it is
+	// already inset by Carbon's 16px; its own padding on top left a 120px column
+	// with ~30px of usable width, and frappe's Link control reserves a further
+	// 44px for its open-record arrow.
+	const editorBox = await page.eval<EditorBoxProbe>(`(() => {
     const dt = cur_list.datatable;
     const colIndex = dt.columns.findIndex((c, i) => {
       if (i < dt.standardColumnCount || c.editable === false || !c.docfield) return false;
@@ -617,25 +644,25 @@ try {
     dt.editing.deactivate(false);
     return res;
   })()`);
-  ok(
-    "the editor uses most of the cell width",
-    editorBox.input / editorBox.cell > 0.85,
-    JSON.stringify(editorBox)
-  );
+	ok(
+		"the editor uses most of the cell width",
+		editorBox.input / editorBox.cell > 0.85,
+		JSON.stringify(editorBox),
+	);
 
-  // --- editing: Check, multi-line, paste ----------------------------------
-  // Four fixture columns on User, appended in this order so `bio` and
-  // `first_name` are adjacent for the block paste: `bio` (Small Text),
-  // `first_name` (Data), `mute_sounds` (Check — `enabled` is read_only and so
-  // never editable in a report view) and `desk_theme` (Select). Every
-  // write goes through report_view's `setValue` → `frappe.db.set_value`,
-  // which is stubbed in-page so the doctype is never mutated: the stub keeps
-  // report_view's contract (a thenable with `.fail`, resolving `{ message:
-  // <the whole doc> }`) and rejects when a value is `REJECT_ME`.
-  // The report view persists its columns in the user's settings on every
-  // refresh, so the fixture remembers which ones it added and removes them at
-  // the end (`__cfAddedFields`).
-  await page.eval(`(() => {
+	// --- editing: Check, multi-line, paste ----------------------------------
+	// Four fixture columns on User, appended in this order so `bio` and
+	// `first_name` are adjacent for the block paste: `bio` (Small Text),
+	// `first_name` (Data), `mute_sounds` (Check — `enabled` is read_only and so
+	// never editable in a report view) and `desk_theme` (Select). Every
+	// write goes through report_view's `setValue` → `frappe.db.set_value`,
+	// which is stubbed in-page so the doctype is never mutated: the stub keeps
+	// report_view's contract (a thenable with `.fail`, resolving `{ message:
+	// <the whole doc> }`) and rejects when a value is `REJECT_ME`.
+	// The report view persists its columns in the user's settings on every
+	// refresh, so the fixture remembers which ones it added and removes them at
+	// the end (`__cfAddedFields`).
+	await page.eval(`(() => {
     const rv = cur_list;
     window.__cfAddedFields = [];
     for (const f of ['bio', 'first_name', 'mute_sounds', 'desk_theme']) {
@@ -644,14 +671,17 @@ try {
       rv.add_column_to_datatable(f, 'User', rv.fields.length);
     }
   })()`);
-  await page.waitFor(`!!cur_list.datatable && ['bio','first_name','mute_sounds','desk_theme'].every((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f)) && document.querySelectorAll('tbody .dt-cell').length > 0`, { timeout: 90000 });
-  await sleep(800);
-  const editCols = await page.eval<EditColumnsProbe>(`(() => {
+	await page.waitFor(
+		`!!cur_list.datatable && ['bio','first_name','mute_sounds','desk_theme'].every((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f)) && document.querySelectorAll('tbody .dt-cell').length > 0`,
+		{ timeout: 90000 },
+	);
+	await sleep(800);
+	const editCols = await page.eval<EditColumnsProbe>(`(() => {
     const dt = cur_list.datatable;
     const at = (f) => dt.columns.findIndex((c) => c.docfield && c.docfield.fieldname === f);
     return { check: at('mute_sounds'), text: at('bio'), select: at('desk_theme'), data: at('first_name') };
   })()`);
-  await page.eval(`(() => {
+	await page.eval(`(() => {
     window.__cfSetValueCalls = [];
     window.__cfRealSetValue = frappe.db.set_value;
     frappe.db.set_value = (doctype, name, values) => {
@@ -664,8 +694,8 @@ try {
     };
   })()`);
 
-  // Check editor paints
-  const checkEditor = await page.eval<CheckEditorProbe>(`(() => {
+	// Check editor paints
+	const checkEditor = await page.eval<CheckEditorProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.navigation.focus(${editCols.check}, 0);
     dt.navigation.activateFocused();
@@ -680,37 +710,51 @@ try {
     dt.editing.deactivate(false);
     return res;
   })()`);
-  ok(
-    "the Check editor is a visible 16px box",
-    checkEditor.present && checkEditor.width === 16 && checkEditor.height === 16 && !/^0px/.test(checkEditor.border),
-    JSON.stringify(checkEditor)
-  );
-  // The editor's box is centred in the cell; the static box is an inline-block
-  // on a line box's baseline and so sits ~2px higher. Same column, same size.
-  ok("the Check editor sits where the static box sits", Math.abs(checkEditor.dx) <= 1 && Math.abs(checkEditor.dy) <= 2, JSON.stringify({ dx: checkEditor.dx, dy: checkEditor.dy }));
+	ok(
+		"the Check editor is a visible 16px box",
+		checkEditor.present &&
+			checkEditor.width === 16 &&
+			checkEditor.height === 16 &&
+			!/^0px/.test(checkEditor.border),
+		JSON.stringify(checkEditor),
+	);
+	// The editor's box is centred in the cell; the static box is an inline-block
+	// on a line box's baseline and so sits ~2px higher. Same column, same size.
+	ok(
+		"the Check editor sits where the static box sits",
+		Math.abs(checkEditor.dx) <= 1 && Math.abs(checkEditor.dy) <= 2,
+		JSON.stringify({ dx: checkEditor.dx, dy: checkEditor.dy }),
+	);
 
-  // Space toggles a focused Check cell through setValue
-  await page.eval(`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.check}, 0); dt.engine.renderer.scroll.focus(); window.__cfSetValueCalls.length = 0; window.__cfBefore = dt.datamanager.getCell(${editCols.check}, 0).content; })()`);
-  await key(" ", "Space");
-  await sleep(300);
-  const toggled = await page.eval<CheckToggleProbe>(`(() => {
+	// Space toggles a focused Check cell through setValue
+	await page.eval(
+		`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.check}, 0); dt.engine.renderer.scroll.focus(); window.__cfSetValueCalls.length = 0; window.__cfBefore = dt.datamanager.getCell(${editCols.check}, 0).content; })()`,
+	);
+	await key(" ", "Space");
+	await sleep(300);
+	const toggled = await page.eval<CheckToggleProbe>(`(() => {
     const dt = cur_list.datatable;
     const calls = window.__cfSetValueCalls;
     return { before: window.__cfBefore, after: dt.datamanager.getCell(${editCols.check}, 0).content, calls: calls.length, payload: calls[0] && calls[0].values, focusKept: document.activeElement === dt.engine.renderer.scroll };
   })()`);
-  ok(
-    "space flips a focused Check cell and saves it once",
-    toggled.calls === 1 && Number(toggled.after) === (Number(toggled.before) ? 0 : 1) && JSON.stringify(toggled.payload) === JSON.stringify({ mute_sounds: Number(toggled.after) }) && toggled.focusKept,
-    JSON.stringify(toggled)
-  );
-  await key(" ", "Space");
-  await sleep(300);
+	ok(
+		"space flips a focused Check cell and saves it once",
+		toggled.calls === 1 &&
+			Number(toggled.after) === (Number(toggled.before) ? 0 : 1) &&
+			JSON.stringify(toggled.payload) === JSON.stringify({ mute_sounds: Number(toggled.after) }) &&
+			toggled.focusKept,
+		JSON.stringify(toggled),
+	);
+	await key(" ", "Space");
+	await sleep(300);
 
-  // multi-line editor is a contained popover; Enter is a newline; ctrl+Enter commits
-  await page.eval(`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.text}, 0); dt.navigation.activateFocused(); })()`);
-  // `initValue` → `control.set_value` lands asynchronously; let it, or it clobbers the typed text below
-  await sleep(400);
-  const multiline = await page.eval<MultilineProbe>(`(() => {
+	// multi-line editor is a contained popover; Enter is a newline; ctrl+Enter commits
+	await page.eval(
+		`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.text}, 0); dt.navigation.activateFocused(); })()`,
+	);
+	// `initValue` → `control.set_value` lands asynchronously; let it, or it clobbers the typed text below
+	await sleep(400);
+	const multiline = await page.eval<MultilineProbe>(`(() => {
     const td = document.querySelector('tbody .dt-cell--editing');
     const mount = td && td.querySelector('.dt-cell__edit');
     const ta = mount && mount.querySelector('textarea');
@@ -720,24 +764,43 @@ try {
              contained: t.top >= m.top - 1 && t.bottom <= m.bottom + 1, belowRowTop: m.top >= row.top - 1,
              framed: getComputedStyle(mount).outlineStyle !== 'none' && getComputedStyle(mount).boxShadow !== 'none', inlineHeight: ta.style.height };
   })()`);
-  ok(
-    "a Small Text editor is a framed popover that contains its textarea",
-    multiline.marked && multiline.textareaHeight >= 100 && multiline.contained && multiline.belowRowTop && multiline.framed && multiline.inlineHeight === "",
-    JSON.stringify(multiline)
-  );
-  // frappe v16's espresso scale sets `--weight-regular: 420` on `.frappe-control`; the theme pins it to 400
-  ok("the editor's text weighs the same as the cell's", multiline.weight === "400", multiline.weight);
-  await page.eval(`(() => { const ta = document.querySelector('tbody .dt-cell--editing textarea'); ta.focus(); ta.value = 'line one'; ta.setSelectionRange(8, 8); window.__cfSetValueCalls.length = 0; })()`);
-  await key("Enter");
-  const afterEnter = await page.eval<{ editing: boolean; value: string }>(`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, value: (document.querySelector('tbody .dt-cell--editing textarea') || {}).value || '' }))()`);
-  ok("enter in a multi-line editor inserts a newline and keeps editing", afterEnter.editing && afterEnter.value === "line one\n", JSON.stringify(afterEnter));
-  await key("Enter", "Enter", 2);
-  await sleep(300);
-  const afterCtrlEnter = await page.eval<{ editing: boolean; calls: number; value: unknown }>(`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, calls: window.__cfSetValueCalls.length, value: window.__cfSetValueCalls[0] && window.__cfSetValueCalls[0].values.bio }))()`);
-  ok("ctrl+enter commits the multi-line editor", !afterCtrlEnter.editing && afterCtrlEnter.calls === 1 && afterCtrlEnter.value === "line one\n", JSON.stringify(afterCtrlEnter));
+	ok(
+		"a Small Text editor is a framed popover that contains its textarea",
+		multiline.marked &&
+			multiline.textareaHeight >= 100 &&
+			multiline.contained &&
+			multiline.belowRowTop &&
+			multiline.framed &&
+			multiline.inlineHeight === "",
+		JSON.stringify(multiline),
+	);
+	// frappe v16's espresso scale sets `--weight-regular: 420` on `.frappe-control`; the theme pins it to 400
+	ok("the editor's text weighs the same as the cell's", multiline.weight === "400", multiline.weight);
+	await page.eval(
+		`(() => { const ta = document.querySelector('tbody .dt-cell--editing textarea'); ta.focus(); ta.value = 'line one'; ta.setSelectionRange(8, 8); window.__cfSetValueCalls.length = 0; })()`,
+	);
+	await key("Enter");
+	const afterEnter = await page.eval<{ editing: boolean; value: string }>(
+		`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, value: (document.querySelector('tbody .dt-cell--editing textarea') || {}).value || '' }))()`,
+	);
+	ok(
+		"enter in a multi-line editor inserts a newline and keeps editing",
+		afterEnter.editing && afterEnter.value === "line one\n",
+		JSON.stringify(afterEnter),
+	);
+	await key("Enter", "Enter", 2);
+	await sleep(300);
+	const afterCtrlEnter = await page.eval<{ editing: boolean; calls: number; value: unknown }>(
+		`(() => ({ editing: !!cur_list.datatable.editing.$editingCell, calls: window.__cfSetValueCalls.length, value: window.__cfSetValueCalls[0] && window.__cfSetValueCalls[0].values.bio }))()`,
+	);
+	ok(
+		"ctrl+enter commits the multi-line editor",
+		!afterCtrlEnter.editing && afterCtrlEnter.calls === 1 && afterCtrlEnter.value === "line one\n",
+		JSON.stringify(afterCtrlEnter),
+	);
 
-  // paste
-  const PASTE = (tsv: string, focus: string, after = "") => `(async () => {
+	// paste
+	const PASTE = (tsv: string, focus: string, after = "") => `(async () => {
     const dt = cur_list.datatable;
     window.__cfSetValueCalls.length = 0;
     ${focus}
@@ -750,53 +813,115 @@ try {
     ${after}
     return { prevented: ev.defaultPrevented, result, calls: window.__cfSetValueCalls.map((c) => c.values), cells: window.__cfCells ? window.__cfCells() : [], bounds: dt.navigation.bounds(), toast, dataValue: window.__cfDataValue };
   })()`;
-  await page.eval(`window.__cfCells = () => { const dt = cur_list.datatable; const b = dt.navigation.bounds(); const out = []; for (let p = b.p1; p <= b.p2; p++) for (let c = b.c1; c <= b.c2; c++) out.push(dt.datamanager.getCell(c, dt.datamanager.rowViewOrder[p]).content); return out; }`);
+	await page.eval(
+		`window.__cfCells = () => { const dt = cur_list.datatable; const b = dt.navigation.bounds(); const out = []; for (let p = b.p1; p <= b.p2; p++) for (let c = b.c1; c <= b.c2; c++) out.push(dt.datamanager.getCell(c, dt.datamanager.rowViewOrder[p]).content); return out; }`,
+	);
 
-  const rowCount = await page.eval<number>(`cur_list.datatable.datamanager.rowViewOrder.length`);
-  if (rowCount >= 3) {
-    const fill = await page.eval<PasteProbe>(PASTE("Pasted", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[2], { extend: true }); dt.navigation.lastPaste = undefined;`, `window.__cfDataValue = cur_list.data[0].first_name;`));
-    ok(
-      "a single value pasted over a 1x3 selection fills all three cells",
-      fill.prevented && fill.result && fill.result.pasted === 3 && fill.calls.length === 3 && fill.calls.every((v) => JSON.stringify(v) === '{"first_name":"Pasted"}') && fill.cells.join("|") === "Pasted|Pasted|Pasted",
-      JSON.stringify(fill)
-    );
-    ok("the report view's own data reflects the pasted value", fill.dataValue === "Pasted", String(fill.dataValue));
-  } else {
-    ok("a single value pasted over a 1x3 selection fills all three cells", false, "fewer than 3 rows");
-  }
+	const rowCount = await page.eval<number>(`cur_list.datatable.datamanager.rowViewOrder.length`);
+	if (rowCount >= 3) {
+		const fill = await page.eval<PasteProbe>(
+			PASTE(
+				"Pasted",
+				`dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[2], { extend: true }); dt.navigation.lastPaste = undefined;`,
+				`window.__cfDataValue = cur_list.data[0].first_name;`,
+			),
+		);
+		ok(
+			"a single value pasted over a 1x3 selection fills all three cells",
+			fill.prevented &&
+				fill.result &&
+				fill.result.pasted === 3 &&
+				fill.calls.length === 3 &&
+				fill.calls.every((v) => JSON.stringify(v) === '{"first_name":"Pasted"}') &&
+				fill.cells.join("|") === "Pasted|Pasted|Pasted",
+			JSON.stringify(fill),
+		);
+		ok(
+			"the report view's own data reflects the pasted value",
+			fill.dataValue === "Pasted",
+			String(fill.dataValue),
+		);
+	} else {
+		ok("a single value pasted over a 1x3 selection fills all three cells", false, "fewer than 3 rows");
+	}
 
-  const block = await page.eval<PasteProbe>(PASTE("A\tB\nC\tD\n", `dt.navigation.focus(${editCols.text}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
-  ok(
-    "a 2x2 block pasted on one cell extends past it and selects what landed",
-    block.result && block.result.pasted === 4 && block.calls.length === 4 && block.cells.join("|") === "A|B|C|D" && !!block.bounds && block.bounds.p2 - block.bounds.p1 === 1 && block.bounds.c2 - block.bounds.c1 === 1,
-    JSON.stringify(block)
-  );
+	const block = await page.eval<PasteProbe>(
+		PASTE(
+			"A\tB\nC\tD\n",
+			`dt.navigation.focus(${editCols.text}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`,
+		),
+	);
+	ok(
+		"a 2x2 block pasted on one cell extends past it and selects what landed",
+		block.result &&
+			block.result.pasted === 4 &&
+			block.calls.length === 4 &&
+			block.cells.join("|") === "A|B|C|D" &&
+			!!block.bounds &&
+			block.bounds.p2 - block.bounds.p1 === 1 &&
+			block.bounds.c2 - block.bounds.c1 === 1,
+		JSON.stringify(block),
+	);
 
-  const checkPaste = await page.eval<PasteProbe>(PASTE("yes\nmaybe\n", `dt.navigation.focus(${editCols.check}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
-  ok(
-    "\"yes\" into a Check column arrives as 1 and \"maybe\" is skipped",
-    checkPaste.result && checkPaste.result.pasted === 1 && checkPaste.cells[0] === 1 && (checkPaste.calls.length === 0 || JSON.stringify(checkPaste.calls[0]) === '{"mute_sounds":1}') && checkPaste.result.skipped === 1 && /skipped/.test(checkPaste.toast),
-    JSON.stringify(checkPaste)
-  );
+	const checkPaste = await page.eval<PasteProbe>(
+		PASTE(
+			"yes\nmaybe\n",
+			`dt.navigation.focus(${editCols.check}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`,
+		),
+	);
+	ok(
+		'"yes" into a Check column arrives as 1 and "maybe" is skipped',
+		checkPaste.result &&
+			checkPaste.result.pasted === 1 &&
+			checkPaste.cells[0] === 1 &&
+			(checkPaste.calls.length === 0 || JSON.stringify(checkPaste.calls[0]) === '{"mute_sounds":1}') &&
+			checkPaste.result.skipped === 1 &&
+			/skipped/.test(checkPaste.toast),
+		JSON.stringify(checkPaste),
+	);
 
-  const selectPaste = await page.eval<PasteProbe>(PASTE("dark\nNope\n", `dt.navigation.focus(${editCols.select}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`));
-  ok(
-    "a Select accepts an option (case-insensitively, canonical spelling) and refuses a non-option",
-    selectPaste.result && selectPaste.calls.length === 1 && JSON.stringify(selectPaste.calls[0]) === '{"desk_theme":"Dark"}' && selectPaste.result.skipped === 1,
-    JSON.stringify(selectPaste)
-  );
+	const selectPaste = await page.eval<PasteProbe>(
+		PASTE(
+			"dark\nNope\n",
+			`dt.navigation.focus(${editCols.select}, dt.datamanager.rowViewOrder[0]); dt.navigation.lastPaste = undefined;`,
+		),
+	);
+	ok(
+		"a Select accepts an option (case-insensitively, canonical spelling) and refuses a non-option",
+		selectPaste.result &&
+			selectPaste.calls.length === 1 &&
+			JSON.stringify(selectPaste.calls[0]) === '{"desk_theme":"Dark"}' &&
+			selectPaste.result.skipped === 1,
+		JSON.stringify(selectPaste),
+	);
 
-  const rejected = await page.eval<PasteProbe>(PASTE("REJECT_ME", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); window.__cfOld = dt.datamanager.getCell(${editCols.data}, dt.datamanager.rowViewOrder[0]).content; dt.navigation.lastPaste = undefined;`, `window.__cfDataValue = window.__cfOld;`));
-  ok(
-    "a value the server rejects is reverted in the cell",
-    rejected.result && rejected.result.rejected === 1 && rejected.cells[0] === rejected.dataValue,
-    JSON.stringify(rejected)
-  );
+	const rejected = await page.eval<PasteProbe>(
+		PASTE(
+			"REJECT_ME",
+			`dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); window.__cfOld = dt.datamanager.getCell(${editCols.data}, dt.datamanager.rowViewOrder[0]).content; dt.navigation.lastPaste = undefined;`,
+			`window.__cfDataValue = window.__cfOld;`,
+		),
+	);
+	ok(
+		"a value the server rejects is reverted in the cell",
+		rejected.result && rejected.result.rejected === 1 && rejected.cells[0] === rejected.dataValue,
+		JSON.stringify(rejected),
+	);
 
-  const whileEditing = await page.eval<PasteProbe>(PASTE("X", `dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.activateFocused(); dt.navigation.lastPaste = undefined;`, `dt.editing.deactivate(false);`));
-  ok("a paste while an editor is open belongs to the editor", !whileEditing.prevented && whileEditing.calls.length === 0 && whileEditing.result === null, JSON.stringify(whileEditing));
+	const whileEditing = await page.eval<PasteProbe>(
+		PASTE(
+			"X",
+			`dt.navigation.focus(${editCols.data}, dt.datamanager.rowViewOrder[0]); dt.navigation.activateFocused(); dt.navigation.lastPaste = undefined;`,
+			`dt.editing.deactivate(false);`,
+		),
+	);
+	ok(
+		"a paste while an editor is open belongs to the editor",
+		!whileEditing.prevented && whileEditing.calls.length === 0 && whileEditing.result === null,
+		JSON.stringify(whileEditing),
+	);
 
-  await page.eval(`(() => {
+	await page.eval(`(() => {
     frappe.db.set_value = window.__cfRealSetValue;
     const rv = cur_list;
     const added = window.__cfAddedFields || [];
@@ -808,30 +933,35 @@ try {
     rv.datatable = null;
     rv.refresh();
   })()`);
-  await page.waitFor(`!!cur_list.datatable && document.querySelectorAll('tbody .dt-cell').length > 0 && !(window.__cfAddedFields || []).some((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f))`, { timeout: 90000 });
-  await sleep(600);
+	await page.waitFor(
+		`!!cur_list.datatable && document.querySelectorAll('tbody .dt-cell').length > 0 && !(window.__cfAddedFields || []).some((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f))`,
+		{ timeout: 90000 },
+	);
+	await sleep(600);
 
-  // --- frozen columns must be opaque -------------------------------------
-  const frozen = await page.eval<FrozenProbe>(`(() => {
+	// --- frozen columns must be opaque -------------------------------------
+	const frozen = await page.eval<FrozenProbe>(`(() => {
     const td = document.querySelector('tbody td.cf-table__cell--pinned');
     const th = document.querySelector('thead th.cf-table__cell--pinned');
     const bg = (n) => (n ? getComputedStyle(n).backgroundColor : null);
     return { body: bg(td), head: bg(th) };
   })()`);
-  ok(
-    "frozen columns are opaque so scrolled cells cannot show through",
-    frozen.body && !frozen.body.includes("rgba(0, 0, 0, 0)") &&
-      frozen.head && !frozen.head.includes("rgba(0, 0, 0, 0)"),
-    JSON.stringify(frozen)
-  );
+	ok(
+		"frozen columns are opaque so scrolled cells cannot show through",
+		frozen.body &&
+			!frozen.body.includes("rgba(0, 0, 0, 0)") &&
+			frozen.head &&
+			!frozen.head.includes("rgba(0, 0, 0, 0)"),
+		JSON.stringify(frozen),
+	);
 
-  // --- an open editor owns its own clicks ---------------------------------
-  // A Link editor renders awesomplete's option list inside the cell. Treating a
-  // click on an option as a grid click stole focus to the scroll container —
-  // closing the dropdown before it could commit — AND started a drag, so the
-  // pointer travelling to the option swept a rectangle of cells behind it. The
-  // user picked a value and got a multi-cell selection instead.
-  const editorClick = await page.eval<EditorClickProbe>(`(() => {
+	// --- an open editor owns its own clicks ---------------------------------
+	// A Link editor renders awesomplete's option list inside the cell. Treating a
+	// click on an option as a grid click stole focus to the scroll container —
+	// closing the dropdown before it could commit — AND started a drag, so the
+	// pointer travelling to the option swept a rectangle of cells behind it. The
+	// user picked a value and got a multi-cell selection instead.
+	const editorClick = await page.eval<EditorClickProbe>(`(() => {
     const dt = cur_list.datatable;
     const colIndex = dt.columns.findIndex((c, i) => {
       if (i < dt.standardColumnCount || c.editable === false || !c.docfield) return false;
@@ -870,11 +1000,11 @@ try {
     dt.editing.deactivate(false);
     return res;
   })()`);
-  ok("clicking inside an editor does not start a drag", !editorClick.dragging, JSON.stringify(editorClick));
+	ok("clicking inside an editor does not start a drag", !editorClick.dragging, JSON.stringify(editorClick));
 
-  // A drag whose mouseup we never see (released outside the window, or over a
-  // dialog that opened mid-drag) must not leave the grid selecting forever.
-  const lostMouseUp = await page.eval<LostMouseUpProbe>(`(() => {
+	// A drag whose mouseup we never see (released outside the window, or over a
+	// dialog that opened mid-drag) must not leave the grid selecting forever.
+	const lostMouseUp = await page.eval<LostMouseUpProbe>(`(() => {
     const dt = cur_list.datatable;
     const cell = (c, r) => document.querySelector('tbody .dt-cell[data-col-index="' + c + '"][data-row-index="' + r + '"]');
     const start = cell(3, 0);
@@ -888,23 +1018,35 @@ try {
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
     return res;
   })()`);
-  ok(
-    "a drag with no mouseup self-heals on the next button-less move",
-    lostMouseUp.startedDrag && !lostMouseUp.stillDragging && lostMouseUp.selectingClass === 0,
-    JSON.stringify(lostMouseUp)
-  );
-  ok("clicking inside an editor does not move the grid focus", editorClick.focusUnchanged, JSON.stringify(editorClick));
-  ok("clicking inside an editor does not close it", editorClick.stillEditing, JSON.stringify(editorClick));
-  ok("clicking inside an editor does not steal DOM focus", !editorClick.focusStolen, JSON.stringify(editorClick));
-  ok("no stray range is selected behind the dropdown", editorClick.highlighted === 0, JSON.stringify(editorClick));
+	ok(
+		"a drag with no mouseup self-heals on the next button-less move",
+		lostMouseUp.startedDrag && !lostMouseUp.stillDragging && lostMouseUp.selectingClass === 0,
+		JSON.stringify(lostMouseUp),
+	);
+	ok(
+		"clicking inside an editor does not move the grid focus",
+		editorClick.focusUnchanged,
+		JSON.stringify(editorClick),
+	);
+	ok("clicking inside an editor does not close it", editorClick.stillEditing, JSON.stringify(editorClick));
+	ok(
+		"clicking inside an editor does not steal DOM focus",
+		!editorClick.focusStolen,
+		JSON.stringify(editorClick),
+	);
+	ok(
+		"no stray range is selected behind the dropdown",
+		editorClick.highlighted === 0,
+		JSON.stringify(editorClick),
+	);
 
-  // --- sticky stacking order ---------------------------------------------
-  // Four levels are in play at once: ordinary body cells, the frozen body
-  // column they scroll under, the sticky header, and the frozen header corner.
-  // The engine used to write z-index INLINE for pinned cells, which always beat
-  // the stylesheet — so the scrolling column headers painted OVER the frozen
-  // header instead of sliding beneath it.
-  const layering = await page.eval<LayeringProbe>(`(() => {
+	// --- sticky stacking order ---------------------------------------------
+	// Four levels are in play at once: ordinary body cells, the frozen body
+	// column they scroll under, the sticky header, and the frozen header corner.
+	// The engine used to write z-index INLINE for pinned cells, which always beat
+	// the stylesheet — so the scrolling column headers painted OVER the frozen
+	// header instead of sliding beneath it.
+	const layering = await page.eval<LayeringProbe>(`(() => {
     const z = (s) => { const n = document.querySelector(s); return n ? getComputedStyle(n).zIndex : null; };
     const inlineZ = (s) => { const n = document.querySelector(s); return n ? (n.style.zIndex || '') : null; };
     return {
@@ -915,30 +1057,30 @@ try {
       inlineOnPinned: inlineZ('tbody td.cf-table__cell--pinned'),
     };
   })()`);
-  const zi = (v: string | null) => (v === 'auto' || v == null ? 0 : Number(v));
-  ok(
-    "frozen header sits above the scrolling headers",
-    zi(layering.headPinned) > zi(layering.headPlain),
-    JSON.stringify(layering)
-  );
-  ok(
-    "sticky header sits above the body, frozen body above plain body",
-    zi(layering.headPlain) > zi(layering.bodyPinned) && zi(layering.bodyPinned) > zi(layering.bodyPlain),
-    JSON.stringify(layering)
-  );
-  ok(
-    "layering is left to the stylesheet, not written inline",
-    layering.inlineOnPinned === "",
-    JSON.stringify(layering)
-  );
+	const zi = (v: string | null) => (v === "auto" || v == null ? 0 : Number(v));
+	ok(
+		"frozen header sits above the scrolling headers",
+		zi(layering.headPinned) > zi(layering.headPlain),
+		JSON.stringify(layering),
+	);
+	ok(
+		"sticky header sits above the body, frozen body above plain body",
+		zi(layering.headPlain) > zi(layering.bodyPinned) && zi(layering.bodyPinned) > zi(layering.bodyPlain),
+		JSON.stringify(layering),
+	);
+	ok(
+		"layering is left to the stylesheet, not written inline",
+		layering.inlineOnPinned === "",
+		JSON.stringify(layering),
+	);
 
-  // --- nothing shows through the frozen columns ---------------------------
-  // The real question is not "is the background set" but "is anything of the
-  // scrolled column visible inside the frozen region". Hit-test across the
-  // whole frozen band, including the seam between the two frozen columns and
-  // both outer edges, and require the topmost element at every point to belong
-  // to a pinned cell.
-  const bleed = await page.eval<BleedProbe>(`(() => {
+	// --- nothing shows through the frozen columns ---------------------------
+	// The real question is not "is the background set" but "is anything of the
+	// scrolled column visible inside the frozen region". Hit-test across the
+	// whole frozen band, including the seam between the two frozen columns and
+	// both outer edges, and require the topmost element at every point to belong
+	// to a pinned cell.
+	const bleed = await page.eval<BleedProbe>(`(() => {
     const dt = cur_list.datatable;
     const scroll = dt.engine.renderer.scroll;
     // The check is only meaningful while columns are actually passing under the
@@ -972,30 +1114,33 @@ try {
              missCount: misses.length, scrollLeft: scroll.scrollLeft,
              overflow: scroll.scrollWidth - scroll.clientWidth };
   })()`);
-  ok("the bleed check actually scrolled columns under the frozen ones",
-     bleed.skipped || bleed.scrollLeft > 0, JSON.stringify(bleed));
-  ok(
-    "no scrolled content shows through the frozen columns",
-    bleed.skipped || bleed.missCount === 0,
-    JSON.stringify(bleed)
-  );
+	ok(
+		"the bleed check actually scrolled columns under the frozen ones",
+		bleed.skipped || bleed.scrollLeft > 0,
+		JSON.stringify(bleed),
+	);
+	ok(
+		"no scrolled content shows through the frozen columns",
+		bleed.skipped || bleed.missCount === 0,
+		JSON.stringify(bleed),
+	);
 
-  // --- select-all lines up with the column it heads ----------------------
-  const cbAlign = await page.eval<CbAlignProbe>(`(() => {
+	// --- select-all lines up with the column it heads ----------------------
+	const cbAlign = await page.eval<CbAlignProbe>(`(() => {
     const x = (s) => { const n = document.querySelector(s); return n ? Math.round(n.getBoundingClientRect().x) : null; };
     return {
       head: x('thead [data-col-id$=":_checkbox"] input'),
       body: x('tbody [data-col-id$=":_checkbox"] input'),
     };
   })()`);
-  ok(
-    "header checkbox aligns with the column's checkboxes",
-    cbAlign.head !== null && cbAlign.head === cbAlign.body,
-    JSON.stringify(cbAlign)
-  );
+	ok(
+		"header checkbox aligns with the column's checkboxes",
+		cbAlign.head !== null && cbAlign.head === cbAlign.body,
+		JSON.stringify(cbAlign),
+	);
 
-  // --- drag to select a range --------------------------------------------
-  const dragBox = await page.eval<DragBoxProbe>(`(() => {
+	// --- drag to select a range --------------------------------------------
+	const dragBox = await page.eval<DragBoxProbe>(`(() => {
     const dt = cur_list.datatable;
     dt.cellmanager.unfocusCell();
     const c = (col, row) => {
@@ -1007,9 +1152,9 @@ try {
     const rows = dt.datamanager.rowViewOrder;
     return { from: c(3, rows[0]), to: c(4, rows[Math.min(1, rows.length - 1)]) };
   })()`);
-  if (dragBox.from && dragBox.to) {
-    await page.drag(dragBox.from.x, dragBox.from.y, dragBox.to.x, dragBox.to.y);
-    const dragged = await page.eval<DraggedProbe>(`(() => {
+	if (dragBox.from && dragBox.to) {
+		await page.drag(dragBox.from.x, dragBox.from.y, dragBox.to.x, dragBox.to.y);
+		const dragged = await page.eval<DraggedProbe>(`(() => {
       const dt = cur_list.datatable;
       return {
         bounds: dt.navigation.bounds(),
@@ -1018,28 +1163,35 @@ try {
         selectingClass: document.querySelectorAll('.cf-table--selecting').length,
       };
     })()`);
-    ok(
-      "dragging the mouse across cells selects a range",
-      dragged.bounds && (dragged.bounds.c2 > dragged.bounds.c1 || dragged.bounds.p2 > dragged.bounds.p1),
-      JSON.stringify(dragged)
-    );
-    ok(
-      "the drag ends cleanly on mouseup",
-      !dragged.stillDragging && dragged.selectingClass === 0,
-      JSON.stringify(dragged)
-    );
-  } else {
-    ok("dragging the mouse across cells selects a range", false, "cells not found");
-  }
+		ok(
+			"dragging the mouse across cells selects a range",
+			dragged.bounds && (dragged.bounds.c2 > dragged.bounds.c1 || dragged.bounds.p2 > dragged.bounds.p1),
+			JSON.stringify(dragged),
+		);
+		ok(
+			"the drag ends cleanly on mouseup",
+			!dragged.stillDragging && dragged.selectingClass === 0,
+			JSON.stringify(dragged),
+		);
+	} else {
+		ok("dragging the mouse across cells selects a range", false, "cells not found");
+	}
 
-  await page.screenshot(SHOT + "/bench-report.png");
-  const errs = page.consoleErrors();
-  ok("no console errors", errs.length === 0, errs.slice(0,3).join(" | "));
+	await page.screenshot(SHOT + "/bench-report.png");
+	const errs = page.consoleErrors();
+	ok("no console errors", errs.length === 0, errs.slice(0, 3).join(" | "));
 } catch (e) {
-  results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
+	results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
 } finally {
-  console.log("\n" + results.join("\n"));
-  console.log("\n" + results.filter(r=>r.startsWith("PASS")).length + " passed, " + results.filter(r=>r.startsWith("FAIL")).length + " failed");
-  page.close(); proc.kill();
-  process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
+	console.log("\n" + results.join("\n"));
+	console.log(
+		"\n" +
+			results.filter((r) => r.startsWith("PASS")).length +
+			" passed, " +
+			results.filter((r) => r.startsWith("FAIL")).length +
+			" failed",
+	);
+	page.close();
+	proc.kill();
+	process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
 }

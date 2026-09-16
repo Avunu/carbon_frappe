@@ -104,22 +104,23 @@ fs.mkdirSync(SHOT, { recursive: true });
 const { proc, port } = await launch();
 const page = await newPage(port);
 const results: string[] = [];
-const ok = (n: string, c: unknown, x = "") => results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
+const ok = (n: string, c: unknown, x = "") =>
+	results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
 try {
-  await login(page, BASE);
-  // `/app/todo` honours the saved `last_view` user setting, and this suite ends
-  // on the report view — so the NEXT run would be redirected there and wait
-  // forever for view_name === 'List'. Ask for the list view explicitly.
-  await page.goto(`${BASE}/app/todo/view/list`);
-  await page.waitFor(`!!window.cur_list && cur_list.view_name === 'List'`, { timeout: 90000 });
-  // Guard: a stolen assets.json key means we would be measuring stock frappe.
-  await assertCarbonStylesheet(page);
-  await new Promise(r => setTimeout(r, 2500));
+	await login(page, BASE);
+	// `/app/todo` honours the saved `last_view` user setting, and this suite ends
+	// on the report view — so the NEXT run would be redirected there and wait
+	// forever for view_name === 'List'. Ask for the list view explicitly.
+	await page.goto(`${BASE}/app/todo/view/list`);
+	await page.waitFor(`!!window.cur_list && cur_list.view_name === 'List'`, { timeout: 90000 });
+	// Guard: a stolen assets.json key means we would be measuring stock frappe.
+	await assertCarbonStylesheet(page);
+	await new Promise((r) => setTimeout(r, 2500));
 
-  // Seed ToDos so the list is not empty. Use frappe.xcall throughout: a raw
-  // fetch to /api/method/frappe.client.get_count needs the CSRF token as a
-  // query arg, not a header, and quietly 400s.
-  await page.eval(`(async () => {
+	// Seed ToDos so the list is not empty. Use frappe.xcall throughout: a raw
+	// fetch to /api/method/frappe.client.get_count needs the CSRF token as a
+	// query arg, not a header, and quietly 400s.
+	await page.eval(`(async () => {
     const existing = await frappe.xcall('frappe.client.get_list', {
       doctype: 'ToDo', filters: { description: ['like', 'Carbon table check%'] }, limit_page_length: 0,
     });
@@ -135,10 +136,10 @@ try {
     }
     return true;
   })()`);
-  await page.eval(`cur_list.refresh()`);
-  await new Promise(r => setTimeout(r, 2500));
+	await page.eval(`cur_list.refresh()`);
+	await new Promise((r) => setTimeout(r, 2500));
 
-  const info = await page.eval<InfoProbe>(`(() => {
+	const info = await page.eval<InfoProbe>(`(() => {
     const l = cur_list;
     const $r = l.$result;
     return {
@@ -159,25 +160,37 @@ try {
       columns: l.columns.length,
     };
   })()`);
-  console.log(JSON.stringify(info, null, 2));
-  ok("ListView renders through CarbonTable", info.hasEngine && info.carbonTable === 1);
-  ok("one <tr class=list-row-container> per doc", info.rows === info.dataLen && info.rows > 0, `${info.rows}/${info.dataLen}`);
-  ok("get_column_html reused (.list-row-col emitted)", info.listRowCol > 0, String(info.listRowCol));
-  ok("subject column + row checkboxes", info.subject > 0 && info.checkboxes === info.rows, `${info.subject}/${info.checkboxes}`);
-  ok("select-all lives under .list-header-subject", info.selectAll === 1);
-  ok("bulk-action overlay present", info.checkboxActions === 1);
-  ok("[data-sort-by] header handles preserved", info.sortBy > 0, String(info.sortBy));
-  ok("filterable cells preserved", info.filterable > 0, String(info.filterable));
-  ok("meta rail (assignments/comments/like) rendered", info.metaCol === info.rows, `${info.metaCol}/${info.rows}`);
-  ok("$list_head_subject is the <thead>", info.headIsThead === "THEAD", String(info.headIsThead));
-  const cur_data_len = info.dataLen;
+	console.log(JSON.stringify(info, null, 2));
+	ok("ListView renders through CarbonTable", info.hasEngine && info.carbonTable === 1);
+	ok(
+		"one <tr class=list-row-container> per doc",
+		info.rows === info.dataLen && info.rows > 0,
+		`${info.rows}/${info.dataLen}`,
+	);
+	ok("get_column_html reused (.list-row-col emitted)", info.listRowCol > 0, String(info.listRowCol));
+	ok(
+		"subject column + row checkboxes",
+		info.subject > 0 && info.checkboxes === info.rows,
+		`${info.subject}/${info.checkboxes}`,
+	);
+	ok("select-all lives under .list-header-subject", info.selectAll === 1);
+	ok("bulk-action overlay present", info.checkboxActions === 1);
+	ok("[data-sort-by] header handles preserved", info.sortBy > 0, String(info.sortBy));
+	ok("filterable cells preserved", info.filterable > 0, String(info.filterable));
+	ok(
+		"meta rail (assignments/comments/like) rendered",
+		info.metaCol === info.rows,
+		`${info.metaCol}/${info.rows}`,
+	);
+	ok("$list_head_subject is the <thead>", info.headIsThead === "THEAD", String(info.headIsThead));
+	const cur_data_len = info.dataLen;
 
-  // --- the header must survive a re-render --------------------------------
-  // This is where the header used to disappear: the adapter's stale-row sweep
-  // matched the engine's own <thead> row (it carries .list-row-container by
-  // design), and the engine only appended that row once. The first render
-  // looked perfect and every later one had no header at all.
-  const rerender = await page.eval<RerenderProbe>(`(() => {
+	// --- the header must survive a re-render --------------------------------
+	// This is where the header used to disappear: the adapter's stale-row sweep
+	// matched the engine's own <thead> row (it carries .list-row-container by
+	// design), and the engine only appended that row once. The first render
+	// looked perfect and every later one had no header at all.
+	const rerender = await page.eval<RerenderProbe>(`(() => {
     const l = cur_list;
     l.render_list();
     l.render_list();
@@ -193,21 +206,29 @@ try {
       });
     }, 800));
   })()`);
-  console.log(JSON.stringify(rerender));
-  ok(
-    "header survives repeated render_list()",
-    rerender.headerRows === 1 && rerender.headerCells > 0 && rerender.headerAttached,
-    JSON.stringify(rerender)
-  );
-  ok("sort handles and select-all survive too", rerender.sortHandles > 0 && rerender.selectAll === 1, JSON.stringify(rerender));
-  ok("body rows are not duplicated by re-render", rerender.bodyRows === cur_data_len, String(rerender.bodyRows));
+	console.log(JSON.stringify(rerender));
+	ok(
+		"header survives repeated render_list()",
+		rerender.headerRows === 1 && rerender.headerCells > 0 && rerender.headerAttached,
+		JSON.stringify(rerender),
+	);
+	ok(
+		"sort handles and select-all survive too",
+		rerender.sortHandles > 0 && rerender.selectAll === 1,
+		JSON.stringify(rerender),
+	);
+	ok(
+		"body rows are not duplicated by re-render",
+		rerender.bodyRows === cur_data_len,
+		String(rerender.bodyRows),
+	);
 
-  // --- header/body alignment ----------------------------------------------
-  // The header cells are hand-built here, so they need frappe's own per-column
-  // classes: .list-subject.level is the flex box that puts the select-all
-  // checkbox beside the ID label, and .level-right right-aligns the meta rail.
-  // Without them both stacked vertically and drifted out of line with the rows.
-  const align = await page.eval<AlignProbe>(`(() => {
+	// --- header/body alignment ----------------------------------------------
+	// The header cells are hand-built here, so they need frappe's own per-column
+	// classes: .list-subject.level is the flex box that puts the select-all
+	// checkbox beside the ID label, and .level-right right-aligns the meta rail.
+	// Without them both stacked vertically and drifted out of line with the rows.
+	const align = await page.eval<AlignProbe>(`(() => {
     const $r = cur_list.$result;
     const box = (n) => { const r = n.getBoundingClientRect(); return { x: Math.round(r.x), w: Math.round(r.width), h: Math.round(r.height) }; };
     const ids = [...$r.find('thead th')].map((th) => th.dataset.colId);
@@ -255,33 +276,49 @@ try {
       headHeight: Math.round($r.find('header.list-row-head')[0].getBoundingClientRect().height),
     };
   })()`);
-  console.log(JSON.stringify(align));
-  ok("header and body cells share column geometry", align.cellMismatch.length === 0, JSON.stringify(align.cellMismatch));
-  ok("header content lines up with body content", align.contentMismatch.length === 0, JSON.stringify(align.contentMismatch));
-  ok("no header cell stacks its contents", align.stacked.length === 0, JSON.stringify(align.stacked));
-  ok("subject header is frappe's .list-subject.level flex box", align.subjectIsFlex);
-  ok("meta rail header is right-aligned", align.metaIsRight);
-  ok("meta rail fills its column rather than a fixed 130px", align.metaFillsCell, JSON.stringify(align.metaTrailing));
-  ok(
-    "meta rail trailing control aligns with the rows",
-    align.metaTrailing && Math.abs(Number(align.metaTrailing.th) - Number(align.metaTrailing.td)) <= 1,
-    JSON.stringify(align.metaTrailing)
-  );
-  ok("no stray .list-row-container left in $result", align.strayRows === 0, String(align.strayRows));
-  ok("bulk-action host takes no space while unselected", align.overlayHeight === 0 && align.headHeight === 0, JSON.stringify({ o: align.overlayHeight, h: align.headHeight }));
+	console.log(JSON.stringify(align));
+	ok(
+		"header and body cells share column geometry",
+		align.cellMismatch.length === 0,
+		JSON.stringify(align.cellMismatch),
+	);
+	ok(
+		"header content lines up with body content",
+		align.contentMismatch.length === 0,
+		JSON.stringify(align.contentMismatch),
+	);
+	ok("no header cell stacks its contents", align.stacked.length === 0, JSON.stringify(align.stacked));
+	ok("subject header is frappe's .list-subject.level flex box", align.subjectIsFlex);
+	ok("meta rail header is right-aligned", align.metaIsRight);
+	ok(
+		"meta rail fills its column rather than a fixed 130px",
+		align.metaFillsCell,
+		JSON.stringify(align.metaTrailing),
+	);
+	ok(
+		"meta rail trailing control aligns with the rows",
+		align.metaTrailing && Math.abs(Number(align.metaTrailing.th) - Number(align.metaTrailing.td)) <= 1,
+		JSON.stringify(align.metaTrailing),
+	);
+	ok("no stray .list-row-container left in $result", align.strayRows === 0, String(align.strayRows));
+	ok(
+		"bulk-action host takes no space while unselected",
+		align.overlayHeight === 0 && align.headHeight === 0,
+		JSON.stringify({ o: align.overlayHeight, h: align.headHeight }),
+	);
 
-  // --- row hover must span the whole row ----------------------------------
-  // Pinned cells (the subject column and the meta rail) are opaque so scrolled
-  // columns cannot show through them, which also means they cover the hover
-  // fill Carbon paints on the <tr>. Left unhandled the highlight stops at the
-  // first pinned column and resumes after the last.
-  const rowBox = await page.eval<PointProbe>(`(() => {
+	// --- row hover must span the whole row ----------------------------------
+	// Pinned cells (the subject column and the meta rail) are opaque so scrolled
+	// columns cannot show through them, which also means they cover the hover
+	// fill Carbon paints on the <tr>. Left unhandled the highlight stops at the
+	// first pinned column and resumes after the last.
+	const rowBox = await page.eval<PointProbe>(`(() => {
     const tr = cur_list.$result.find('tbody tr.list-row-container')[0];
     const r = tr.getBoundingClientRect();
     return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
   })()`);
-  await page.hover(rowBox.x, rowBox.y);
-  const hover = await page.eval<HoverProbe>(`(() => {
+	await page.hover(rowBox.x, rowBox.y);
+	const hover = await page.eval<HoverProbe>(`(() => {
     const tr = cur_list.$result.find('tbody tr.list-row-container')[0];
     const cells = [...tr.children].map((td) => ({
       id: td.dataset.colId,
@@ -292,18 +329,18 @@ try {
     const rowBg = getComputedStyle(tr).backgroundColor;
     return { rowBg, cells };
   })()`);
-  console.log(JSON.stringify(hover));
-  const pinnedCells = hover.cells.filter((c) => c.pinned);
-  ok("the row is actually hovered", hover.rowBg !== "rgba(0, 0, 0, 0)", hover.rowBg);
-  ok("there are pinned cells to check", pinnedCells.length > 0, String(pinnedCells.length));
-  ok(
-    "hover fill spans pinned cells too",
-    pinnedCells.every((c) => c.bg === hover.rowBg),
-    JSON.stringify({ rowBg: hover.rowBg, pinned: pinnedCells.map((c) => [c.id, c.bg]) })
-  );
+	console.log(JSON.stringify(hover));
+	const pinnedCells = hover.cells.filter((c) => c.pinned);
+	ok("the row is actually hovered", hover.rowBg !== "rgba(0, 0, 0, 0)", hover.rowBg);
+	ok("there are pinned cells to check", pinnedCells.length > 0, String(pinnedCells.length));
+	ok(
+		"hover fill spans pinned cells too",
+		pinnedCells.every((c) => c.bg === hover.rowBg),
+		JSON.stringify({ rowBg: hover.rowBg, pinned: pinnedCells.map((c) => [c.id, c.bg]) }),
+	);
 
-  // checking a row must drive frappe's own bulk-action machinery
-  const checked = await page.eval<CheckedProbe>(`(() => {
+	// checking a row must drive frappe's own bulk-action machinery
+	const checked = await page.eval<CheckedProbe>(`(() => {
     const l = cur_list;
     // a real click toggles the box and fires BOTH click and change, which is
     // what drives on_row_checked; .trigger('click') fires neither.
@@ -316,29 +353,50 @@ try {
       meta: l.$result.find('.list-header-meta').text(),
     }), 500));
   })()`);
-  console.log(JSON.stringify(checked, null, 2));
-  ok("checking a row updates get_checked_items()", checked.checks === 1 && checked.items.length === 1, JSON.stringify(checked.items));
-  ok("batch-actions overlay replaces the header", checked.overlayShown && checked.theadHidden, JSON.stringify({o:checked.overlayShown,t:checked.theadHidden}));
-  ok("'N items selected' rendered", /1/.test(checked.meta), checked.meta);
+	console.log(JSON.stringify(checked, null, 2));
+	ok(
+		"checking a row updates get_checked_items()",
+		checked.checks === 1 && checked.items.length === 1,
+		JSON.stringify(checked.items),
+	);
+	ok(
+		"batch-actions overlay replaces the header",
+		checked.overlayShown && checked.theadHidden,
+		JSON.stringify({ o: checked.overlayShown, t: checked.theadHidden }),
+	);
+	ok("'N items selected' rendered", /1/.test(checked.meta), checked.meta);
 
-  await page.eval(`cur_list.clear_checked_items()`);
-  await new Promise(r=>setTimeout(r,400));
-  await page.screenshot(SHOT + "/bench-list.png");
+	await page.eval(`cur_list.clear_checked_items()`);
+	await new Promise((r) => setTimeout(r, 400));
+	await page.screenshot(SHOT + "/bench-list.png");
 
-  // ReportView (a ListView subclass) must be unaffected
-  await page.goto(`${BASE}/app/todo/view/report`);
-  await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
-  await new Promise(r=>setTimeout(r,2000));
-  const rv = await page.eval<ReportViewProbe>(`(() => ({ ctor: cur_list.datatable.constructor.name, isCarbon: cur_list.datatable.constructor === window.DataTable && !!cur_list.datatable.engine, rows: document.querySelectorAll('tbody .dt-row').length, view: cur_list.view_name }))()`);
-  ok("ReportView subclass still renders its own way", rv.isCarbon && rv.view === "Report" && rv.rows > 0, JSON.stringify(rv));
+	// ReportView (a ListView subclass) must be unaffected
+	await page.goto(`${BASE}/app/todo/view/report`);
+	await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
+	await new Promise((r) => setTimeout(r, 2000));
+	const rv = await page.eval<ReportViewProbe>(
+		`(() => ({ ctor: cur_list.datatable.constructor.name, isCarbon: cur_list.datatable.constructor === window.DataTable && !!cur_list.datatable.engine, rows: document.querySelectorAll('tbody .dt-row').length, view: cur_list.view_name }))()`,
+	);
+	ok(
+		"ReportView subclass still renders its own way",
+		rv.isCarbon && rv.view === "Report" && rv.rows > 0,
+		JSON.stringify(rv),
+	);
 
-  const errs = page.consoleErrors();
-  ok("no console errors", errs.length === 0, errs.slice(0,4).join(" | "));
+	const errs = page.consoleErrors();
+	ok("no console errors", errs.length === 0, errs.slice(0, 4).join(" | "));
 } catch (e) {
-  results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
+	results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
 } finally {
-  console.log("\n" + results.join("\n"));
-  console.log("\n" + results.filter(r=>r.startsWith("PASS")).length + " passed, " + results.filter(r=>r.startsWith("FAIL")).length + " failed");
-  page.close(); proc.kill();
-  process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
+	console.log("\n" + results.join("\n"));
+	console.log(
+		"\n" +
+			results.filter((r) => r.startsWith("PASS")).length +
+			" passed, " +
+			results.filter((r) => r.startsWith("FAIL")).length +
+			" failed",
+	);
+	page.close();
+	proc.kill();
+	process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
 }

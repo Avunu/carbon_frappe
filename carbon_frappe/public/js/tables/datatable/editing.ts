@@ -90,7 +90,7 @@ export function commitValue(
 	column: DataTableColumn,
 	editor: DataTableEditor,
 	value: DataTableCellValue,
-	oldValue: DataTableCellValue
+	oldValue: DataTableCellValue,
 ): Promise<boolean> {
 	const setValue: DataTableEditor["setValue"] | undefined = editor.setValue;
 	host.updateCell(colIndex, rowIndex, { content: value }, true);
@@ -105,7 +105,7 @@ export function commitValue(
 		() => {
 			host.updateCell(colIndex, rowIndex, { content: oldValue }, true);
 			return false;
-		}
+		},
 	);
 }
 
@@ -278,24 +278,32 @@ export default class CellEditing {
 	bind(container: HTMLElement): void {
 		this._abort = new AbortController();
 		const signal = this._abort.signal;
-		container.addEventListener("dblclick", (e) => {
-			// A double click inside an open editor belongs to the control (text
-			// selection, a date picker's day), not to the grid.
-			if (insideEditorUI(e.target)) return;
-			const td = isElement(e.target) && e.target.closest<HTMLElement>(".dt-cell");
-			if (!td || td.classList.contains("dt-cell--header")) return;
-			this.activate(td);
-		}, { signal });
-		container.addEventListener("click", (e) => {
-			// Likewise: clicking an awesomplete option or a picker day must not
-			// be read as "the user clicked a cell" and commit the editor out
-			// from under the selection they were making.
-			if (insideEditorUI(e.target)) return;
-			const td = isElement(e.target) && e.target.closest<HTMLElement>(".dt-cell");
-			if (!td || td.classList.contains("dt-cell--header")) return;
-			if (td !== this.$editingCell) this.deactivate(true);
-			this.focus(td);
-		}, { signal });
+		container.addEventListener(
+			"dblclick",
+			(e) => {
+				// A double click inside an open editor belongs to the control (text
+				// selection, a date picker's day), not to the grid.
+				if (insideEditorUI(e.target)) return;
+				const td = isElement(e.target) && e.target.closest<HTMLElement>(".dt-cell");
+				if (!td || td.classList.contains("dt-cell--header")) return;
+				this.activate(td);
+			},
+			{ signal },
+		);
+		container.addEventListener(
+			"click",
+			(e) => {
+				// Likewise: clicking an awesomplete option or a picker day must not
+				// be read as "the user clicked a cell" and commit the editor out
+				// from under the selection they were making.
+				if (insideEditorUI(e.target)) return;
+				const td = isElement(e.target) && e.target.closest<HTMLElement>(".dt-cell");
+				if (!td || td.classList.contains("dt-cell--header")) return;
+				if (td !== this.$editingCell) this.deactivate(true);
+				this.focus(td);
+			},
+			{ signal },
+		);
 		// Keys are ./navigation.ts's (`onKeyDown`): Escape cancels, Enter
 		// commits or opens, Tab commits and moves. This module used to bind
 		// its own Enter/Escape too, which ran FIRST (bound earlier on the same

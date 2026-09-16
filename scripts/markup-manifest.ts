@@ -304,16 +304,8 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 	],
 
 	// --- UI Shell header (js/anatomy/ui_shell.ts + shell/*) ----------------
-	[
-		"empty <header> mount point (UI Shell header)",
-		"frappe/www/desk.html",
-		/<header>\s*<\/header>/,
-	],
-	[
-		"#body content column (the skip link's target)",
-		"frappe/www/desk.html",
-		/<div id="body">/,
-	],
+	["empty <header> mount point (UI Shell header)", "frappe/www/desk.html", /<header>\s*<\/header>/],
+	["#body content column (the skip link's target)", "frappe/www/desk.html", /<div id="body">/],
 	[
 		"toolbar only replaces <header> conditionally",
 		"frappe/public/js/frappe/ui/toolbar/toolbar.js",
@@ -424,13 +416,9 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe/boot.py",
 		/"label": _\(item\.label\)/,
 	],
+	["app_data entries carry app_route (the switcher's hrefs)", "frappe/boot.py", /app_route=/],
 	[
-		"app_data entries carry app_route (the switcher's hrefs)",
-		"frappe/boot.py",
-		/app_route=/,
-	],
-	[
-		"body click router skips href=\"#\" (sub-menu titles preventDefault themselves)",
+		'body click router skips href="#" (sub-menu titles preventDefault themselves)',
 		"frappe/public/js/frappe/router.js",
 		/href === "#"/,
 	],

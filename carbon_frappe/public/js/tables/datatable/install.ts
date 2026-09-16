@@ -71,6 +71,6 @@ export default function installDataTable(): void {
 					hooks: { columnTotal: frappe.utils.report_column_total },
 				});
 			},
-		"frappe.views.ReportView.prototype.setup_datatable (CarbonDataTable)"
+		"frappe.views.ReportView.prototype.setup_datatable (CarbonDataTable)",
 	);
 }

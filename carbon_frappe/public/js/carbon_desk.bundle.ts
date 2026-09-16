@@ -67,9 +67,7 @@ function patchFormatters(): boolean {
 		if (typeof orig !== "function") continue;
 		f[type] = function (this: FrappeFormatters, ...args: Parameters<typeof orig>) {
 			const out = orig.apply(this, args);
-			return typeof out === "string" && out
-				? `<span class="carbon-num">${out}</span>`
-				: out;
+			return typeof out === "string" && out ? `<span class="carbon-num">${out}</span>` : out;
 		};
 	}
 

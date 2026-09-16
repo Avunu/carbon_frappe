@@ -115,13 +115,7 @@ export function datatableProfile(scopeClass: string): TableClassProfile {
 			setData(node, "data-is-header", "1");
 		},
 		headerCell(node, { colIndex, content }) {
-			add(
-				node,
-				"dt-cell",
-				"dt-cell--header",
-				`dt-cell--header-${colIndex}`,
-				`dt-cell--col-${colIndex}`
-			);
+			add(node, "dt-cell", "dt-cell--header", `dt-cell--header-${colIndex}`, `dt-cell--col-${colIndex}`);
 			setData(node, "data-col-index", colIndex);
 			setData(node, "data-is-header", "1");
 			add(content, "dt-cell__content", `dt-cell__content--header-${colIndex}`);
@@ -151,13 +145,7 @@ export function datatableProfile(scopeClass: string): TableClassProfile {
 		},
 		cell(node, { row, colIndex, content }) {
 			const r = rowIndexFrom(row);
-			add(
-				node,
-				"dt-cell",
-				`dt-cell--col-${colIndex}`,
-				`dt-cell--${colIndex}-${r}`,
-				`dt-cell--row-${r}`
-			);
+			add(node, "dt-cell", `dt-cell--col-${colIndex}`, `dt-cell--${colIndex}-${r}`, `dt-cell--row-${r}`);
 			setData(node, "data-col-index", colIndex);
 			setData(node, "data-row-index", r);
 			add(content, "dt-cell__content", `dt-cell__content--col-${colIndex}`);

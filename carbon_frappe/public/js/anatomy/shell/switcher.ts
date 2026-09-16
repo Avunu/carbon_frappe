@@ -128,7 +128,7 @@ export function mountSwitcher(header: HTMLElement, global: HTMLElement): ShellSw
 	/** The rows a keyboard user can reach right now: every link or toggle not inside a collapsed group. */
 	function rows(): HTMLElement[] {
 		return Array.from(switcher.querySelectorAll<HTMLElement>(".cds--switcher__item-link")).filter(
-			(el) => !el.closest(".cf-switcher__submenu[hidden]")
+			(el) => !el.closest(".cf-switcher__submenu[hidden]"),
 		);
 	}
 
@@ -162,7 +162,8 @@ export function mountSwitcher(header: HTMLElement, global: HTMLElement): ShellSw
 		submenu.hidden = !value;
 		if (value) expanded.add(label);
 		else expanded.delete(label);
-		for (const a of submenu.querySelectorAll<HTMLElement>(".cds--switcher__item-link")) a.tabIndex = open && value ? 0 : -1;
+		for (const a of submenu.querySelectorAll<HTMLElement>(".cds--switcher__item-link"))
+			a.tabIndex = open && value ? 0 : -1;
 	}
 
 	function render(model: ShellModel): void {
@@ -244,7 +245,8 @@ export function mountSwitcher(header: HTMLElement, global: HTMLElement): ShellSw
 		const target = e.target;
 		if (!(target instanceof Node)) return;
 		if (button.contains(target)) return;
-		if (panel.contains(target) && !(isHTMLElement(target) && target.closest("a.cds--switcher__item-link"))) return;
+		if (panel.contains(target) && !(isHTMLElement(target) && target.closest("a.cds--switcher__item-link")))
+			return;
 		close();
 	});
 

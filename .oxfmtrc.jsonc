@@ -1,0 +1,18 @@
+// oxfmt — the one formatter for TS, JS, JSON, SCSS, YAML, TOML and Markdown.
+// Prettier-compatible output; tabs and 110 columns are frappe/erpnext's
+// .editorconfig convention. Anything .gitignore'd (dist, .dev-dist,
+// .frappe-nix) is skipped without being listed here.
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"printWidth": 110,
+	"ignorePatterns": [
+		// frappe's exporter writes doctype JSON (1-space indent) and rewrites it
+		// on every export; formatting it would fight the framework
+		"carbon_frappe/**/doctype/**/*.json",
+		// frappe-nix's generated locks
+		"nix/**",
+		// release-please writes it
+		"CHANGELOG.md",
+	],
+}

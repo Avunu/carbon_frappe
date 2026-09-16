@@ -134,7 +134,7 @@ export interface CarbonGridRow extends GridRow {
 	toggle_view(
 		show?: boolean | undefined,
 		callback?: (() => void) | null | undefined,
-		opts?: { modal?: boolean | undefined } | undefined
+		opts?: { modal?: boolean | undefined } | undefined,
 	): this | undefined;
 }
 
@@ -243,7 +243,7 @@ export function syncExpandState(grid_row: CarbonGridRow, open: boolean): void {
 		"aria-label",
 		open
 			? __("Collapse current row", null, "Carbon expandable grid row")
-			: __("Expand current row", null, "Carbon expandable grid row")
+			: __("Expand current row", null, "Carbon expandable grid row"),
 	);
 	button.setAttribute("aria-controls", childRowId(grid_row));
 

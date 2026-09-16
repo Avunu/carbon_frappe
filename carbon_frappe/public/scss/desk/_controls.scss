@@ -23,7 +23,8 @@
 	border-bottom: 1px solid var(--cds-border-strong-01);
 	border-radius: 0;
 	color: var(--cds-text-primary);
-	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard),
+	transition:
+		background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard),
 		outline var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 
 	&::placeholder {

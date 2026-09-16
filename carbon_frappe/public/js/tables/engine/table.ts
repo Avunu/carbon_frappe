@@ -155,7 +155,7 @@ export interface CarbonHeaderRenderContext<TData extends RowData> {
 
 /** A column's body-cell renderer. */
 export type CarbonCellRenderer<TData extends RowData> = (
-	ctx: CarbonCellRenderContext<TData>
+	ctx: CarbonCellRenderContext<TData>,
 ) => CarbonRenderResult;
 
 /** A column's header, either a fixed string or a renderer. */
@@ -179,10 +179,7 @@ export type CarbonSortFnName = "frappe" | "alphanumeric" | "basic" | "datetime" 
 export type CarbonColumnPinned = "start" | "end" | "left" | "right" | boolean;
 
 /** A column's accessor. Its result is what filters and sorts see. */
-export type CarbonAccessorFn<TData extends RowData> = (
-	originalRow: TData,
-	index: number
-) => unknown;
+export type CarbonAccessorFn<TData extends RowData> = (originalRow: TData, index: number) => unknown;
 
 /**
  * A column, as an adapter describes it to the engine.
@@ -272,10 +269,7 @@ interface CarbonColumnDef<TData extends RowData> {
  * only consumers and this engine uses neither), and the engine reads its own
  * copies off the spec — see {@link CarbonTable.renderCellContent}.
  */
-type CarbonTableColumnDef<TData extends RowData> = Omit<
-	CarbonColumnDef<TData>,
-	"cell" | "header"
->;
+type CarbonTableColumnDef<TData extends RowData> = Omit<CarbonColumnDef<TData>, "cell" | "header">;
 
 // ------------------------------------------------------------------ the hooks
 
@@ -285,7 +279,7 @@ export type CarbonCellContentHook<TData extends RowData> = (
 	row: CarbonRow<TData>,
 	column: CarbonColumn<TData>,
 	colIndex: number,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => void;
 
 /** `renderHeader` — takes a header cell's contents over entirely. */
@@ -294,7 +288,7 @@ export type CarbonHeaderContentHook<TData extends RowData> = (
 	header: CarbonHeader<TData> | undefined,
 	column: CarbonColumn<TData>,
 	colIndex: number,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => void;
 
 /** `renderTotal` — fills one cell of the totals row. */
@@ -302,20 +296,20 @@ export type CarbonTotalContentHook<TData extends RowData> = (
 	entry: TotalCellEntry,
 	column: CarbonColumn<TData>,
 	colIndex: number,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => void;
 
 /** `renderRowAddendum` — the extra `<tr>` placed immediately after a row. */
 export type CarbonRowAddendumHook<TData extends RowData> = (
 	row: CarbonRow<TData>,
 	leaf: readonly CarbonColumn<TData>[],
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => HTMLTableRowElement | null | undefined;
 
 /** `createRowNode` — the adapter's own `<tr>`, or nullish for the engine's. */
 export type CarbonRowNodeHook<TData extends RowData> = (
 	row: CarbonRow<TData>,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => HTMLTableRowElement | null | undefined;
 
 /** `createCellNode` — the adapter's own `<td>`, or nullish for the engine's. */
@@ -323,7 +317,7 @@ export type CarbonCellNodeHook<TData extends RowData> = (
 	row: CarbonRow<TData>,
 	column: CarbonColumn<TData>,
 	colIndex: number,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => HTMLTableCellElement | null | undefined;
 
 /** `createFilterCell` — a truthy result suppresses the engine's own `<input>`. */
@@ -331,28 +325,25 @@ export type CarbonFilterCellHook<TData extends RowData> = (
 	entry: FilterCellEntry,
 	column: CarbonColumn<TData>,
 	colIndex: number,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => unknown;
 
 /** `onRowAdopt` — a row's `<tr>` has just entered the DOM. */
 export type CarbonRowAdoptHook<TData extends RowData> = (
 	row: CarbonRow<TData>,
 	entry: RowEntry,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => void;
 
 /** `onRowRelease` — a row's `<tr>` has just left it. */
 export type CarbonRowReleaseHook<TData extends RowData> = (
 	rowId: string,
 	entry: RowEntry,
-	host: CarbonTable<TData>
+	host: CarbonTable<TData>,
 ) => void;
 
 /** `renderToolbar` / `renderFooter` — called once, after mount, with the region. */
-export type CarbonRegionHook<TData extends RowData> = (
-	node: HTMLElement,
-	host: CarbonTable<TData>
-) => void;
+export type CarbonRegionHook<TData extends RowData> = (node: HTMLElement, host: CarbonTable<TData>) => void;
 
 /**
  * An event handler.
@@ -369,10 +360,7 @@ export type CarbonTableEventHandler<TData extends RowData> = (
 ) => void;
 
 /** The `events` bag: handler-per-name, registered at construction. */
-export type CarbonTableEvents<TData extends RowData> = Record<
-	string,
-	CarbonTableEventHandler<TData>
->;
+export type CarbonTableEvents<TData extends RowData> = Record<string, CarbonTableEventHandler<TData>>;
 
 /** `layout` is carried for adapters; the engine sizes through `<colgroup>`. */
 export type CarbonTableLayout = "fixed" | "auto";
@@ -522,9 +510,7 @@ const DEFAULTS: ResolvedCarbonTableOptions = {
  * `table.getColumn()`, and paying for that lookup once per cell per render is
  * exactly what the JS version did not do.
  */
-function specOf<TData extends RowData>(
-	column: CarbonColumn<TData>
-): CarbonColumnSpec<TData> | null {
+function specOf<TData extends RowData>(column: CarbonColumn<TData>): CarbonColumnSpec<TData> | null {
 	const meta = column.columnDef.meta;
 	return meta && meta.spec ? meta.spec : null;
 }
@@ -563,10 +549,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	/** The store subscription, dropped in {@link destroy}. */
 	_subscription: CarbonTableStoreTeardown | null;
 
-	constructor(
-		container: string | Element | null | undefined,
-		options: CarbonTableOptions<TData> = {}
-	) {
+	constructor(container: string | Element | null | undefined, options: CarbonTableOptions<TData> = {}) {
 		if (typeof container === "string") container = document.querySelector(container);
 		if (!container || !(container instanceof HTMLElement)) {
 			throw new Error("CarbonTable: invalid container");
@@ -692,10 +675,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		}
 		const visibility: ColumnVisibilityState = {};
 		for (const spec of o.columns) if (spec.hidden) visibility[spec.id] = false;
-		return Object.assign(
-			{ columnPinning: pinning, columnVisibility: visibility },
-			o.initialState || {}
-		);
+		return Object.assign({ columnPinning: pinning, columnVisibility: visibility }, o.initialState || {});
 	}
 
 	/**
@@ -813,7 +793,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		this.options.columns = columns || [];
 		this.columnSpecs = this.options.columns.slice();
 		this.table.setOptions((prev) =>
-			Object.assign({}, prev, { columns: this.columnSpecs.map((s) => this.toColumnDef(s)) })
+			Object.assign({}, prev, { columns: this.columnSpecs.map((s) => this.toColumnDef(s)) }),
 		);
 		this.scheduleRender();
 		return this;
@@ -821,7 +801,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 
 	refresh(
 		data?: readonly TData[] | null | undefined,
-		columns?: readonly CarbonColumnSpec<TData>[] | null | undefined
+		columns?: readonly CarbonColumnSpec<TData>[] | null | undefined,
 	): this {
 		if (columns) this.setColumns(columns);
 		if (data) this.setData(data);
@@ -1018,7 +998,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		cell: RowCellEntry,
 		row: CarbonRow<TData>,
 		column: CarbonColumn<TData>,
-		colIndex: number
+		colIndex: number,
 	): void {
 		if (typeof this.options.renderCell === "function") {
 			this.options.renderCell(cell, row, column, colIndex, this);
@@ -1050,7 +1030,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		entry: HeaderCellEntry,
 		header: CarbonHeader<TData> | undefined,
 		column: CarbonColumn<TData>,
-		colIndex: number
+		colIndex: number,
 	): void {
 		if (typeof this.options.renderHeader === "function") {
 			this.options.renderHeader(entry, header, column, colIndex, this);
@@ -1075,7 +1055,11 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 
 		entry.th.classList.add(CARBON.sortHeaderCell);
 		const direction = column.getIsSorted();
-		attr(entry.th, "aria-sort", direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none");
+		attr(
+			entry.th,
+			"aria-sort",
+			direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none",
+		);
 
 		// The four chrome nodes are held in locals as well as on the entry:
 		// HeaderCellEntry declares them as four independent optional fields
@@ -1124,7 +1108,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	wireResizeHandle(
 		entry: HeaderCellEntry,
 		header: CarbonHeader<TData> | undefined,
-		column: CarbonColumn<TData>
+		column: CarbonColumn<TData>,
 	): void {
 		if (!header || !column.getCanResize || !column.getCanResize()) {
 			if (entry.resizer) {
@@ -1185,7 +1169,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 
 	renderRowAddendum(
 		row: CarbonRow<TData>,
-		leaf: readonly CarbonColumn<TData>[]
+		leaf: readonly CarbonColumn<TData>[],
 	): HTMLTableRowElement | null | undefined {
 		if (typeof this.options.renderRowAddendum === "function") {
 			return this.options.renderRowAddendum(row, leaf, this);
@@ -1198,9 +1182,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	 * See render.ts#renderRow for why this seam exists.
 	 */
 	createRowNode(row: CarbonRow<TData>): HTMLTableRowElement | null | undefined {
-		return typeof this.options.createRowNode === "function"
-			? this.options.createRowNode(row, this)
-			: null;
+		return typeof this.options.createRowNode === "function" ? this.options.createRowNode(row, this) : null;
 	}
 
 	/** Let an adapter own a filter cell's contents. Truthy skips the default input. */
@@ -1214,7 +1196,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	createCellNode(
 		row: CarbonRow<TData>,
 		column: CarbonColumn<TData>,
-		colIndex: number
+		colIndex: number,
 	): HTMLTableCellElement | null | undefined {
 		return typeof this.options.createCellNode === "function"
 			? this.options.createCellNode(row, column, colIndex, this)
@@ -1226,8 +1208,7 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	}
 
 	releaseRow(rowId: string, entry: RowEntry): void {
-		if (typeof this.options.onRowRelease === "function")
-			this.options.onRowRelease(rowId, entry, this);
+		if (typeof this.options.onRowRelease === "function") this.options.onRowRelease(rowId, entry, this);
 	}
 
 	// ------------------------------------------------------------------ lookup

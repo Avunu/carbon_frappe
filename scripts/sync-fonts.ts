@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatFiles } from "./lib/format.ts";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fontsOut = path.join(appRoot, "carbon_frappe", "public", "fonts");
@@ -64,9 +65,10 @@ for (const [pkg, faces] of Object.entries(FACES)) {
 	// license alongside the vendored files
 	fs.copyFileSync(
 		path.join(appRoot, "node_modules", "@ibm", pkg, "LICENSE.txt"),
-		path.join(fontsOut, `LICENSE-${pkg}.txt`)
+		path.join(fontsOut, `LICENSE-${pkg}.txt`),
 	);
 }
 
 fs.writeFileSync(path.join(scssOut, "_fonts.scss"), scss);
+formatFiles(path.join(scssOut, "_fonts.scss"));
 console.log(`[sync-fonts] copied ${copied} woff2 files, wrote generated/_fonts.scss`);

@@ -23,7 +23,8 @@
 
 [data-theme="dark"],
 .dark,
-.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
+.cf-zone-g100 {
+	// UI Shell zone — see desk/_ui-shell.scss
 	--carbon-border-subtle: var(--cds-border-subtle-00); // #393939
 }
 
@@ -31,7 +32,8 @@
 [data-theme="light"],
 [data-theme="dark"],
 .dark,
-.cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
+.cf-zone-g100 {
+	// UI Shell zone — see desk/_ui-shell.scss
 	// THE headline change: frappe's black primary button becomes Carbon
 	// button-primary (blue-60 in every Carbon theme). The fill reads the
 	// component token (unemitted by theme.theme(), so the fallback is the

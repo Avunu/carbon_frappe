@@ -26,7 +26,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SELECTORS, PATCH_TARGETS, MIRRORED_LITERALS, SHADOWED_BUNDLES, JS_BUNDLES } from "./markup-manifest.ts";
+import {
+	SELECTORS,
+	PATCH_TARGETS,
+	MIRRORED_LITERALS,
+	SHADOWED_BUNDLES,
+	JS_BUNDLES,
+} from "./markup-manifest.ts";
 
 const strict = process.argv.includes("--strict");
 
@@ -68,7 +74,9 @@ if (fs.existsSync(assetsPath)) {
 		if (isRecord(parsed)) {
 			assets = parsed;
 		} else {
-			warn(`assets.json is ${parsed === null ? "null" : typeof parsed}, not an object — the asset shadow cannot be verified`);
+			warn(
+				`assets.json is ${parsed === null ? "null" : typeof parsed}, not an object — the asset shadow cannot be verified`,
+			);
 		}
 	} catch (e) {
 		warn(`assets.json is unreadable (${e instanceof Error ? e.message : String(e)})`);
@@ -91,7 +99,7 @@ if (fs.existsSync(assetsPath)) {
 			`asset shadow lost for ${stolen.join(", ")} — assets.json points at frappe's bundles, ` +
 				`so the desk is being served STOCK frappe CSS. ` +
 				`Re-run \`node scripts/patch-assets.ts\`. ` +
-				`Usual causes: \`bench build --apps frappe\`, or \`bench watch\` rebuilding frappe mid-session.`
+				`Usual causes: \`bench build --apps frappe\`, or \`bench watch\` rebuilding frappe mid-session.`,
 		);
 	}
 
@@ -118,7 +126,7 @@ if (fs.existsSync(assetsPath)) {
 			`assets.json points ${dangling.map((n) => `${n}.bundle.js`).join(", ")} at a file that no longer exists — ` +
 				`the desk is loading a missing or stale bundle. ` +
 				`Re-run \`node scripts/patch-assets.ts\`. ` +
-				`Usual cause: a build that did not run this app's build command, i.e. \`bench watch\`.`
+				`Usual cause: a build that did not run this app's build command, i.e. \`bench watch\`.`,
 		);
 	}
 }

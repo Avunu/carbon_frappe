@@ -76,8 +76,12 @@
 		overflow: hidden;
 		position: relative;
 
-		&--right { text-align: end; }
-		&--center { text-align: center; }
+		&--right {
+			text-align: end;
+		}
+		&--center {
+			text-align: center;
+		}
 
 		&--pinned {
 			background-color: var(--cds-layer-01);

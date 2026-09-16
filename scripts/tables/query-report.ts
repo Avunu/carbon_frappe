@@ -73,16 +73,19 @@ const results: string[] = [];
 // The condition is `unknown` on purpose: assertions hand this whatever their
 // expression produced — a boolean, a string, a null out of `querySelector` —
 // and the only thing read of it is its truthiness.
-const ok = (n: string, c: unknown, x = "") => results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
+const ok = (n: string, c: unknown, x = "") =>
+	results.push(`${c ? "PASS" : "FAIL"}  ${n}${x ? "  " + x : ""}`);
 try {
-  await login(page, BASE);
-  await page.goto(`${BASE}/app/query-report/${encodeURIComponent(REPORT)}`);
-  await page.waitFor(`!!(window.frappe && frappe.query_report && frappe.query_report.datatable)`, { timeout: 120000 });
-  // Guard: a stolen assets.json key means we would be measuring stock frappe.
-  await assertCarbonStylesheet(page);
-  await new Promise(r => setTimeout(r, 2000));
+	await login(page, BASE);
+	await page.goto(`${BASE}/app/query-report/${encodeURIComponent(REPORT)}`);
+	await page.waitFor(`!!(window.frappe && frappe.query_report && frappe.query_report.datatable)`, {
+		timeout: 120000,
+	});
+	// Guard: a stolen assets.json key means we would be measuring stock frappe.
+	await assertCarbonStylesheet(page);
+	await new Promise((r) => setTimeout(r, 2000));
 
-  const base = await page.eval<BaseProbe>(`(() => {
+	const base = await page.eval<BaseProbe>(`(() => {
     const qr = frappe.query_report;
     return {
       ctor: qr.datatable.constructor.name,
@@ -93,12 +96,16 @@ try {
       carbon: !!document.querySelector('table.cds--data-table'),
     };
   })()`);
-  console.log(JSON.stringify(base));
-  ok("QueryReport constructs CarbonDataTable via window.DataTable", base.viaWindow, base.ctor);
-  ok("report data rendered as a Carbon table", base.carbon && base.dtRows > 0, `rows=${base.dtRows}/${base.rows}`);
+	console.log(JSON.stringify(base));
+	ok("QueryReport constructs CarbonDataTable via window.DataTable", base.viaWindow, base.ctor);
+	ok(
+		"report data rendered as a Carbon table",
+		base.carbon && base.dtRows > 0,
+		`rows=${base.dtRows}/${base.rows}`,
+	);
 
-  // Install a timesheet_review-shaped consumer and re-render through it.
-  await page.eval<true>(`(() => {
+	// Install a timesheet_review-shaped consumer and re-render through it.
+	await page.eval<true>(`(() => {
     window.__probe = { formatter: 0, getOpts: 0, afterRender: 0, editor: 0, setValueSeen: null };
     frappe.query_reports[${JSON.stringify(REPORT)}] = Object.assign(frappe.query_reports[${JSON.stringify(REPORT)}] || {}, {
       initial_depth: 1,
@@ -156,9 +163,9 @@ try {
     frappe.query_report.refresh();
     return true;
   })()`);
-  await new Promise(r => setTimeout(r, 4000));
+	await new Promise((r) => setTimeout(r, 4000));
 
-  const after = await page.eval<AfterProbe>(`(() => {
+	const after = await page.eval<AfterProbe>(`(() => {
     const p = window.__probe;
     const dt = frappe.query_report.datatable;
     const cell = document.querySelector('.dt-cell--2-0');
@@ -172,15 +179,30 @@ try {
       rowH: Math.round(document.querySelector('tbody .dt-row').getBoundingClientRect().height),
     };
   })()`);
-  console.log(JSON.stringify(after, null, 2));
-  ok("report_settings.get_datatable_options() applied", after.probe.getOpts > 0 && after.stdCols === 2, JSON.stringify({g:after.probe.getOpts,std:after.stdCols}));
-  ok("report_settings.formatter() drives cell HTML", after.probe.formatter > 0 && after.probeCells > 0, `calls=${after.probe.formatter} cells=${after.probeCells}`);
-  ok("after_datatable_render() receives a usable instance", after.probe.afterRender > 0 && after.probe.hasRowmanager && after.probe.hasDatamanager);
-  ok("style.setStyle from after_datatable_render paints the cell", after.cellBg === "rgb(0, 128, 0)" && after.cellFw === "700", JSON.stringify({bg:after.cellBg,fw:after.cellFw}));
-  ok("cellHeight honoured (36 -> Carbon md 40)", after.rowH >= 32 && after.rowH <= 44, `rowH=${after.rowH}`);
+	console.log(JSON.stringify(after, null, 2));
+	ok(
+		"report_settings.get_datatable_options() applied",
+		after.probe.getOpts > 0 && after.stdCols === 2,
+		JSON.stringify({ g: after.probe.getOpts, std: after.stdCols }),
+	);
+	ok(
+		"report_settings.formatter() drives cell HTML",
+		after.probe.formatter > 0 && after.probeCells > 0,
+		`calls=${after.probe.formatter} cells=${after.probeCells}`,
+	);
+	ok(
+		"after_datatable_render() receives a usable instance",
+		after.probe.afterRender > 0 && after.probe.hasRowmanager && after.probe.hasDatamanager,
+	);
+	ok(
+		"style.setStyle from after_datatable_render paints the cell",
+		after.cellBg === "rgb(0, 128, 0)" && after.cellFw === "700",
+		JSON.stringify({ bg: after.cellBg, fw: after.cellFw }),
+	);
+	ok("cellHeight honoured (36 -> Carbon md 40)", after.rowH >= 32 && after.rowH <= 44, `rowH=${after.rowH}`);
 
-  // getEditor path
-  const edit = await page.eval<EditProbe>(`(() => {
+	// getEditor path
+	const edit = await page.eval<EditProbe>(`(() => {
     const td = document.querySelector('tbody .dt-row .dt-cell[data-col-index="3"]');
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     return new Promise(res => setTimeout(() => {
@@ -190,26 +212,45 @@ try {
       setTimeout(() => res({ editorCalls: window.__probe.editor, mounted: !!input, setValueSeen: window.__probe.setValueSeen }), 400);
     }, 400));
   })()`);
-  ok("getEditor() called and its input mounted in the cell", edit.editorCalls > 0 && edit.mounted, JSON.stringify(edit));
-  ok("editor setValue() receives the new value", edit.setValueSeen === "edited-by-probe", String(edit.setValueSeen));
+	ok(
+		"getEditor() called and its input mounted in the cell",
+		edit.editorCalls > 0 && edit.mounted,
+		JSON.stringify(edit),
+	);
+	ok(
+		"editor setValue() receives the new value",
+		edit.setValueSeen === "edited-by-probe",
+		String(edit.setValueSeen),
+	);
 
-  // rowmanager.getCheckedRows — the 13-call-site API
-  const checks = await page.eval<ChecksProbe>(`(() => {
+	// rowmanager.getCheckedRows — the 13-call-site API
+	const checks = await page.eval<ChecksProbe>(`(() => {
     const dt = frappe.query_report.datatable;
     dt.rowmanager.checkRow(0, true);
     dt.rowmanager.checkRow(1, true);
     return { checked: dt.rowmanager.getCheckedRows(), items: frappe.query_report.get_checked_items().length };
   })()`);
-  ok("rowmanager.getCheckedRows() + QueryReport.get_checked_items()", JSON.stringify(checks.checked) === "[0,1]" && checks.items === 2, JSON.stringify(checks));
+	ok(
+		"rowmanager.getCheckedRows() + QueryReport.get_checked_items()",
+		JSON.stringify(checks.checked) === "[0,1]" && checks.items === 2,
+		JSON.stringify(checks),
+	);
 
-  await page.screenshot(SHOT + "/bench-queryreport.png");
-  const errs = page.consoleErrors();
-  ok("no console errors", errs.length === 0, errs.slice(0,4).join(" | "));
+	await page.screenshot(SHOT + "/bench-queryreport.png");
+	const errs = page.consoleErrors();
+	ok("no console errors", errs.length === 0, errs.slice(0, 4).join(" | "));
 } catch (e) {
-  results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
+	results.push("FAIL  harness: " + (e instanceof Error ? e.message : String(e)));
 } finally {
-  console.log("\n" + results.join("\n"));
-  console.log("\n" + results.filter(r=>r.startsWith("PASS")).length + " passed, " + results.filter(r=>r.startsWith("FAIL")).length + " failed");
-  page.close(); proc.kill();
-  process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
+	console.log("\n" + results.join("\n"));
+	console.log(
+		"\n" +
+			results.filter((r) => r.startsWith("PASS")).length +
+			" passed, " +
+			results.filter((r) => r.startsWith("FAIL")).length +
+			" failed",
+	);
+	page.close();
+	proc.kill();
+	process.exitCode = results.some((r) => r.startsWith("FAIL")) ? 1 : 0;
 }

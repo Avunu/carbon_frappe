@@ -75,7 +75,7 @@ export function safePatch<O extends object, K extends keyof O>(
 	getOwner: () => O | null | false | undefined,
 	key: K,
 	wrap: (orig: O[K] & Function) => O[K] & Function,
-	id: string
+	id: string,
 ): boolean {
 	let owner: O | null = null;
 	try {

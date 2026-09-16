@@ -305,7 +305,10 @@ interface DatatableColumnMeta {
 	colIndex: DataTableColIndex;
 	dtColumn: DataTableColumn;
 	compareValue?:
-		| ((row: CarbonRow<DataTableRow>, keyword: string) => [number | string, number | string] | null | undefined)
+		| ((
+				row: CarbonRow<DataTableRow>,
+				keyword: string,
+		  ) => [number | string, number | string] | null | undefined)
 		| undefined;
 	getFilterText?: ((row: CarbonRow<DataTableRow>) => string) | undefined;
 }
@@ -665,8 +668,7 @@ export default class CarbonDataTable {
 			// 100k-row report would put every row in the DOM.
 			scrollHeight: this.options.scrollHeight || "calc(100vh - 260px)",
 			profile: datatableProfile(this.scopeClass),
-			renderTotal: (entry, column, colIndex, host) =>
-				this.renderTotalCell(entry, column, colIndex, host),
+			renderTotal: (entry, column, colIndex, host) => this.renderTotalCell(entry, column, colIndex, host),
 			events: {
 				// Every render: the renderer recycles row nodes as the window
 				// scrolls, and a recycled node comes back with the markup
@@ -713,7 +715,7 @@ export default class CarbonDataTable {
 						// "no opinion, compare the usual way", which is where a
 						// hole would have thrown instead.
 						return cell ? compareValue(cell, keyword) : null;
-				  }
+					}
 				: undefined,
 			getFilterText: (row) => this.plainText(this.cellHTML(row.original[i], false)),
 		};
@@ -747,11 +749,7 @@ export default class CarbonDataTable {
 	 * treeView injects the indent and toggle into the column right after
 	 * `_rowIndex` at 20px per level.
 	 */
-	cellHTML(
-		cell: DataTableCell | undefined,
-		refreshHtml?: boolean,
-		row?: CarbonRow<DataTableRow>
-	): string {
+	cellHTML(cell: DataTableCell | undefined, refreshHtml?: boolean, row?: CarbonRow<DataTableRow>): string {
 		if (!cell) return "";
 		const formatter = cell.format || (cell.column && cell.column.format) || null;
 		let html: DataTableCellValue;
@@ -766,7 +764,7 @@ export default class CarbonDataTable {
 				cell.content,
 				rowIndex == null ? undefined : this.rows[rowIndex],
 				cell.column,
-				rowIndex == null ? undefined : this.data[rowIndex]
+				rowIndex == null ? undefined : this.data[rowIndex],
 			);
 		} else {
 			html = cell.html;
@@ -815,7 +813,7 @@ export default class CarbonDataTable {
 		entry: TotalCellTarget,
 		column: EngineColumnRef,
 		_colIndex: number,
-		host: TotalCellHost
+		host: TotalCellHost,
 	): void {
 		const dtColIndex = this.colIndexOfEngineColumn(column);
 		const col = this.columns[dtColIndex];
@@ -963,8 +961,7 @@ export default class CarbonDataTable {
 			e.preventDefault();
 			const row = this.engine.table.getRow(this.rowIdFor(rowIndex));
 			// `typeof`, not truthiness, for the reason given in `cellHTML`.
-			const expanded =
-				!!row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
+			const expanded = !!row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
 			this.setExpanded(rowIndex, !expanded);
 		});
 	}
@@ -1093,7 +1090,7 @@ export default class CarbonDataTable {
 		colIndex: DataTableColIndex,
 		rowIndex: DataTableRowIndex,
 		options?: Partial<DataTableCell>,
-		refreshHtml?: boolean
+		refreshHtml?: boolean,
 	): DataTableCell | undefined {
 		const cell = this.datamanager.getCell(colIndex, rowIndex);
 		if (!cell) return;
@@ -1166,9 +1163,7 @@ export default class CarbonDataTable {
 
 	persistSorting(): void {
 		try {
-			const key = this.options.sortingKey
-				? `${this.options.sortingKey}::sortedColumns`
-				: "sortedColumns";
+			const key = this.options.sortingKey ? `${this.options.sortingKey}::sortedColumns` : "sortedColumns";
 			localStorage.setItem(key, JSON.stringify(this.engine.state.sorting || []));
 		} catch (e) {
 			/* private mode / quota — sorting simply is not remembered */
@@ -1183,9 +1178,7 @@ export default class CarbonDataTable {
 	removeColumn(colIndex: DataTableColIndex): void {
 		const col = this.columns[colIndex];
 		if (!col) return;
-		this.options.columns = this.options.columns.filter(
-			(_c, i) => i !== colIndex - this.standardColumnCount
-		);
+		this.options.columns = this.options.columns.filter((_c, i) => i !== colIndex - this.standardColumnCount);
 		this.refresh(this.options.data, this.options.columns);
 		this.fireEvent("onRemoveColumn", col);
 	}
