@@ -48,7 +48,10 @@ updates:
   # by `nix build`, the audits and the integration suites. A frappe bump can
   # legitimately fail the drift audits and need a follow-up commit; auto-merge
   # simply waits. `nix run .#relock` may be needed when a bump changes Python
-  # dependencies (the shell says so).
+  # dependencies (the shell says so), and `nix run .#relock -- --node-locks
+  # frappe/ui erpnext/banking hrms/frontend hrms/roster` when one of the nested
+  # frontends' upstream yarn.lock is stale against its package.json — the
+  # forced fallback locks under nix/node-locks/ exist for exactly that.
   - package-ecosystem: "nix"
     directory: "/"
     target-branch: "develop"
