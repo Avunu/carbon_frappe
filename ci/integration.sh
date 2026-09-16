@@ -41,7 +41,7 @@ for _ in $(seq 150); do
 	sleep 2
 done
 [ -n "$PORT" ] || { echo "::error::the bench never answered on its web port" >&2; exit 1; }
-echo "bench is up on http://localhost:$PORT"
+echo "bench is up on http://127.0.0.1:$PORT"
 
 # `bench new-site` asks for the MariaDB root password through getpass, which
 # reads a line from stdin when there is no tty; the dev bench's root has none.
@@ -73,7 +73,9 @@ coverage_flag=()
 if "$FRAPPE_BENCH_ROOT/env/bin/python" -c 'import coverage' 2>/dev/null; then coverage_flag=(--coverage); fi
 step "bench run-tests --app carbon_frappe" bench --site "$FRAPPE_SITE" run-tests --app carbon_frappe "${coverage_flag[@]}"
 step "bench build --app carbon_frappe" bench build --app carbon_frappe
-export CF_SITE_URL="http://localhost:$PORT"
+# 127.0.0.1, not localhost: nginx listens on the IPv4 loopback, and a runner
+# whose `localhost` resolves to ::1 first would have every suite fail at login
+export CF_SITE_URL="http://127.0.0.1:$PORT"
 export CF_SHOT_DIR="${CF_SHOT_DIR:-$PWD/.dev-dist/screenshots}"
 step "scripts/test-tables.ts" node scripts/test-tables.ts
 step "scripts/test-shell.ts" node scripts/test-shell.ts

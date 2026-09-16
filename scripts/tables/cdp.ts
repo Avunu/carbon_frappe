@@ -483,6 +483,7 @@ export async function assertCarbonStylesheet(page: Page): Promise<string> {
 export async function login(page: Page, base: string, user = "Administrator", pwd = "admin"): Promise<true> {
 	const deadline = Date.now() + 90000;
 	let lastSeen: string | null = null;
+	let lastProbe: string | undefined;
 
 	for (let attempt = 1; Date.now() < deadline; attempt++) {
 		await page.goto(`${base}/login`);
@@ -516,15 +517,18 @@ export async function login(page: Page, base: string, user = "Administrator", pw
 		while (Date.now() < until) {
 			await new Promise((r) => setTimeout(r, 500));
 			try {
+				// A Guest answers "Guest"; `null` here means the API did not answer
+				// 2xx at all, which is why the status and body are kept for the log.
 				lastSeen = await page.eval<string | null>(
 					`(async () => {
              const r = await fetch('/api/method/frappe.auth.get_logged_user');
-             if (!r.ok) return null;
+             if (!r.ok) { window.__cfLoginProbe = r.status + ' ' + (await r.text()).slice(0, 300); return null; }
              return (await r.json()).message || null;
            })()`,
 				);
-			} catch {
+			} catch (e) {
 				lastSeen = null;
+				lastProbe = e instanceof Error ? e.message : String(e);
 			}
 			if (lastSeen === user) {
 				// The suites run against localhost, where brand.py would paint the
@@ -535,7 +539,15 @@ export async function login(page: Page, base: string, user = "Administrator", pw
 				return true;
 			}
 		}
-		console.error(`login attempt ${attempt} did not take (saw ${JSON.stringify(lastSeen)}), retrying`);
+		try {
+			const probe = await page.eval<string | undefined>(`window.__cfLoginProbe`);
+			if (probe) lastProbe = probe;
+		} catch {
+			/* the page may be mid-navigation */
+		}
+		console.error(
+			`login attempt ${attempt} did not take (saw ${JSON.stringify(lastSeen)}; ${lastProbe ?? "no HTTP detail"}), retrying`,
+		);
 	}
 
 	throw new Error(
