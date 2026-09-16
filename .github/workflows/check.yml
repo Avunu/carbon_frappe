@@ -54,7 +54,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-          cache: yarn
+      # Not setup-node's `cache: yarn`: its post-job save fails on this runner
+      # ("path does not exist" for yarn 1's cache dir) and fails the job with it.
+      - uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           enable-cache: true
@@ -99,7 +104,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-          cache: yarn
+      - uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
       - run: yarn install --frozen-lockfile
       - run: yarn typecheck
       - run: yarn check:major
