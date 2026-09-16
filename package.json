@@ -1,6 +1,6 @@
 {
 	"name": "carbon-frappe",
-	"version": "0.1.0",
+	"version": "16.0.0",
 	"private": true,
 	"description": "Carbon Design System theme for Frappe",
 	"keywords": [
@@ -9,15 +9,15 @@
 		"erpnext",
 		"frappe"
 	],
-	"homepage": "https://github.com/Avunu/carbon-frappe#readme",
+	"homepage": "https://github.com/Avunu/carbon_frappe#readme",
 	"bugs": {
-		"url": "https://github.com/Avunu/carbon-frappe/issues"
+		"url": "https://github.com/Avunu/carbon_frappe/issues"
 	},
 	"license": "MIT",
 	"author": "Avunu LLC",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Avunu/carbon-frappe.git"
+		"url": "git+https://github.com/Avunu/carbon_frappe.git"
 	},
 	"type": "module",
 	"scripts": {
@@ -26,9 +26,17 @@
 		"audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
 		"compile": "node scripts/dev-compile.ts",
 		"typecheck": "tsc --build",
-		"upgrade": "npx npm-check-updates -u && yarn install && yarn build",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check",
+		"lint": "oxlint && stylelint \"carbon_frappe/public/scss/**/*.scss\"",
+		"lint:py": "uv run --frozen --project tools ruff check carbon_frappe && uv run --frozen --project tools ruff format --check carbon_frappe",
+		"typecheck:py": "uv run --frozen --project tools ty check --python \"${FRAPPE_BENCH_ROOT:-.frappe-nix/bench}/env\"",
+		"check:major": "node scripts/check-frappe-major.ts",
+		"test:unit": "node --test --experimental-test-coverage --test-coverage-include='carbon_frappe/public/js/**' 'test/unit/**/*.test.ts'",
 		"test:tables": "node scripts/test-tables.ts",
-		"test:shell": "node scripts/test-shell.ts"
+		"test:shell": "node scripts/test-shell.ts",
+		"check": "yarn -s format:check && yarn -s lint && yarn -s typecheck && yarn -s check:major && yarn -s test:unit",
+		"upgrade": "npx npm-check-updates -u && yarn install && yarn build"
 	},
 	"dependencies": {
 		"@carbon/charts": "1.27.19",
@@ -49,5 +57,13 @@
 		"stylelint": "^17.15.0",
 		"stylelint-config-standard-scss": "^17.0.0",
 		"typescript": "^7.0.2"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"packageManager": "yarn@1.22.22",
+	"frappe": {
+		"major": "16",
+		"branch": "version-16"
 	}
 }

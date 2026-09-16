@@ -35,76 +35,74 @@ JS_BUNDLES = ("carbon_charts", "carbon_desk", "carbon_anatomy", "carbon_tables")
 
 
 def patch_assets(app_name=None):
-    """Point frappe's stylesheet keys in assets.json at carbon_frappe's shadow bundles.
+	"""Point frappe's stylesheet keys in assets.json at carbon_frappe's shadow bundles.
 
-    esbuild's assets.json merge is ordering-dependent; this makes the shadow
-    deterministic and heals reversions caused by partial builds that excluded
-    this app (e.g. `bench build --apps frappe`). Also re-points this app's own
-    `*.bundle.js` keys, which a `.ts` entry point leaves stale — see JS_BUNDLES.
-    """
-    assets_dir = os.path.abspath(os.path.join(frappe.local.sites_path, "assets"))
-    patched = False
+	esbuild's assets.json merge is ordering-dependent; this makes the shadow
+	deterministic and heals reversions caused by partial builds that excluded
+	this app (e.g. `bench build --apps frappe`). Also re-points this app's own
+	`*.bundle.js` keys, which a `.ts` entry point leaves stale — see JS_BUNDLES.
+	"""
+	assets_dir = os.path.abspath(os.path.join(frappe.local.sites_path, "assets"))
+	patched = False
 
-    for json_name, css_dir, key_prefix in (
-        ("assets.json", "css", ""),
-        ("assets-rtl.json", "css-rtl", "rtl_"),
-    ):
-        json_path = os.path.join(assets_dir, json_name)
-        dist_dir = os.path.join(assets_dir, "carbon_frappe", "dist", css_dir)
-        if not (os.path.exists(json_path) and os.path.isdir(dist_dir)):
-            continue
+	for json_name, css_dir, key_prefix in (
+		("assets.json", "css", ""),
+		("assets-rtl.json", "css-rtl", "rtl_"),
+	):
+		json_path = os.path.join(assets_dir, json_name)
+		dist_dir = os.path.join(assets_dir, "carbon_frappe", "dist", css_dir)
+		if not (os.path.exists(json_path) and os.path.isdir(dist_dir)):
+			continue
 
-        with open(json_path) as f:
-            assets = json.load(f)
+		with open(json_path) as f:
+			assets = json.load(f)
 
-        changed = False
-        for name in SHADOWED_BUNDLES:
-            candidates = sorted(
-                glob(os.path.join(dist_dir, f"{name}.bundle.*.css")),
-                key=os.path.getmtime,
-            )
-            if not candidates:
-                continue
-            target = "/" + os.path.relpath(candidates[-1], os.path.dirname(assets_dir))
-            key = f"{key_prefix}{name}.bundle.css"
-            if assets.get(key) != target:
-                assets[key] = target
-                changed = True
+		changed = False
+		for name in SHADOWED_BUNDLES:
+			candidates = sorted(
+				glob(os.path.join(dist_dir, f"{name}.bundle.*.css")),
+				key=os.path.getmtime,
+			)
+			if not candidates:
+				continue
+			target = "/" + os.path.relpath(candidates[-1], os.path.dirname(assets_dir))
+			key = f"{key_prefix}{name}.bundle.css"
+			if assets.get(key) != target:
+				assets[key] = target
+				changed = True
 
-        if changed:
-            with open(json_path, "w") as f:
-                json.dump(assets, f, indent=4)
-            patched = True
+		if changed:
+			with open(json_path, "w") as f:
+				json.dump(assets, f, indent=4)
+			patched = True
 
-    # No rtl variant: that prefix is a CSS-only convention (esbuild.js:451-453).
-    json_path = os.path.join(assets_dir, "assets.json")
-    dist_dir = os.path.join(assets_dir, "carbon_frappe", "dist", "js")
-    if os.path.exists(json_path) and os.path.isdir(dist_dir):
-        with open(json_path) as f:
-            assets = json.load(f)
+	# No rtl variant: that prefix is a CSS-only convention (esbuild.js:451-453).
+	json_path = os.path.join(assets_dir, "assets.json")
+	dist_dir = os.path.join(assets_dir, "carbon_frappe", "dist", "js")
+	if os.path.exists(json_path) and os.path.isdir(dist_dir):
+		with open(json_path) as f:
+			assets = json.load(f)
 
-        changed = False
-        for name in JS_BUNDLES:
-            # `.js` also excludes the sourcemaps sitting next to them.
-            candidates = sorted(
-                glob(os.path.join(dist_dir, f"{name}.bundle.*.js")),
-                key=os.path.getmtime,
-            )
-            if not candidates:
-                continue
-            target = "/" + os.path.relpath(candidates[-1], os.path.dirname(assets_dir))
-            key = f"{name}.bundle.js"
-            if assets.get(key) != target:
-                assets[key] = target
-                changed = True
+		changed = False
+		for name in JS_BUNDLES:
+			# `.js` also excludes the sourcemaps sitting next to them.
+			candidates = sorted(
+				glob(os.path.join(dist_dir, f"{name}.bundle.*.js")),
+				key=os.path.getmtime,
+			)
+			if not candidates:
+				continue
+			target = "/" + os.path.relpath(candidates[-1], os.path.dirname(assets_dir))
+			key = f"{name}.bundle.js"
+			if assets.get(key) != target:
+				assets[key] = target
+				changed = True
 
-        if changed:
-            with open(json_path, "w") as f:
-                json.dump(assets, f, indent=4)
-            patched = True
+		if changed:
+			with open(json_path, "w") as f:
+				json.dump(assets, f, indent=4)
+			patched = True
 
-    if patched:
-        assert isinstance(
-            frappe.client_cache, ClientCache
-        ), "frappe cache is not available"
-        frappe.client_cache.delete_value("assets_json")
+	if patched:
+		assert isinstance(frappe.client_cache, ClientCache), "frappe cache is not available"
+		frappe.client_cache.delete_value("assets_json")

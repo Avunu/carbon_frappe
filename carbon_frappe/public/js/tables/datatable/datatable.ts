@@ -1165,7 +1165,7 @@ export default class CarbonDataTable {
 		try {
 			const key = this.options.sortingKey ? `${this.options.sortingKey}::sortedColumns` : "sortedColumns";
 			localStorage.setItem(key, JSON.stringify(this.engine.state.sorting || []));
-		} catch (e) {
+		} catch {
 			/* private mode / quota — sorting simply is not remembered */
 		}
 	}
@@ -1304,6 +1304,7 @@ export default class CarbonDataTable {
 	}
 
 	log(...args: unknown[]): void {
+		// oxlint-disable-next-line no-console -- frappe-datatable's `logs` option is a console log by contract
 		if (this.options.logs) console.log(...args);
 	}
 

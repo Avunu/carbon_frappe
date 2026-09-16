@@ -177,7 +177,7 @@ function retheme(): void {
 			// no args => onlyWidthChange=false, init=false: a full redraw that does
 			// not re-arm frappe-charts' 700ms init timer
 			chart.draw();
-		} catch (e) {
+		} catch {
 			// one dead chart must not stop the rest
 			themed.delete(chart);
 		}

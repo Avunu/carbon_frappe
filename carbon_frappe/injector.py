@@ -54,10 +54,13 @@ def inject_carbon_ui_css(response=None, request=None):
 		# bundled_asset resolves the hashed path and auto-selects the rtl_ variant
 		# for RTL sites (it calls is_rtl() internally).
 		href = bundled_asset(CARBON_UI_BUNDLE)
-		link = _SENTINEL + (
-			f'<link rel="stylesheet" type="text/css" href="{href}">'
-			f'<link rel="stylesheet" type="text/css" href="{BRAND_STYLESHEET}">'
-		).encode()
+		link = (
+			_SENTINEL
+			+ (
+				f'<link rel="stylesheet" type="text/css" href="{href}">'
+				f'<link rel="stylesheet" type="text/css" href="{BRAND_STYLESHEET}">'
+			).encode()
+		)
 		response.set_data(data.replace(b"</head>", link + b"</head>", 1))
 	except Exception:
 		# a theming asset must never break the app render

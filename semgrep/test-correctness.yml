@@ -1,0 +1,27 @@
+# erpnext's rules for test files, applied to **/test_*.py: frappe's test
+# classes force a rollback per test, and anything that commits behind their
+# back breaks idempotency.
+rules:
+  - id: dont-commit
+    pattern: frappe.db.commit()
+    message: Committing inside a test breaks idempotency.
+    languages: [python]
+    severity: ERROR
+  - id: implicit-commit
+    pattern: frappe.db.truncate()
+    message: DB truncation does an implicit commit, which breaks test idempotency.
+    languages: [python]
+    severity: ERROR
+  - id: dont-override-teardown
+    patterns:
+      - pattern: |
+          def tearDown(...):
+            ...
+      - pattern-not: |
+          def tearDown(...):
+            ...
+            super().tearDown()
+            ...
+    message: The test case forces a rollback on each tearDown; an override must call super().tearDown().
+    languages: [python]
+    severity: ERROR

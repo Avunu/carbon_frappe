@@ -283,8 +283,8 @@ body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__n
 	// paint by FILL; frappe's sprite icons (`.icon`) paint by STROKE with a
 	// transparent fill, and es-icons by fill. `color` on the cell is the single
 	// source for all three.
-	.cds--header__action > svg:not(.icon):not(.es-icon) {
-		fill: currentColor;
+	.cds--header__action > svg:not(.icon, .es-icon) {
+		fill: currentcolor;
 	}
 
 	.sidebar-item-icon,
@@ -308,12 +308,12 @@ body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__n
 	}
 
 	.icon {
-		stroke: currentColor;
+		stroke: currentcolor;
 		fill: transparent;
 	}
 
 	.es-icon {
-		fill: currentColor;
+		fill: currentcolor;
 		stroke-width: 0;
 	}
 
@@ -455,8 +455,7 @@ body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__n
 		position: fixed;
 		inset-block: $shell-height 0;
 		inset-block-start: $shell-height !important; // the landing fallback ships inline `top: unset`
-		inset-inline-end: 0;
-		inset-inline-start: auto;
+		inset-inline: auto 0;
 		inline-size: 22.5rem;
 		block-size: auto;
 		min-block-size: 0;

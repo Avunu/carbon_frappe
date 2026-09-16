@@ -85,7 +85,7 @@ function seedColumnWidths(listview: ListView): void {
 		for (const col of listview.columns) {
 			try {
 				listview.get_column_html(col, doc, false);
-			} catch (e) {
+			} catch {
 				/* a formatter that needs a full render can simply not contribute */
 			}
 		}

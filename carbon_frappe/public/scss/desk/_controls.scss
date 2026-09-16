@@ -31,7 +31,7 @@
 		color: var(--cds-text-placeholder);
 	}
 
-	&:hover:not(:disabled):not([readonly]) {
+	&:hover:not(:disabled, [readonly]) {
 		background-color: var(--cds-field-hover-02);
 	}
 
@@ -147,7 +147,7 @@ select.form-control,
 	margin-bottom: 8px;
 }
 
-.control-label.reqd:after {
+.control-label.reqd::after {
 	color: var(--cds-support-error);
 }
 

@@ -1,0 +1,21 @@
+# Python-side tooling, pinned. A separate uv project rather than a dependency
+# group on the app: in frappe-nix app mode the workspace root is generated and
+# its lock lives at nix/uv.lock, so a `uv.lock` beside the app's pyproject would
+# be a second, competing lock. Dependabot's `uv` ecosystem bumps these
+# (`directory: /tools`); everything runs as `uv run --frozen --project tools`.
+[project]
+name = "carbon-frappe-tools"
+version = "0"
+requires-python = ">=3.14"
+dependencies = [
+	"ruff",
+	"ty",
+	"zizmor",
+	"committed",
+	"actionlint-py",
+	"semgrep",
+	"prek",
+]
+
+[tool.uv]
+package = false

@@ -84,7 +84,7 @@
 
 // timeline: subtle connector + dots
 .new-timeline {
-	&:before {
+	&::before {
 		border-color: var(--carbon-border-subtle);
 		background: var(--carbon-border-subtle);
 	}

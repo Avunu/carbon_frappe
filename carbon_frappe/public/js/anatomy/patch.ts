@@ -80,7 +80,7 @@ export function safePatch<O extends object, K extends keyof O>(
 	let owner: O | null = null;
 	try {
 		owner = getOwner() || null;
-	} catch (e) {
+	} catch {
 		owner = null;
 	}
 
@@ -102,7 +102,7 @@ export function safePatch<O extends object, K extends keyof O>(
 	let patched: O[K] & Function;
 	try {
 		patched = wrap(target);
-	} catch (e) {
+	} catch {
 		registry.push({ id, ok: false });
 		return false;
 	}

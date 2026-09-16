@@ -124,7 +124,7 @@ await (async () => {
 		try {
 			const r = await fetch(`http://127.0.0.1:${fixturePort}/`);
 			if (r.ok) return;
-		} catch (e) {
+		} catch {
 			/* not listening yet */
 		}
 		await new Promise((r) => setTimeout(r, 250));

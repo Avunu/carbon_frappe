@@ -1,0 +1,2 @@
+# Mass reformats. `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+1b7986a68d515b058e7f7b2561a959cf16b5d6ef  style: format the tree with oxfmt

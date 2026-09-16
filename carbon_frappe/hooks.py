@@ -37,10 +37,10 @@ web_include_css = ["/carbon-brand.css"]
 #   Must load after frappe's own bundles, which it does: app_include_js from
 #   installed apps is appended after frappe's.
 app_include_js = [
-    "carbon_charts.bundle.js",
-    "carbon_desk.bundle.js",
-    "carbon_anatomy.bundle.js",
-    "carbon_tables.bundle.js",
+	"carbon_charts.bundle.js",
+	"carbon_desk.bundle.js",
+	"carbon_anatomy.bundle.js",
+	"carbon_tables.bundle.js",
 ]
 
 # frappe-ui / Vite SPA pages (CRM, Helpdesk, Banking, Builder, Insights, Wiki,

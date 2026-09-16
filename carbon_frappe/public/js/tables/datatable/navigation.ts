@@ -517,7 +517,7 @@ function writeClipboard(text: string): void {
 		ta.select();
 		try {
 			document.execCommand("copy");
-		} catch (e) {
+		} catch {
 			/* clipboard genuinely unavailable */
 		}
 		ta.remove();
@@ -529,7 +529,7 @@ function writeClipboard(text: string): void {
 			if (p && typeof p.catch === "function") p.catch(fallback);
 			return;
 		}
-	} catch (e) {
+	} catch {
 		/* fall through to the fallback */
 	}
 	fallback();

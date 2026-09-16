@@ -198,7 +198,7 @@ function sweepStaleProfiles(maxAgeMs = 60 * 60 * 1000): void {
 	let entries: string[] = [];
 	try {
 		entries = fs.readdirSync(tmp).filter((n) => n.startsWith("cdp-"));
-	} catch (e) {
+	} catch {
 		return;
 	}
 	const cutoff = Date.now() - maxAgeMs;
@@ -206,7 +206,7 @@ function sweepStaleProfiles(maxAgeMs = 60 * 60 * 1000): void {
 		const full = path.join(tmp, name);
 		try {
 			if (fs.statSync(full).mtimeMs < cutoff) fs.rmSync(full, { recursive: true, force: true });
-		} catch (e) {
+		} catch {
 			/* in use, or gone already */
 		}
 	}
@@ -236,7 +236,7 @@ export async function launch({ port, headless = true, userDataDir }: LaunchOptio
 		try {
 			const r = await fetch(`http://127.0.0.1:${port}/json/version`);
 			if (r.ok) break;
-		} catch (e) {
+		} catch {
 			/* not up yet */
 		}
 		await new Promise((r) => setTimeout(r, 200));
@@ -247,7 +247,7 @@ export async function launch({ port, headless = true, userDataDir }: LaunchOptio
 	const cleanup = () => {
 		try {
 			if (!userDataDir) fs.rmSync(dir, { recursive: true, force: true });
-		} catch (e) {
+		} catch {
 			/* still in use; the next run's sweep will take it */
 		}
 	};
@@ -258,11 +258,11 @@ export async function launch({ port, headless = true, userDataDir }: LaunchOptio
 }
 
 export async function newPage(port: number): Promise<Page> {
-	const r = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
+	const created = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
 	// `/json/new` answers with bare JSON. The two fields this driver actually
 	// needs are proven here rather than assumed; before, a malformed reply failed
 	// one line later inside the WebSocket constructor instead.
-	const target: unknown = await r.json();
+	const target: unknown = await created.json();
 	const targetId = isRecord(target) ? target["id"] : undefined;
 	const debuggerUrl = isRecord(target) ? target["webSocketDebuggerUrl"] : undefined;
 	if (typeof targetId !== "string" || typeof debuggerUrl !== "string") {
@@ -270,14 +270,14 @@ export async function newPage(port: number): Promise<Page> {
 	}
 	const ws = new WebSocket(debuggerUrl);
 	await new Promise((res, rej) => {
-		ws.onopen = res;
-		ws.onerror = rej;
+		ws.addEventListener("open", res);
+		ws.addEventListener("error", rej);
 	});
 
 	let id = 0;
 	const pending = new Map<number, PendingCall>();
 	const events: CdpEvent[] = [];
-	ws.onmessage = (m: MessageEvent<unknown>) => {
+	ws.addEventListener("message", (m: MessageEvent<unknown>) => {
 		// CDP frames are text. `String` is what `JSON.parse` would have applied to
 		// anything else anyway, so the coercion is a type-level formality.
 		const msg: unknown = JSON.parse(typeof m.data === "string" ? m.data : String(m.data));
@@ -288,11 +288,12 @@ export async function newPage(port: number): Promise<Page> {
 		if (mid !== undefined && settle !== undefined) {
 			pending.delete(mid);
 			const error = msg["error"];
-			error ? settle.reject(new Error(JSON.stringify(error))) : settle.resolve(msg["result"]);
+			if (error) settle.reject(new Error(JSON.stringify(error)));
+			else settle.resolve(msg["result"]);
 		} else if (isCdpEvent(msg)) {
 			events.push(msg);
 		}
-	};
+	});
 	const send = (method: string, params: CdpParams = {}): Promise<unknown> =>
 		new Promise((resolve, reject) => {
 			const mid = ++id;
@@ -322,7 +323,7 @@ export async function newPage(port: number): Promise<Page> {
 			while (Date.now() < deadline) {
 				const done = events.some((e) => e.method === "Page.loadEventFired");
 				if (done) break;
-				await new Promise((r) => setTimeout(r, 100));
+				await new Promise((wake) => setTimeout(wake, 100));
 			}
 			events.length = 0;
 		},
@@ -362,7 +363,7 @@ export async function newPage(port: number): Promise<Page> {
 				} catch (e) {
 					last = e instanceof Error ? e.message : String(e);
 				}
-				await new Promise((r) => setTimeout(r, interval));
+				await new Promise((wake) => setTimeout(wake, interval));
 			}
 			throw new Error(
 				`waitFor timed out: ${String(expr).slice(0, 200)} (last: ${JSON.stringify(last)?.slice(0, 300)})`,
@@ -380,7 +381,7 @@ export async function newPage(port: number): Promise<Page> {
 				y: Math.round(y),
 				buttons: 0,
 			});
-			await new Promise((r) => setTimeout(r, 120));
+			await new Promise((wake) => setTimeout(wake, 120));
 		},
 		/** Press, move and release the real pointer — a genuine drag gesture. */
 		async drag(x1: number, y1: number, x2: number, y2: number, steps = 6): Promise<void> {
@@ -397,10 +398,10 @@ export async function newPage(port: number): Promise<Page> {
 			await send3("mousePressed", x1, y1);
 			for (let i = 1; i <= steps; i++) {
 				await send3("mouseMoved", x1 + ((x2 - x1) * i) / steps, y1 + ((y2 - y1) * i) / steps);
-				await new Promise((r) => setTimeout(r, 20));
+				await new Promise((wake) => setTimeout(wake, 20));
 			}
 			await send3("mouseReleased", x2, y2);
-			await new Promise((r) => setTimeout(r, 150));
+			await new Promise((wake) => setTimeout(wake, 150));
 		},
 		async screenshot(file: string, { fullPage = false }: ScreenshotOptions = {}): Promise<string> {
 			const r = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: fullPage });
@@ -456,11 +457,7 @@ export async function assertCarbonStylesheet(page: Page): Promise<string> {
 		`[...document.querySelectorAll('link[rel=stylesheet]')].map((l) => l.href)`,
 	);
 	const desk = links.filter((h) => h.includes("desk.bundle") && h.endsWith(".css"));
-	const carbon = desk.filter((h) => h.includes("/assets/carbon_frappe/"));
-	// Tested through `carbon[0]` rather than `carbon.length`: under
-	// `noUncheckedIndexedAccess` the index read is the thing that has to be
-	// proven, and for a filter result the two tests are the same test.
-	const href = carbon[0];
+	const href = desk.find((h) => h.includes("/assets/carbon_frappe/"));
 	if (href === undefined) {
 		throw new Error(
 			"carbon_frappe's desk.bundle.css is NOT being served (assets.json shadow lost -- " +
@@ -491,7 +488,7 @@ export async function login(page: Page, base: string, user = "Administrator", pw
 		await page.goto(`${base}/login`);
 		try {
 			await page.waitFor(`!!document.querySelector('#login_email')`, { timeout: 20000 });
-		} catch (e) {
+		} catch {
 			// already authenticated? fall through to the check below
 		}
 
@@ -509,7 +506,7 @@ export async function login(page: Page, base: string, user = "Administrator", pw
           return true;
         })()
       `);
-		} catch (e) {
+		} catch {
 			// Submitting navigates, and an evaluation in flight when that happens
 			// rejects with an exception CDP reports as `undefined`. Nothing is wrong
 			// — the click landed. Fall through to the confirmation poll.
@@ -526,7 +523,7 @@ export async function login(page: Page, base: string, user = "Administrator", pw
              return (await r.json()).message || null;
            })()`,
 				);
-			} catch (e) {
+			} catch {
 				lastSeen = null;
 			}
 			if (lastSeen === user) {

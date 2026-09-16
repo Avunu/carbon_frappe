@@ -98,11 +98,11 @@
 		}
 		&--pinned-last::after {
 			inset-inline-end: -6px;
-			box-shadow: inset 4px 0 4px -4px rgba(0, 0, 0, 0.3);
+			box-shadow: inset 4px 0 4px -4px rgb(0 0 0 / 30%);
 		}
 		&--pinned-first::before {
 			inset-inline-start: -6px;
-			box-shadow: inset -4px 0 4px -4px rgba(0, 0, 0, 0.3);
+			box-shadow: inset -4px 0 4px -4px rgb(0 0 0 / 30%);
 		}
 	}
 
@@ -753,7 +753,7 @@
 		z-index: 1021;
 		padding: var(--cds-spacing-05, 1rem);
 		background-color: var(--cds-layer-01);
-		box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+		box-shadow: 0 2px 6px var(--cds-shadow, rgb(0 0 0 / 30%));
 	}
 
 	.grid-form-body {
@@ -834,7 +834,7 @@
 		svg {
 			inline-size: 1rem;
 			block-size: 1rem;
-			fill: currentColor;
+			fill: currentcolor;
 		}
 	}
 
@@ -862,7 +862,7 @@
 	// substituting a glyph that does not mean "download".
 	.cds--toolbar-content .grid-download svg {
 		fill: none;
-		stroke: currentColor;
+		stroke: currentcolor;
 		stroke-width: 1;
 	}
 
@@ -951,7 +951,7 @@
 			white-space: nowrap;
 
 			&:hover {
-				background-color: var(--cds-background-brand-hover, rgba(255, 255, 255, 0.12));
+				background-color: var(--cds-background-brand-hover, rgb(255 255 255 / 12%));
 			}
 		}
 
@@ -1328,7 +1328,7 @@
 		z-index: 3;
 		outline: 2px solid var(--cds-focus);
 		outline-offset: -2px;
-		box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+		box-shadow: 0 2px 6px var(--cds-shadow, rgb(0 0 0 / 30%));
 
 		> .frappe-control {
 			flex: 1 1 auto;

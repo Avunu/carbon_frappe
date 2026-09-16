@@ -65,7 +65,9 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 	if (opts.style) Object.assign(node.style, opts.style);
 	if (opts.text != null) node.textContent = opts.text;
 	else if (opts.html != null) node.innerHTML = opts.html;
-	if (opts.children) for (const c of opts.children) c && node.appendChild(c);
+	if (opts.children) {
+		for (const c of opts.children) if (c) node.appendChild(c);
+	}
 	return node;
 }
 

@@ -2,7 +2,8 @@
 name = "carbon_frappe"
 authors = [{ name = "Avunu LLC", email = "mail@avu.nu" }]
 description = "Carbon Design System theme for Frappe"
-requires-python = ">=3.10"
+# frappe v16 is `>=3.14,<3.15`; ty derives its target from this line
+requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = []
@@ -12,3 +13,38 @@ requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.bench.dev-dependencies]
+
+# ---------------------------------------------------------------------------
+# ruff — frappe's rule set (F E W I UP B RUF, tabs, 110 columns) at pequea's
+# strictness (only E501 and W191 ignored: the formatter owns line length and
+# frappe's indentation is tabs), plus the simplification/perf families and
+# T20 (no stray prints). The tools themselves are pinned in tools/pyproject.toml.
+[tool.ruff]
+line-length = 110
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "UP", "B", "RUF", "SIM", "C4", "PIE", "PERF", "T20"]
+ignore = [
+	"E501", # line too long — the formatter decides
+	"W191", # indentation contains tabs — frappe's convention
+]
+typing-modules = ["frappe.types.DF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# ty — checked against the frappe-nix bench's interpreter, where `frappe` is
+# installed: `ty check --python "$FRAPPE_BENCH_ROOT/env"`. Never through a bare
+# `uv run`, which exports its own VIRTUAL_ENV and ty honours that first.
+[tool.ty.src]
+include = ["carbon_frappe"]
+
+[tool.ty.rules]
+# frappe attaches attributes dynamically (`frappe.local`, boot-time globals);
+# these two are the noise a beta ty makes of that, kept visible but non-fatal
+possibly-unresolved-reference = "warn"
+possibly-missing-attribute = "warn"

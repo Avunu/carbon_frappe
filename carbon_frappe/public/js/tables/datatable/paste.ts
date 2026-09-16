@@ -322,6 +322,7 @@ export async function pasteIntoSelection(host: CarbonDataTableHost, text: string
 			result.skipped++;
 			continue;
 		}
+		// oxlint-disable-next-line no-await-in-loop -- sequential by design; see the header
 		const outcome = await writeCell(host, target.colIndex, target.rowIndex, value);
 		result[outcome]++;
 	}

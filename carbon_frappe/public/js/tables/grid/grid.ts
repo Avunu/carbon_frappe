@@ -332,7 +332,7 @@ export default class CarbonGrid extends Grid {
 			grid: this,
 			show_search: true,
 		});
-		this.header_search.row && this.header_search.row.addClass("filter-row");
+		this.header_search.row?.addClass("filter-row");
 
 		// The filter row is always built; the toolbar's magnifier decides
 		// whether it is shown. An active filter forces it open so a user can
@@ -347,9 +347,9 @@ export default class CarbonGrid extends Grid {
 
 		// `make_head()` builds a NEW header row on every refresh, so the gear it
 		// owns has to be re-adopted into the toolbar each time.
-		this.toolbar && this.toolbar.sync();
+		this.toolbar?.sync();
 
-		this.filter_applied && this.update_search_columns();
+		if (this.filter_applied) this.update_search_columns();
 	}
 
 	/** Show/hide frappe's per-column filter row. Driven by the toolbar magnifier. */
@@ -370,7 +370,7 @@ export default class CarbonGrid extends Grid {
 	 */
 	override refresh_remove_rows_button(): void {
 		super.refresh_remove_rows_button();
-		this.toolbar && this.toolbar.refreshBatch();
+		this.toolbar?.refreshBatch();
 	}
 
 	/**

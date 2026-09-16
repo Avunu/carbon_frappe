@@ -110,7 +110,7 @@ def normalize_hex(value):
 	rgb = parse_hex(value)
 	if rgb is None:
 		return None
-	return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in rgb)
+	return "#{:02x}{:02x}{:02x}".format(*tuple(round(c * 255) for c in rgb))
 
 
 def shift(value, amount):
@@ -121,7 +121,7 @@ def shift(value, amount):
 	hue, lightness, saturation = rgb_to_hls(*rgb)
 	lightness = min(1.0, max(0.0, lightness - amount))
 	red, green, blue = hls_to_rgb(hue, lightness, saturation)
-	return "#%02x%02x%02x" % (int(red * 255), int(green * 255), int(blue * 255))
+	return f"#{int(red * 255):02x}{int(green * 255):02x}{int(blue * 255):02x}"
 
 
 def blend(colour, towards, amount):
@@ -130,7 +130,7 @@ def blend(colour, towards, amount):
 	if a is None or b is None:
 		return colour
 	mixed = [a[i] + (b[i] - a[i]) * amount for i in range(3)]
-	return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in mixed)
+	return "#{:02x}{:02x}{:02x}".format(*tuple(round(c * 255) for c in mixed))
 
 
 def luma(colour):
@@ -383,10 +383,7 @@ def _header_aliases(h):
 
 
 def _stripes(alpha):
-	return (
-		"repeating-linear-gradient(135deg, transparent, transparent 10px, "
-		f"{alpha} 10px, {alpha} 20px)"
-	)
+	return f"repeating-linear-gradient(135deg, transparent, transparent 10px, {alpha} 10px, {alpha} 20px)"
 
 
 def render_css(config, dev=False):
@@ -409,7 +406,9 @@ def render_css(config, dev=False):
 	header = header_palette(config.get("header_bg"), config.get("header_text"))
 	if header:
 		if not dev:
-			out.append(_block(ZONE_SELECTOR, _header_declarations(header, light if header["light"] else dark)))
+			out.append(
+				_block(ZONE_SELECTOR, _header_declarations(header, light if header["light"] else dark))
+			)
 		# on :root so the website navbar, footer and the theme-switcher preview
 		# strip all follow (they read the aliases through inheritance); in dev
 		# the header and navbar are re-declared below and the footer keeps this

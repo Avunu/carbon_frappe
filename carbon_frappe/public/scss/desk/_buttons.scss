@@ -25,7 +25,7 @@ $button-danger-active: c.$red-80;
 	border-radius: 0;
 	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 
-	&:not(.btn-md):not(.btn-lg):not(.btn-xs) {
+	&:not(.btn-md, .btn-lg, .btn-xs) {
 		padding: 6px 12px;
 	}
 

@@ -112,7 +112,7 @@ export function isCurrentHref(href: string): boolean {
 	const clean = (s: string): string => {
 		try {
 			return decodeURIComponent(s).replace(/\/$/, "");
-		} catch (e) {
+		} catch {
 			return s.replace(/\/$/, "");
 		}
 	};
@@ -203,7 +203,7 @@ function signatureOf(
 			parts.push(`${item.kind}:${item.label}:${item.kind === "link" ? item.href : ""}`);
 		}
 	}
-	return parts.join(" ");
+	return parts.join("\u0000");
 }
 
 const EMPTY: Omit<ShellModel, "signature"> = {

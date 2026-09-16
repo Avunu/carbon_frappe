@@ -761,10 +761,10 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 				// pair, its `data-fieldname` / `data-fieldtype` (which
 				// desk/_numerics.scss selects on) and its mounted control. The
 				// engine positions it; it never rebuilds it.
-				const supplied = this.host.createCellNode(row, column, i);
-				if (supplied) {
-					supplied.classList.add("cf-table__cell");
-					cell = { td: supplied, content: supplied, rendered: undefined, adapterOwned: true };
+				const suppliedCell = this.host.createCellNode(row, column, i);
+				if (suppliedCell) {
+					suppliedCell.classList.add("cf-table__cell");
+					cell = { td: suppliedCell, content: suppliedCell, rendered: undefined, adapterOwned: true };
 				} else {
 					const td = el("td", { className: "cf-table__cell" });
 					const content = el("div", { className: "cf-table__cell-content" });

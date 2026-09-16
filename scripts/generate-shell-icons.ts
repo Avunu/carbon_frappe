@@ -136,7 +136,7 @@ function render(glyph: Glyph): string {
 		console.error(`[shell-icons] getAttributes returned a non-object for ${glyph.icon}`);
 		process.exit(1);
 	}
-	const svg = toString({ ...descriptor, attrs: { ...attrs, ...(glyph.attrs ?? {}) } });
+	const svg = toString({ ...descriptor, attrs: { ...attrs, ...glyph.attrs } });
 	if (typeof svg !== "string" || !svg.startsWith("<svg")) {
 		console.error(`[shell-icons] toString did not render ${glyph.icon} as an <svg>`);
 		process.exit(1);

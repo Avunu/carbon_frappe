@@ -1,0 +1,60 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["typescript", "unicorn", "oxc", "import"],
+	"categories": {
+		"correctness": "error",
+		"suspicious": "error",
+		"perf": "warn",
+		"pedantic": "off"
+	},
+	"env": {
+		"builtin": true,
+		"es2024": true,
+		"browser": true,
+		"node": true
+	},
+	"rules": {
+		"typescript/no-explicit-any": "error",
+		"typescript/ban-ts-comment": "error",
+		"typescript/consistent-type-imports": "error",
+		"no-console": [
+			"warn",
+			{
+				"allow": ["error", "warn"]
+			}
+		],
+		"import/no-cycle": "off",
+		"no-underscore-dangle": "off",
+		"unicorn/consistent-function-scoping": "off",
+		"unicorn/no-array-sort": "off"
+	},
+	"ignorePatterns": [
+		"carbon_frappe/public/dist/**",
+		"carbon_frappe/public/js/generated/**",
+		".dev-dist/**",
+		".frappe-nix/**"
+	],
+	"overrides": [
+		{
+			"files": ["carbon_frappe/public/js/*.bundle.ts"],
+			"rules": {
+				"import/no-unassigned-import": "off"
+			}
+		},
+		{
+			"files": ["scripts/**", "dev/**"],
+			"rules": {
+				"no-console": "off",
+				"no-await-in-loop": "off"
+			}
+		},
+		{
+			"files": ["carbon_frappe/**/doctype/**/*.js"],
+			"globals": {
+				"frappe": "readonly",
+				"__": "readonly",
+				"cur_frm": "readonly"
+			}
+		}
+	]
+}

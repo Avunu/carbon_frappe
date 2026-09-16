@@ -155,7 +155,9 @@ class TestStylesheet(UnitTestCase):
 	def test_blocks_are_ordered_light_then_dark(self):
 		"""On <html> in dark mode both groups match; the dark one must be later."""
 		css = render_css(config(brand_light="#009d9a"))
-		self.assertLess(css.index('html:root,\nhtml[data-theme="light"]'), css.index('html[data-theme="dark"]'))
+		self.assertLess(
+			css.index('html:root,\nhtml[data-theme="light"]'), css.index('html[data-theme="dark"]')
+		)
 		self.assertIn(".cf-zone-g100", css.split('html[data-theme="dark"]')[1].split("}")[0])
 
 	def test_outranks_the_bundles_without_important(self):
@@ -235,7 +237,9 @@ class TestStylesheet(UnitTestCase):
 		# stripes on the bar alone, running under idle menu items
 		self.assertNotIn(".page-container", css)
 		self.assertNotIn("html,", css)
-		self.assertIn("a.cds--header__menu-item:not(:hover):not(:active) {\n\tbackground-color: transparent;", css)
+		self.assertIn(
+			"a.cds--header__menu-item:not(:hover):not(:active) {\n\tbackground-color: transparent;", css
+		)
 		# the configured header's zone block is replaced, not stacked
 		self.assertNotIn("--cds-background: #e8574c", css)
 		# but the footer keeps the configured colour through the :root aliases
@@ -270,7 +274,11 @@ class TestDevDetection(UnitTestCase):
 		self.assertTrue(self._dev_for("erp.example.com", cookies="carbon_dev_indicator=1"))
 
 	def test_site_config_overrides_everything(self):
-		self.assertFalse(self._dev_for("localhost:8000", cookies="carbon_dev_indicator=1", conf={"carbon_dev_indicator": 0}))
+		self.assertFalse(
+			self._dev_for(
+				"localhost:8000", cookies="carbon_dev_indicator=1", conf={"carbon_dev_indicator": 0}
+			)
+		)
 		self.assertTrue(self._dev_for("erp.example.com", conf={"carbon_dev_indicator": 1}))
 
 
@@ -282,7 +290,7 @@ class TestBrandStylesheet(IntegrationTestCase):
 	def setUp(self):
 		super().setUp()
 		self.saved = {f: frappe.db.get_single_value("Carbon Settings", f) for f in self.FIELDS}
-		self._set(**{f: None for f in self.FIELDS})
+		self._set(**dict.fromkeys(self.FIELDS))
 
 	def tearDown(self):
 		self._set(**self.saved)
@@ -336,5 +344,7 @@ class TestBrandStylesheet(IntegrationTestCase):
 
 	def test_validate_rejects_non_hex(self):
 		doc = frappe.get_doc("Carbon Settings")
-		doc.brand_light = "not-a-colour"
+		# `Document.set`, not attribute assignment: frappe types the Single
+		# overload of `get_doc` as a bare Document, on which the field is unknown
+		doc.set("brand_light", "not-a-colour")
 		self.assertRaises(frappe.ValidationError, doc.save)

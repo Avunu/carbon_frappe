@@ -715,7 +715,7 @@ try {
 		checkEditor.present &&
 			checkEditor.width === 16 &&
 			checkEditor.height === 16 &&
-			!/^0px/.test(checkEditor.border),
+			!checkEditor.border.startsWith("0px"),
 		JSON.stringify(checkEditor),
 	);
 	// The editor's box is centred in the cell; the static box is an inline-block

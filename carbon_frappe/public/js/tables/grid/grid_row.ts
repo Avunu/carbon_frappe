@@ -113,7 +113,6 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 	 * it out of the table.
 	 */
 	override make(): void {
-		const me = this;
 		// frappe's row is `.grid-row > .data-row.row.m-0`. Both class sets move
 		// onto the single <tr>, MINUS Bootstrap's `.row`: that is
 		// `display: flex`, which blockifies every <td> and collapses the table
@@ -131,7 +130,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// one path and falls off the end on another is the shape
 		// `noImplicitReturns` rejects. `undefined` is what falling off the end
 		// produced, so the two branches that used to do so now say it.
-		this.wrapper.on("click", function (e) {
+		this.wrapper.on("click", (e) => {
 			if (
 				$(e.target).hasClass("grid-row-check") ||
 				$(e.target).hasClass("row-index") ||
@@ -139,11 +138,11 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 			) {
 				return undefined;
 			}
-			if (me.grid.allow_on_grid_editing() && me.grid.is_editable()) {
+			if (this.grid.allow_on_grid_editing() && this.grid.is_editable()) {
 				// in-place editing handles the click
 				return undefined;
 			} else {
-				me.toggle_view();
+				this.toggle_view();
 				return false;
 			}
 		});
