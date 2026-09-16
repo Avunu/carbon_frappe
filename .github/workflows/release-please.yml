@@ -1,0 +1,135 @@
+name: release
+
+# release-please owns the version, the changelog and the tag. Conventional
+# commits on `develop` accumulate into a release pull request; merging it is
+# the release: the tag and the GitHub release are cut, and `version-16` — the
+# production branch, what `bench get-app --branch version-16` installs — is
+# fast-forwarded to the release commit. Nothing else ever writes to
+# `version-16` (check.yml's `version-16` job is the alarm if something does).
+#
+# The version is 16.x.y because the theme is for frappe v16 — the major is the
+# frappe major, never something a commit subject decides. `guard-major` checks
+# the version release-please actually proposes, on the release branch it
+# writes, in the same run that opens the pull request, and posts the verdict
+# back as a commit status. scripts/check-frappe-major.ts has the rationale and
+# the recovery (`Release-As:`).
+#
+# Adapted from Avunu/frappe-types' release-please.yml; there is no npm publish.
+
+on:
+  push:
+    branches: [develop]
+  # GitHub raises no `push` for merges its own token performs (dependabot
+  # auto-merge), so a weekly nudge keeps the release PR current regardless.
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+# Each job asks for what it needs; the release-please job is the one that
+# writes the release commit, tag and pull request.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    if: github.ref_name == 'develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+      sha: ${{ steps.rp.outputs.sha }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: develop
+
+  # See the header. Runs on every successful release-please run (not gated on
+  # `prs_created`, which is empty when the PR was already up to date) and
+  # rediscovers the release PR by release-please's own label.
+  guard-major:
+    needs: release-please
+    if: ${{ always() && needs.release-please.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - name: The version release-please proposes must be the frappe major
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --state open --base develop --label 'autorelease: pending' \
+                  --json number,headRefName,headRefOid,title --limit 1 --jq '.[0] // empty')"
+          if [ -z "$pr" ]; then
+            echo "No open release pull request; nothing to guard."
+            exit 0
+          fi
+          num="$(jq -r .number <<<"$pr")"
+          head="$(jq -r .headRefName <<<"$pr")"
+          oid="$(jq -r .headRefOid <<<"$pr")"
+          echo "Release pull request #$num ($head @ ${oid:0:7}): $(jq -r .title <<<"$pr")"
+
+          # the proposed version lives on the release BRANCH, not in this checkout
+          gh api "repos/${GH_REPO}/contents/package.json?ref=${head}" \
+            -H 'Accept: application/vnd.github.raw' > proposed-package.json
+
+          status=success
+          node scripts/check-frappe-major.ts proposed-package.json || status=failure
+
+          gh api "repos/${GH_REPO}/statuses/${oid}" \
+            -f state="$status" \
+            -f context="frappe-major (release PR)" \
+            -f target_url="$RUN_URL" \
+            -f description="The package major must equal package.json's frappe.major" \
+            >/dev/null || echo "::warning::could not post the commit status to #$num"
+
+          if [ "$status" = failure ]; then
+            echo "::error::release pull request #$num proposes a version whose major is not the frappe major. Do not merge it; see scripts/check-frappe-major.ts."
+            exit 1
+          fi
+
+  # The production branch follows the release. A server-side fast-forward:
+  # `force: false` makes GitHub refuse anything that is not one, atomically,
+  # and no clone or credential is needed here. GITHUB_TOKEN's ref update raises
+  # no workflow runs on version-16 — nothing needs to run there.
+  fast-forward-version-16:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: version-16 := ${{ needs.release-please.outputs.tag_name }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ needs.release-please.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GH_REPO}/git/ref/heads/version-16" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/${GH_REPO}/git/refs/heads/version-16" -f sha="$SHA" -F force=false
+          else
+            # the first release creates the branch
+            gh api -X POST "repos/${GH_REPO}/git/refs" -f ref="refs/heads/version-16" -f sha="$SHA"
+          fi
+          echo "version-16 -> $SHA"

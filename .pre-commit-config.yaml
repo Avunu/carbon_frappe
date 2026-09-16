@@ -1,0 +1,101 @@
+# Git hooks, run by prek (https://prek.j178.dev — pre-commit's format, in
+# Rust) and by CI (`prek run --all-files`). Every hook is `repo: local` and
+# calls a binary this repository pins — oxfmt/oxlint/stylelint through
+# package.json, ruff/ty/zizmor/committed/actionlint through tools/pyproject.toml
+# — so dependabot is the one thing that moves a tool's version and the hook,
+# the CI job and a developer's shell all run the same one. There are no
+# `rev:` pins here to autoupdate.
+#
+#   uv run --frozen --project tools prek install      # once per clone
+#   prek run --all-files                              # what CI runs
+#
+# `yarn -s` and `uv` come from the frappe-nix shell; ty is not a hook because
+# it needs the bench's interpreter (`yarn typecheck:py`), and the audits need
+# a frappe checkout (`yarn audit`) — both run in CI's `bench` job.
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: local
+    hooks:
+      - id: oxfmt
+        name: oxfmt --check
+        language: system
+        entry: yarn -s oxfmt --check
+        pass_filenames: false
+        always_run: true
+
+      - id: oxlint
+        name: oxlint
+        language: system
+        entry: yarn -s oxlint
+        pass_filenames: false
+        types_or: [ts, javascript, json]
+
+      - id: stylelint
+        name: stylelint
+        language: system
+        entry: yarn -s stylelint "carbon_frappe/public/scss/**/*.scss"
+        pass_filenames: false
+        types: [scss]
+
+      - id: typecheck
+        name: tsc --build
+        language: system
+        entry: yarn -s typecheck
+        pass_filenames: false
+        types_or: [ts, json]
+
+      - id: ruff
+        name: ruff check
+        language: system
+        entry: uv run --frozen --project tools ruff check
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format --check
+        language: system
+        entry: uv run --frozen --project tools ruff format --check
+        types: [python]
+
+      - id: zizmor
+        name: zizmor
+        language: system
+        entry: uv run --frozen --project tools zizmor --config .github/zizmor.yml
+        pass_filenames: false
+        args: [.github/workflows]
+        files: ^\.github/
+
+      - id: actionlint
+        name: actionlint
+        language: system
+        entry: uv run --frozen --project tools actionlint
+        pass_filenames: false
+        files: ^\.github/workflows/
+
+      - id: frappe-major
+        name: the package major is the frappe major
+        language: system
+        entry: node scripts/check-frappe-major.ts
+        pass_filenames: false
+        files: ^(package\.json|flake\.nix|flake\.lock)$
+
+      - id: unit-tests
+        name: node --test
+        language: system
+        entry: yarn -s test:unit
+        pass_filenames: false
+        files: ^(carbon_frappe/public/js/|test/unit/)
+
+      - id: committed
+        name: committed (conventional commit)
+        language: system
+        entry: uv run --frozen --project tools committed --commit-file
+        stages: [commit-msg]
+
+      - id: commit-subject
+        name: no major bump through a commit subject
+        language: system
+        entry: node scripts/check-commit-subject.ts
+        stages: [commit-msg]
