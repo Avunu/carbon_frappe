@@ -662,17 +662,27 @@ try {
 	// The report view persists its columns in the user's settings on every
 	// refresh, so the fixture remembers which ones it added and removes them at
 	// the end (`__cfAddedFields`).
+	// One rebuild for all four: `add_column_to_datatable` refreshes from the
+	// server each time, and four concurrent refreshes race — the last response
+	// to land can predate the last field, leaving cells empty and then
+	// overwriting a stubbed write with server data.
 	await page.eval(`(() => {
     const rv = cur_list;
     window.__cfAddedFields = [];
     for (const f of ['bio', 'first_name', 'mute_sounds', 'desk_theme']) {
       if (rv.fields.some((x) => x[0] === f)) continue;
       window.__cfAddedFields.push(f);
-      rv.add_column_to_datatable(f, 'User', rv.fields.length);
+      rv.fields.push([f, 'User']);
     }
+    if (!window.__cfAddedFields.length) return;
+    rv.build_fields();
+    rv.setup_columns();
+    if (rv.datatable) rv.datatable.destroy();
+    rv.datatable = null;
+    rv.refresh();
   })()`);
 	await page.waitFor(
-		`!!cur_list.datatable && ['bio','first_name','mute_sounds','desk_theme'].every((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f)) && document.querySelectorAll('tbody .dt-cell').length > 0`,
+		`!!cur_list.datatable && ['bio','first_name','mute_sounds','desk_theme'].every((f) => cur_list.datatable.columns.some((c) => c.docfield && c.docfield.fieldname === f)) && cur_list.data.length > 0 && ['bio','first_name','mute_sounds','desk_theme'].every((f) => f in cur_list.data[0]) && document.querySelectorAll('tbody .dt-cell').length > 0`,
 		{ timeout: 90000 },
 	);
 	await sleep(800);

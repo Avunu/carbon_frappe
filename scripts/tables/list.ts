@@ -136,9 +136,11 @@ try {
     }
     return true;
   })()`);
-	await page.eval(`cur_list.refresh()`);
-	// a cold bench (CI's, freshly provisioned) can take well over the old
-	// fixed 2.5s here; wait for the rows the seed guarantees
+	// Reload rather than `cur_list.refresh()`: a list that rendered its empty
+	// state does not reliably repopulate in place, and a cold bench (CI's,
+	// freshly provisioned) takes well over the old fixed 2.5s anyway.
+	await page.goto(`${BASE}/app/todo/view/list`);
+	await page.waitFor(`!!window.cur_list && cur_list.view_name === 'List'`, { timeout: 90000 });
 	await page.waitFor(
 		`cur_list.data.length >= 3 && cur_list.$result.find('tbody tr.list-row-container').length >= 3`,
 		{ timeout: 60000 },
