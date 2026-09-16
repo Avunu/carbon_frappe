@@ -43,7 +43,14 @@ done
 [ -n "$PORT" ] || { echo "::error::the bench never answered on its web port" >&2; exit 1; }
 echo "bench is up on http://localhost:$PORT"
 
-provision-site admin
+# `bench new-site` asks for the MariaDB root password through getpass, which
+# reads a line from stdin when there is no tty; the dev bench's root has none.
+printf '\n' | provision-site admin
+# A fresh site sends every desk route to the setup wizard until it is marked
+# complete — the same call frappe's own UI-test workflow makes.
+bench --site "$FRAPPE_SITE" execute frappe.utils.install.complete_setup_wizard
+# without this `bench run-tests` prints "Testing is disabled" and exits 0
+bench --site "$FRAPPE_SITE" set-config allow_tests true
 
 status=0
 step() {
@@ -59,7 +66,12 @@ step() {
 	echo "::endgroup::"
 }
 
-step "bench run-tests --app carbon_frappe" bench --site "$FRAPPE_SITE" run-tests --app carbon_frappe --coverage
+# `--coverage` needs the `coverage` package, which frappe-nix's app-mode
+# workspace does not carry by default (its dev group is a fixed list); the
+# tests matter more than the number, so it is used when present.
+coverage_flag=()
+if "$FRAPPE_BENCH_ROOT/env/bin/python" -c 'import coverage' 2>/dev/null; then coverage_flag=(--coverage); fi
+step "bench run-tests --app carbon_frappe" bench --site "$FRAPPE_SITE" run-tests --app carbon_frappe "${coverage_flag[@]}"
 step "bench build --app carbon_frappe" bench build --app carbon_frappe
 export CF_SITE_URL="http://localhost:$PORT"
 export CF_SHOT_DIR="${CF_SHOT_DIR:-$PWD/.dev-dist/screenshots}"

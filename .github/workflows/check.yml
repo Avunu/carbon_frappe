@@ -153,7 +153,7 @@ jobs:
       - name: nix build
         run: nix build .#default -L --no-pure-eval
       - name: ty, against the bench's interpreter
-        run: nix develop --no-pure-eval -c bash -c 'uv run --frozen --project tools ty check --python "$FRAPPE_BENCH_ROOT/env"'
+        run: nix develop --no-pure-eval -c yarn -s typecheck:py
 
   integration:
     if: github.event_name != 'pull_request' && github.ref != 'refs/heads/version-16'

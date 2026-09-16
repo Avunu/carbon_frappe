@@ -74,6 +74,13 @@ repos:
         pass_filenames: false
         files: ^\.github/workflows/
 
+      - id: shellcheck
+        name: shellcheck
+        language: system
+        entry: uv run --frozen --project tools shellcheck --severity=warning
+        types: [shell]
+        exclude: ^\.envrc$
+
       - id: frappe-major
         name: the package major is the frappe major
         language: system

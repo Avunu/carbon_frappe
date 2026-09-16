@@ -731,7 +731,10 @@ try {
 		`(() => { const dt = cur_list.datatable; dt.navigation.focus(${editCols.check}, 0); dt.engine.renderer.scroll.focus(); window.__cfSetValueCalls.length = 0; window.__cfBefore = dt.datamanager.getCell(${editCols.check}, 0).content; })()`,
 	);
 	await key(" ", "Space");
-	await sleep(300);
+	// the write is optimistic, but the stubbed server round-trip and the report
+	// view's own bookkeeping run behind it; give a cold bench time to settle
+	await page.waitFor(`window.__cfSetValueCalls.length >= 1`, { timeout: 10000 });
+	await sleep(600);
 	const toggled = await page.eval<CheckToggleProbe>(`(() => {
     const dt = cur_list.datatable;
     const calls = window.__cfSetValueCalls;

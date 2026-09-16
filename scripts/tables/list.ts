@@ -137,7 +137,13 @@ try {
     return true;
   })()`);
 	await page.eval(`cur_list.refresh()`);
-	await new Promise((r) => setTimeout(r, 2500));
+	// a cold bench (CI's, freshly provisioned) can take well over the old
+	// fixed 2.5s here; wait for the rows the seed guarantees
+	await page.waitFor(
+		`cur_list.data.length >= 3 && cur_list.$result.find('tbody tr.list-row-container').length >= 3`,
+		{ timeout: 60000 },
+	);
+	await new Promise((r) => setTimeout(r, 500));
 
 	const info = await page.eval<InfoProbe>(`(() => {
     const l = cur_list;
@@ -372,8 +378,11 @@ try {
 
 	// ReportView (a ListView subclass) must be unaffected
 	await page.goto(`${BASE}/app/todo/view/report`);
-	await page.waitFor(`!!window.cur_list && !!cur_list.datatable`, { timeout: 90000 });
-	await new Promise((r) => setTimeout(r, 2000));
+	await page.waitFor(
+		`!!window.cur_list && !!cur_list.datatable && document.querySelectorAll('tbody .dt-row').length > 0`,
+		{ timeout: 90000 },
+	);
+	await new Promise((r) => setTimeout(r, 500));
 	const rv = await page.eval<ReportViewProbe>(
 		`(() => ({ ctor: cur_list.datatable.constructor.name, isCarbon: cur_list.datatable.constructor === window.DataTable && !!cur_list.datatable.engine, rows: document.querySelectorAll('tbody .dt-row').length, view: cur_list.view_name }))()`,
 	);
