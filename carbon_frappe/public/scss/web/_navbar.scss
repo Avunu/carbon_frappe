@@ -8,12 +8,17 @@
 // could move onto the `.cf-zone-g100` emission in a later pass.
 @use "@carbon/colors" as c;
 
-$header-bg: c.$gray-100; // #161616
-$header-hover: #292929;
-$header-active: #333333;
-$header-border: c.$gray-80; // #393939
-$header-text: c.$gray-10; // #f4f4f4
-$header-text-secondary: c.$gray-30; // #c6c6c6
+// The g100 shell tones as fallbacks; /carbon-brand.css (brand.py) declares
+// the --carbon-header-* aliases on :root when a header colour is configured
+// (and on .navbar itself for the localhost dev indicator).
+$header-bg: var(--carbon-header-bg, #{c.$gray-100}); // #161616
+$header-hover: var(--carbon-header-hover, #292929);
+$header-active: var(--carbon-header-active, #333333);
+$header-border: var(--carbon-header-border, #{c.$gray-80}); // #393939
+$header-text: var(--carbon-header-text, #{c.$gray-10}); // #f4f4f4
+$header-text-secondary: var(--carbon-header-text-secondary, #{c.$gray-30}); // #c6c6c6
+$header-layer: var(--carbon-header-layer, #262626); // menus opened from the bar
+$header-focus: var(--carbon-header-focus, #{c.$white});
 
 .navbar {
 	// scoped inversion — legacy + espresso + icon tokens
@@ -43,8 +48,8 @@ $header-text-secondary: c.$gray-30; // #c6c6c6
 	--btn-default-hover-bg: #{$header-hover};
 	--btn-ghost-hover-bg: #{$header-hover};
 	--highlight-color: #{$header-active};
-	--focus-default: 0 0 0 2px #{c.$white};
-	--focus-outline-default: 2px solid #{c.$white};
+	--focus-default: 0 0 0 2px #{$header-focus};
+	--focus-outline-default: 2px solid #{$header-focus};
 
 	background: var(--navbar-bg);
 	border-bottom: none;
@@ -68,7 +73,7 @@ $header-text-secondary: c.$gray-30; // #c6c6c6
 
 		&:focus {
 			background-color: $header-hover;
-			outline: 2px solid c.$white;
+			outline: 2px solid $header-focus;
 			outline-offset: -2px;
 			box-shadow: none;
 		}
@@ -77,7 +82,7 @@ $header-text-secondary: c.$gray-30; // #c6c6c6
 	// menus opened from the header are g100 panels
 	.dropdown-menu {
 		--fg-color: #{$header-hover};
-		background-color: #262626;
+		background-color: $header-layer;
 		border: none;
 		border-radius: 0;
 		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);

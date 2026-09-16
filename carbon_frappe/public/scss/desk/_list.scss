@@ -107,7 +107,7 @@
 	.list-subject,
 	.list-count,
 	span {
-		color: var(--cds-text-on-color);
+		color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 	}
 
 	input[type="checkbox"] {

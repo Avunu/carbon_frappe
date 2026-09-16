@@ -6,10 +6,17 @@
 // Carbon's idiom for toolbar-density actions. Danger = Carbon danger tokens.
 @use "@carbon/colors" as c;
 
-// Carbon button interaction colors not present in the theme maps
-$button-primary: c.$blue-60;
-$button-primary-hover: #0050e6;
-$button-primary-active: c.$blue-80;
+// Carbon button interaction colors not present in the theme maps. Carbon's
+// components read them as var(--cds-button-*, fallback) and theme.theme()
+// never emits them, so the fallback IS the default — and /carbon-brand.css
+// (brand.py) can re-point the whole ramp at runtime by declaring them.
+$button-primary: var(--cds-button-primary, #{c.$blue-60});
+$button-primary-hover: var(--cds-button-primary-hover, #0050e6);
+$button-primary-active: var(--cds-button-primary-active, #{c.$blue-80});
+// text on the brand fill: $text-on-color (white) for Carbon blue, flipped to
+// near-black by brand.py when a light brand (yellow, lime) is configured.
+// NOT applied to danger — red keeps white text.
+$on-brand: var(--carbon-text-on-brand, var(--cds-text-on-color));
 $button-danger: c.$red-60;
 $button-danger-hover: #b81921;
 $button-danger-active: c.$red-80;
@@ -34,16 +41,16 @@ $button-danger-active: c.$red-80;
 
 .btn.btn-primary {
 	background-color: $button-primary;
-	color: var(--cds-text-on-color);
+	color: $on-brand;
 
 	&:hover {
 		background-color: $button-primary-hover;
-		color: var(--cds-text-on-color);
+		color: $on-brand;
 	}
 
 	&:active {
 		background-color: $button-primary-active !important;
-		color: var(--cds-text-on-color) !important;
+		color: $on-brand !important;
 	}
 }
 
@@ -115,7 +122,7 @@ $button-danger-active: c.$red-80;
 	--bt-solid-bg: #{$button-primary};
 	--bt-solid-bg-hover: #{$button-primary-hover};
 	--bt-solid-bg-active: #{$button-primary-active};
-	--bt-solid-fg: var(--cds-text-on-color);
+	--bt-solid-fg: #{$on-brand};
 }
 
 .es-button[data-theme="red"] {

@@ -24,6 +24,9 @@ import frappe
 from frappe.utils.jinja_globals import bundled_asset
 
 CARBON_UI_BUNDLE = "carbon_frappe_ui.bundle.css"
+# the per-site brand colours / dev indicator (brand.py); the desk and website
+# get it via *_include_css, SPAs only through here
+BRAND_STYLESHEET = "/carbon-brand.css"
 # Our own dedup sentinel — NOT the asset name. Several SPA boots embed the
 # assets.json (which lists carbon_frappe_ui.bundle.css) in the page body, so a
 # bare-name substring check would false-positive and skip injection.
@@ -31,7 +34,7 @@ _SENTINEL = b"<!--carbon-frappe-ui-->"
 
 
 def inject_carbon_ui_css(response=None, request=None):
-	"""after_request hook: add carbon_frappe_ui.bundle.css to Vite SPA <head>s."""
+	"""after_request hook: add the Carbon tokens + brand stylesheets to Vite SPA <head>s."""
 	try:
 		if response is None or getattr(response, "status_code", None) != 200:
 			return response
@@ -51,7 +54,10 @@ def inject_carbon_ui_css(response=None, request=None):
 		# bundled_asset resolves the hashed path and auto-selects the rtl_ variant
 		# for RTL sites (it calls is_rtl() internally).
 		href = bundled_asset(CARBON_UI_BUNDLE)
-		link = _SENTINEL + f'<link rel="stylesheet" type="text/css" href="{href}">'.encode()
+		link = _SENTINEL + (
+			f'<link rel="stylesheet" type="text/css" href="{href}">'
+			f'<link rel="stylesheet" type="text/css" href="{BRAND_STYLESHEET}">'
+		).encode()
 		response.set_data(data.replace(b"</head>", link + b"</head>", 1))
 	except Exception:
 		# a theming asset must never break the app render

@@ -6,15 +6,16 @@
 @import "./navbar";
 @import "../desk/modals";
 
-// footer -> g100 block (matches the header for brand unity)
+// footer -> g100 block (matches the header for brand unity, and follows a
+// configured header colour through the same aliases as web/_navbar.scss)
 .web-footer {
-	background-color: #161616;
+	background-color: var(--carbon-header-bg, #161616);
 	border-top: none;
-	color: #c6c6c6;
+	color: var(--carbon-header-text-secondary, #c6c6c6);
 
 	a,
 	.footer-link {
-		color: #f4f4f4;
+		color: var(--carbon-header-text, #f4f4f4);
 	}
 }
 

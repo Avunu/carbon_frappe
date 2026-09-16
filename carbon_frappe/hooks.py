@@ -11,6 +11,16 @@ app_license = "MIT"
 # Theme CSS is delivered by shadowing frappe's own bundle names in assets.json
 # (desk/website/login/email .bundle.css), not via *_include_css hooks.
 # See build.py and scripts/patch-assets.ts.
+#
+# The one exception is the per-site brand stylesheet: Carbon Settings' colours
+# (and the localhost dev indicator) are rendered per request at
+# /carbon-brand.css by the page_renderer below, and linked AFTER the bundles so
+# its custom-property declarations win by cascade order. app_include_css reaches
+# the desk, web_include_css the website and the login page; injector.py adds it
+# to frappe-ui SPAs. See brand.py.
+page_renderer = ["carbon_frappe.brand.BrandStylesheet"]
+app_include_css = ["/carbon-brand.css"]
+web_include_css = ["/carbon-brand.css"]
 
 # carbon_charts: injects Carbon categorical colors into frappe.Chart and
 #   re-themes those charts on theme change.

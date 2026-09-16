@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "creation": "2026-09-16 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "brand_section",
+  "brand_light",
+  "brand_dark",
+  "header_section",
+  "header_bg",
+  "header_text",
+  "reload_note"
+ ],
+ "fields": [
+  {
+   "description": "The brand colour is used throughout the interface, not just on the header: it sets primary buttons, links, focus rings, selected rows, the sidebar selection bar and the active tab — everywhere Carbon uses its interactive colour. The header is configured separately below.",
+   "fieldname": "brand_section",
+   "fieldtype": "Section Break",
+   "label": "Brand Colour"
+  },
+  {
+   "description": "Primary colour for the light theme. Leave empty for Carbon Blue 60 (#0f62fe).",
+   "fieldname": "brand_light",
+   "fieldtype": "Color",
+   "label": "Brand Colour (Light)"
+  },
+  {
+   "description": "Primary colour for the dark theme. Carbon uses a lighter tone here than in light, because a mid-dark colour does not carry against a near-black background. Leave empty to lighten the light brand colour automatically, or Carbon Blue 50 (#4589ff) if that is unset too.",
+   "fieldname": "brand_dark",
+   "fieldtype": "Color",
+   "label": "Brand Colour (Dark)"
+  },
+  {
+   "description": "Carbon keeps its header near-black in both themes. Leave these empty for the Carbon default; hover, active, border and menu tones are derived from the background.",
+   "fieldname": "header_section",
+   "fieldtype": "Section Break",
+   "label": "Header"
+  },
+  {
+   "description": "Background of the top bar. Leave empty for #161616.",
+   "fieldname": "header_bg",
+   "fieldtype": "Color",
+   "label": "Header Background"
+  },
+  {
+   "description": "Leave empty to pick black or white automatically, whichever reads better on the header background.",
+   "fieldname": "header_text",
+   "fieldtype": "Color",
+   "label": "Header Text"
+  },
+  {
+   "fieldname": "reload_note",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted\">Reload the page for changes to take effect. On a localhost bench the header is always amber hazard stripes, so a development site can never be mistaken for production; set <code>carbon_dev_indicator</code> in site config to force it on or off.</p>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Carbon Frappe",
+ "name": "Carbon Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

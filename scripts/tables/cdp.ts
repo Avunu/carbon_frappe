@@ -504,7 +504,14 @@ export async function login(page: Page, base: string, user = "Administrator", pw
       } catch (e) {
         lastSeen = null;
       }
-      if (lastSeen === user) return true;
+      if (lastSeen === user) {
+        // The suites run against localhost, where brand.py would paint the
+        // header amber with construction stripes (the dev indicator) and the
+        // shell parity assertions expect stock g100. The cookie is brand.py's
+        // per-browser override; it outranks the hostname check.
+        await page.eval(`(document.cookie = 'carbon_dev_indicator=0; path=/', true)`);
+        return true;
+      }
     }
     console.error(`login attempt ${attempt} did not take (saw ${JSON.stringify(lastSeen)}), retrying`);
   }

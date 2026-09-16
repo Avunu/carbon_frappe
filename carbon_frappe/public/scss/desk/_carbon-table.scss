@@ -880,7 +880,7 @@
 	}
 
 	.cds--toolbar-content .grid-add-row {
-		color: var(--cds-text-on-color);
+		color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 		background-color: var(--cds-background-brand);
 
 		&:hover {
@@ -939,7 +939,7 @@
 			min-block-size: 0;
 			margin: 0;
 			padding-inline: var(--cds-spacing-05, 1rem);
-			color: var(--cds-text-on-color);
+			color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 			background-color: transparent;
 			border: 0;
 			border-radius: 0;
@@ -1094,11 +1094,11 @@
 		block-size: 48px;
 		padding-inline: var(--cds-spacing-05, 1rem);
 		background-color: var(--cds-background-brand);
-		color: var(--cds-text-on-color);
+		color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 
 		.list-header-meta,
 		.select-like {
-			color: var(--cds-text-on-color);
+			color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 		}
 	}
 }

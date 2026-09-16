@@ -583,5 +583,5 @@ body > .body-sidebar-container[data-mode="edit"] ~ .main-section .cds--header__n
 // The one `.navbar` left in the desk (ui/theme_switcher.js): keep its preview
 // tiles showing a g100 bar.
 .theme-grid .navbar {
-	background-color: #{c.$gray-100};
+	background-color: var(--carbon-header-bg, #{c.$gray-100});
 }

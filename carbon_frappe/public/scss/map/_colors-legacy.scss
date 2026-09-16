@@ -33,10 +33,16 @@
 .dark,
 .cf-zone-g100 { // UI Shell zone — see desk/_ui-shell.scss
 	// THE headline change: frappe's black primary button becomes Carbon
-	// button-primary (blue-60 in every Carbon theme).
-	--btn-primary: #{c.$blue-60};
-	--primary: #{c.$blue-60}; // bootstrap theme color; drives --brand-color etc.
-	--primary-color: #{c.$blue-60};
+	// button-primary (blue-60 in every Carbon theme). The fill reads the
+	// component token (unemitted by theme.theme(), so the fallback is the
+	// default); the text/icon/border roles read $interactive, which Carbon
+	// lightens to blue-50 on g100. Both are what /carbon-brand.css re-points
+	// when a brand colour is configured (brand.py).
+	--btn-primary: var(--cds-button-primary, #{c.$blue-60});
+	--primary: var(--cds-interactive); // bootstrap theme color; drives --brand-color etc.
+	--primary-color: var(--cds-interactive);
+	// text on a brand fill; brand.py flips it for a light brand (see desk/_buttons.scss)
+	--carbon-text-on-brand: var(--cds-text-on-color);
 
 	// Carbon field tokens are LAYER-CONTEXTUAL: $field-01 is for a field sitting
 	// on $background, $field-02 for a field on $layer-01. Frappe puts fields on
