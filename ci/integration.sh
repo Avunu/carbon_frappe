@@ -8,7 +8,7 @@
 # hrms, carbon_frappe), then runs, in order:
 #
 #   bench run-tests --app carbon_frappe --coverage    the Python unittest classes
-#   bench build --app carbon_frappe                   the assets the browser suites load
+#   bench build                                       every app's assets — the browser suites load the desk
 #   scripts/test-tables.ts                            the table engine and its adapters
 #   scripts/test-shell.ts                             the UI Shell header
 #
@@ -72,7 +72,10 @@ step() {
 coverage_flag=()
 if "$FRAPPE_BENCH_ROOT/env/bin/python" -c 'import coverage' 2>/dev/null; then coverage_flag=(--coverage); fi
 step "bench run-tests --app carbon_frappe" bench --site "$FRAPPE_SITE" run-tests --app carbon_frappe "${coverage_flag[@]}"
-step "bench build --app carbon_frappe" bench build --app carbon_frappe
+# Every app, not `--app carbon_frappe`: a freshly assembled bench has no
+# compiled assets at all, and the desk cannot boot without frappe's own
+# bundles (and a missing app bundle is a template error, not a 404).
+step "bench build" bench build
 # 127.0.0.1, not localhost: nginx listens on the IPv4 loopback, and a runner
 # whose `localhost` resolves to ::1 first would have every suite fail at login
 export CF_SITE_URL="http://127.0.0.1:$PORT"
