@@ -425,6 +425,20 @@ export default class CarbonGrid extends Grid {
 
 	/** Engine column specs derived from `visible_columns`, plus the gutters. */
 	build_engine_columns(): CarbonColumnSpec<GridRowData>[] {
+		// `FrappeForm.switch_doc` (form.js) nulls `visible_columns` and then,
+		// still inside the same synchronous call, asks `grid_pagination` to
+		// `go_to_page(1, true)` — which ends here, in `render_result_rows`,
+		// while `visible_columns` is still `null`. Stock frappe is safe: its
+		// `render_result_rows` builds rows only, and nothing reads the column
+		// list again until `Grid#refresh` runs `setup_visible_columns()`.
+		// This adapter rebuilds the engine columns on every render, so iterate
+		// against `null` and the whole form switch dies with
+		// "TypeError: this.visible_columns is not iterable" — and the form
+		// keeps showing the PREVIOUS document. Rebuild the column set here so
+		// the re-render always has real columns to walk.
+		if (!this.visible_columns || !this.visible_columns.length) {
+			this.setup_visible_columns();
+		}
 		const node_of = (
 			rowOriginal: GridRowData,
 			pick: (r: CarbonGridRow) => GridNodeContent
