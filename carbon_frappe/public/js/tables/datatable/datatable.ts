@@ -630,6 +630,37 @@ export default class CarbonDataTable {
 		return out;
 	}
 
+	/**
+	 * Ancestor ROWS of a tree node, NEAREST FIRST.
+	 *
+	 * Derived by scanning the flat list backwards for decreasing `indent`,
+	 * which is the same walk {@link CarbonDataTable.prepareTree} does forwards
+	 * — not a stored parent pointer. `DataTableRow` lives in frappe-types,
+	 * where `__children` is already a carbon-only extension; a
+	 * `meta.parentRowIndex` would be a second one, on a package the rest of the
+	 * bench reads too, to save a scan no caller runs in a loop.
+	 *
+	 * Nearest-first is what {@link RowManagerShim.reconcileAncestors} needs:
+	 * it settles each ancestor from its own subtree, so the inner ones must be
+	 * written before an outer one reads them.
+	 */
+	getAncestors(rowIndex: DataTableRowIndex): DataTableRow[] {
+		const start = this.rows[rowIndex];
+		if (!start) return [];
+		const out: DataTableRow[] = [];
+		let depth = start.meta.indent || 0;
+		for (let i = rowIndex - 1; i >= 0 && depth > 0; i--) {
+			const row = this.rows[i];
+			if (!row) continue;
+			const indent = row.meta.indent || 0;
+			if (indent < depth) {
+				out.push(row);
+				depth = indent;
+			}
+		}
+		return out;
+	}
+
 	// ----------------------------------------------------------------- engine
 
 	engineColumnId(colIndex: DataTableColIndex): string | null {
@@ -1031,7 +1062,20 @@ export default class CarbonDataTable {
 			// `cell` hook writes here and what `checkMap` is keyed by — not the
 			// row's position in the render window, and under `treeView` not its
 			// position among its siblings either.
-			node.checked = !!checkMap[Number(td.getAttribute("data-row-index"))];
+			const rowIndex = Number(td.getAttribute("data-row-index"));
+			node.checked = !!checkMap[rowIndex];
+			// Under treeView a node's box summarises its SUBTREE:
+			// `RowManagerShim.checkRow` already keeps `checkMap` holding 1 only
+			// when the whole subtree is checked, so `checked` above covers the
+			// all case and the empty case. The partial case has no room in a
+			// 0|1 map — ERPNext's bank_reconciliation assigns to `checkMap`
+			// directly, so it stays exactly that — and is derived here instead,
+			// on the same every-render basis as the rest of this method.
+			node.indeterminate = false;
+			if (this.options.treeView && !node.checked) {
+				const kids = this.getDescendants(rowIndex);
+				node.indeterminate = kids.some((kid) => !!checkMap[kid.meta.rowIndex]);
+			}
 		}
 
 		// The header box summarises the rows `checkAll` acts on — the CURRENT

@@ -165,7 +165,8 @@ export interface CarbonEngine {
  *
  * Several members are carbon_frappe's own and are deliberately absent from
  * frappe-types (they are not frappe API): `engine`, `standardColumnCount`,
- * `rowIdFor`, `engineColumnId`, `getDescendants`, `syncSelectionToEngine`,
+ * `rowIdFor`, `engineColumnId`, `getDescendants`, `getAncestors`,
+ * `syncSelectionToEngine`,
  * `rebuildColumns`, `applyFilters`, `highlighted`, `highlightAll` and
  * `visibleOverride`.
  */
@@ -210,6 +211,8 @@ export interface CarbonDataTableHost {
 		parentRowIndex: DataTableRowIndex,
 		immediateOnly?: boolean
 	): DataTableRow[];
+	/** Ancestor ROWS of a tree node, nearest first. */
+	getAncestors(rowIndex: DataTableRowIndex): DataTableRow[];
 	getTotalRow(): DataTableTotalCell[];
 
 	/**
@@ -488,16 +491,76 @@ export class RowManagerShim {
 		}, []);
 	}
 
+	/**
+	 * Tick a row, and under `treeView` its whole subtree with it.
+	 *
+	 * The cascade is carbon_frappe's; stock frappe-datatable's `checkRow`
+	 * (`rowmanager.js:95`) writes one index and knows nothing about the tree,
+	 * so a tree report's group header was a checkbox that selected the header
+	 * and none of the rows under it — and under it is where every row with a
+	 * payload lives (little_cocalico's Print Queue puts the work orders on the
+	 * jobs and nothing but a label on the group).
+	 *
+	 * TanStack can cascade — that is `enableSubRowSelection` — but not here:
+	 * {@link CarbonDataTable.syncSelectionToEngine} pushes `checkMap` INTO
+	 * TanStack's `rowSelection`, so this map is upstream of it and never gets
+	 * the expansion back. It has to happen on the way in.
+	 *
+	 * `onCheckRow` still fires once, for the row actually clicked. Handlers
+	 * re-read the selection (`get_checked_items`) rather than accumulating from
+	 * the argument, and one event per descendant would make a 26-job group fire
+	 * 27 of them.
+	 */
 	checkRow(rowIndex: DataTableRowIndex, toggle: boolean): void {
-		this.checkMap[rowIndex] = toggle ? 1 : 0;
+		const value: 0 | 1 = toggle ? 1 : 0;
+		this.checkMap[rowIndex] = value;
+		if (this.host.options.treeView) {
+			for (const kid of this.host.getDescendants(rowIndex)) {
+				this.checkMap[kid.meta.rowIndex] = value;
+			}
+			this.reconcileAncestors(rowIndex);
+		}
 		this.host.syncSelectionToEngine();
 		this.host.fireEvent("onCheckRow", this.host.datamanager.getRow(rowIndex));
 	}
 
+	/**
+	 * Settle every ancestor of `rowIndex` against its own subtree: checked when
+	 * all of it is, unchecked otherwise.
+	 *
+	 * The partially-checked case deliberately lands on 0 rather than on some
+	 * third value — `checkMap` is a 0|1 array that ERPNext's
+	 * bank_reconciliation assigns to directly, and a group that is only partly
+	 * selected is not selected. What the user sees in that case is the
+	 * indeterminate box {@link CarbonDataTable.syncCheckboxes} derives.
+	 *
+	 * Nearest-first (which is the order `getAncestors` returns) matters: an
+	 * outer ancestor's subtree contains the inner ones, so they have to be
+	 * written before it reads them.
+	 */
+	reconcileAncestors(rowIndex: DataTableRowIndex): void {
+		for (const ancestor of this.host.getAncestors(rowIndex)) {
+			const i = ancestor.meta.rowIndex;
+			const kids = this.host.getDescendants(i);
+			this.checkMap[i] = kids.every((kid) => this.checkMap[kid.meta.rowIndex]) ? 1 : 0;
+		}
+	}
+
 	checkAll(toggle: boolean): void {
 		if (toggle) {
+			const tree = this.host.options.treeView;
 			for (const row of this.host.engine.table.getRowModel().rows) {
-				this.checkMap[rowIndexOf(row)] = 1;
+				const rowIndex = rowIndexOf(row);
+				this.checkMap[rowIndex] = 1;
+				// `getRowModel()` is the VISIBLE model — filtering and, under
+				// treeView, collapsing have already been applied. Without the
+				// descendants a header box ticked over a collapsed tree would
+				// select the group rows and none of the jobs inside them, which
+				// is the same hole the cascade in `checkRow` closes.
+				if (!tree) continue;
+				for (const kid of this.host.getDescendants(rowIndex)) {
+					this.checkMap[kid.meta.rowIndex] = 1;
+				}
 			}
 		} else {
 			this.checkMap = [];

@@ -63,6 +63,17 @@ interface ChecksProbe {
 	items: number;
 }
 
+/**
+ * One reading of a standalone tree table's selection: the map, and the two
+ * group boxes as the DOM has them. `indeterminate` is not in `checkMap` — it is
+ * derived per render — so it can only be read off the input.
+ */
+interface TreeSelectionProbe {
+	checked: number[];
+	groupChecked: boolean[];
+	groupIndeterminate: boolean[];
+}
+
 const BASE = process.env.CF_SITE_URL || "http://localhost:8794";
 const SHOT = process.env.CF_SHOT_DIR || new URL("../../.dev-dist/screenshots/", import.meta.url).pathname;
 const REPORT = "Database Storage Usage By Tables";
@@ -201,6 +212,109 @@ try {
     return { checked: dt.rowmanager.getCheckedRows(), items: frappe.query_report.get_checked_items().length };
   })()`);
   ok("rowmanager.getCheckedRows() + QueryReport.get_checked_items()", JSON.stringify(checks.checked) === "[0,1]" && checks.items === 2, JSON.stringify(checks));
+
+  // ---------------------------------------------------------------- tree mode
+  //
+  // Selection cascade, on a standalone CarbonDataTable rather than this
+  // suite's report: "Database Storage Usage By Tables" is flat, and the
+  // cascade's whole subject is what a group header does to the rows under it.
+  // Two groups of two, which is the shape little_cocalico's Print Queue has
+  // (a fabric, then its jobs) and enough to catch a cascade that leaks into a
+  // sibling group.
+  await page.eval<true>(`(() => {
+    const host = document.createElement('div');
+    host.id = 'probe-tree';
+    host.style.cssText = 'position:fixed;left:0;bottom:0;width:600px;height:320px;z-index:9999;background:var(--cds-layer, #fff)';
+    document.body.appendChild(host);
+    window.__tree = new window.DataTable(host, {
+      columns: [{ id: 'label', name: 'Label' }, { id: 'qty', name: 'Qty' }],
+      data: [
+        { indent: 0, label: 'Group A', qty: '' },
+        { indent: 1, label: 'A1', qty: '1' },
+        { indent: 1, label: 'A2', qty: '2' },
+        { indent: 0, label: 'Group B', qty: '' },
+        { indent: 1, label: 'B1', qty: '3' },
+        { indent: 1, label: 'B2', qty: '4' },
+      ],
+      treeView: true,
+      checkboxColumn: true,
+      serialNoColumn: false,
+      layout: 'fluid',
+    });
+    // Groups open, so every box in the assertions below is in the DOM to read.
+    window.__tree.rowmanager.expandAllNodes();
+    // Indices into the FLAT data, which is what checkMap is keyed by.
+    window.__treeProbe = () => {
+      const dt = window.__tree;
+      const box = (i) => dt.engine.renderer.tbody.querySelector('.dt-cell[data-row-index="' + i + '"] .dt-checkbox');
+      const a = box(0), b = box(3);
+      return {
+        checked: dt.rowmanager.getCheckedRows(),
+        groupChecked: [!!(a && a.checked), !!(b && b.checked)],
+        groupIndeterminate: [!!(a && a.indeterminate), !!(b && b.indeterminate)],
+      };
+    };
+    return true;
+  })()`);
+  await new Promise(r => setTimeout(r, 500));
+
+  const treeDown = await page.eval<TreeSelectionProbe>(`(() => {
+    window.__tree.rowmanager.checkAll(false);
+    window.__tree.rowmanager.checkRow(0, true);
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(window.__treeProbe()))));
+  })()`);
+  ok(
+    "checking a group header checks the rows under it",
+    JSON.stringify(treeDown.checked) === "[0,1,2]",
+    JSON.stringify(treeDown)
+  );
+  ok(
+    "the cascade stops at the group it started in",
+    treeDown.groupChecked[0] && !treeDown.groupChecked[1] && !treeDown.groupIndeterminate[1],
+    JSON.stringify(treeDown)
+  );
+
+  const treePartial = await page.eval<TreeSelectionProbe>(`(() => {
+    window.__tree.rowmanager.checkRow(1, false);
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(window.__treeProbe()))));
+  })()`);
+  ok(
+    "unchecking one child releases its group header",
+    JSON.stringify(treePartial.checked) === "[2]",
+    JSON.stringify(treePartial)
+  );
+  ok(
+    "a partly-selected group header reads indeterminate",
+    treePartial.groupIndeterminate[0] && !treePartial.groupChecked[0],
+    JSON.stringify(treePartial)
+  );
+
+  const treeBack = await page.eval<TreeSelectionProbe>(`(() => {
+    window.__tree.rowmanager.checkRow(1, true);
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(window.__treeProbe()))));
+  })()`);
+  ok(
+    "completing a group's children re-checks its header",
+    JSON.stringify(treeBack.checked) === "[0,1,2]" && treeBack.groupChecked[0] && !treeBack.groupIndeterminate[0],
+    JSON.stringify(treeBack)
+  );
+
+  // Collapsed: getRowModel() is the VISIBLE model, so select-all sees two rows
+  // and has to reach the four it cannot see.
+  const treeAll = await page.eval<TreeSelectionProbe>(`(() => {
+    const dt = window.__tree;
+    dt.rowmanager.checkAll(false);
+    dt.rowmanager.collapseAllNodes();
+    dt.rowmanager.checkAll(true);
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(window.__treeProbe()))));
+  })()`);
+  ok(
+    "select-all over a collapsed tree reaches the hidden children",
+    JSON.stringify(treeAll.checked) === "[0,1,2,3,4,5]",
+    JSON.stringify(treeAll)
+  );
+
+  await page.eval(`(() => { window.__tree.destroy(); document.getElementById('probe-tree').remove(); return true; })()`);
 
   await page.screenshot(SHOT + "/bench-queryreport.png");
   const errs = page.consoleErrors();
