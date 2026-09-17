@@ -491,13 +491,14 @@ export type JsBundle = "carbon_charts" | "carbon_desk" | "carbon_anatomy" | "car
  *
  * They need their own assets.json repair, for a different reason than the CSS
  * shadow above: frappe's `write_assets_json` keys by the ENTRY basename
- * (frappe/esbuild/esbuild.js:450), so a `.ts` entry writes
- * `carbon_desk.bundle.ts` while `include_script` looks up
+ * (frappe/esbuild/esbuild.js:450), so while the entries were `.ts` files every
+ * build wrote `carbon_desk.bundle.ts` while `include_script` looked up
  * `carbon_desk.bundle.js` and has no extension fallback
  * (frappe/utils/jinja_globals.py:151-156). Nothing errors; the `.js` key just
- * keeps an older build's hash. Declared here so patch-assets (the repair),
- * audit-markup (the guard) and carbon_frappe/build.py cannot drift apart.
- */
+ * keeps an older build's hash. The entries were renamed to `.js` 2026-09-17
+ * (the TS code moved beside them), so both keying paths now agree — this list
+ * keeps patch-assets (the tripwire), audit-markup (the guard) and
+ * carbon_frappe/build.py from drifting apart. */
 export const JS_BUNDLES: readonly JsBundle[] = [
 	"carbon_charts",
 	"carbon_desk",

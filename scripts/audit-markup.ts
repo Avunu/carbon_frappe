@@ -105,13 +105,15 @@ if (fs.existsSync(assetsPath)) {
 
 	// Check 4b: this app's own JS keys point at a file that still exists.
 	//
-	// Distinct failure from the shadow above, and newer: since the bundle entry
-	// points became `.ts`, every build writes the key `carbon_desk.bundle.TS`
-	// while `hooks.py` asks for `carbon_desk.bundle.JS`
-	// (frappe/esbuild/esbuild.js:450 keys by the ENTRY basename). Nothing errors
-	// — the `.js` key simply keeps an older build's hash, that file is swept by
-	// esbuild's build-cleanup, and the desk serves a 404 or a stale bundle. A
-	// dangling target is therefore the exact, detectable symptom.
+	// HISTORICAL: while the bundle entries were `.ts` files, every build wrote
+	// the key `carbon_desk.bundle.TS` while `hooks.py` asked for
+	// `carbon_desk.bundle.JS` (frappe/esbuild/esbuild.js:450 keys by the ENTRY
+	// basename). Nothing errored — the `.js` key simply kept an older build's
+	// hash, that file was swept by esbuild's build-cleanup, and the desk served
+	// a 404 or a stale bundle. A dangling target was the exact, detectable
+	// symptom, and this check caught it. The entries are `.js` now (2026-09-17),
+	// so both keying paths agree — the check stays because the failure it
+	// guards against is cheap to keep guarded.
 	const dangling = JS_BUNDLES.filter((name) => {
 		const v = assets[`${name}.bundle.js`];
 		// Not built yet is not drift.
