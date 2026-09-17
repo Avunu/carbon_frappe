@@ -354,6 +354,32 @@ function defaults(): CarbonDataTableResolvedOptions {
 
 let INSTANCES = 0;
 
+/**
+ * The live `CarbonDataTable` mounted on each container, so the constructor can
+ * give frappe-datatable's own guarantee: constructing on an element that
+ * already holds a table REPLACES it, rather than stacking a second one
+ * alongside the first.
+ *
+ * Stock frappe-datatable earns that guarantee for free — `prepareDom()`
+ * (datatable.js:113) does `this.wrapper.innerHTML = <scaffold>` unconditionally,
+ * every construction, whether or not the wrapper already held a table. This
+ * class's own `prepareDom` only APPENDS (it and `buildEngine` build the new
+ * table alongside whatever is already in `container`), because the class was
+ * written around callers that clean up first — report_view.js's patched
+ * `setup_datatable` calls `$datatable_wrapper.empty()` before constructing
+ * (./install.ts), and the doc comment on {@link CarbonDataTable.destroy} notes
+ * the same rebuild-into-the-same-wrapper pattern.
+ *
+ * ERPNext's bank reconciliation tool does neither: `DataTableManager.make_dt`
+ * (erpnext bank_reconciliation_tool/data_table_manager.js) constructs a fresh
+ * `frappe.DataTable` on the SAME wrapper every time "Get Unreconciled Entries"
+ * runs, trusting the constructor to replace — exactly the stock contract this
+ * map restores. A `WeakMap` rather than an expando on the element: nothing
+ * here should change the element's own type, and an unreferenced container
+ * (and its stale instance) can still be collected.
+ */
+const mountedOn = new WeakMap<HTMLElement, CarbonDataTable>();
+
 export default class CarbonDataTable {
 	// ------------------------------------------------------- constructed state
 
@@ -411,6 +437,14 @@ export default class CarbonDataTable {
 	declare freezeContainer: HTMLElement;
 	declare toastMessage: HTMLElement;
 	declare pasteTarget: HTMLTextAreaElement;
+	/**
+	 * Governs {@link CarbonDataTable.bindCheckboxes} and
+	 * {@link CarbonDataTable.bindTreeToggles} — both delegate off `container`
+	 * itself, which OUTLIVES any one instance (see {@link mountedOn}), so they
+	 * need their own teardown in `destroy()` rather than going away with
+	 * removed children.
+	 */
+	declare containerAbort: AbortController;
 
 	/** Mirrors frappe-datatable's `DataTable.instances = 0` (datatable.js:298). */
 	static instances = 0;
@@ -421,6 +455,11 @@ export default class CarbonDataTable {
 		if (!el || !(el instanceof HTMLElement)) {
 			throw new Error("Invalid argument given for `wrapper`");
 		}
+
+		// See {@link mountedOn}: a caller reconstructing on this exact element
+		// gets stock's implicit replace, instead of this table's scaffold
+		// mounting alongside whatever the previous instance left behind.
+		mountedOn.get(el)?.destroy();
 
 		CarbonDataTable.instances = ++INSTANCES;
 		const scope = nextScopeClass();
@@ -456,6 +495,11 @@ export default class CarbonDataTable {
 		this.navigation.bind(this.container);
 
 		if (this.options.data && this.options.data.length) this.render();
+
+		// Registered last: `destroy()` below reads nothing that is not already
+		// built, but a table that threw partway through construction should
+		// never become "the live instance" a later reconstruction destroys.
+		mountedOn.set(el, this);
 	}
 
 	// -------------------------------------------------------------- normalise
@@ -905,24 +949,29 @@ export default class CarbonDataTable {
 		this.pasteTarget.className = "dt-paste-target";
 		this.container.appendChild(this.pasteTarget);
 
+		this.containerAbort = new AbortController();
 		this.bindCheckboxes();
 		this.bindTreeToggles();
 	}
 
 	bindCheckboxes(): void {
-		this.container.addEventListener("change", (e) => {
-			const input = e.target;
-			if (!isElement(input) || !input.classList.contains("dt-checkbox")) return;
-			const td = input.closest(".dt-cell");
-			if (!td) return;
-			const isHeader = !!input.closest(".dt-row-header");
-			if (isHeader) {
-				this.rowmanager.checkAll(isChecked(input));
-			} else {
-				const rowIndex = Number(td.getAttribute("data-row-index"));
-				this.rowmanager.checkRow(rowIndex, isChecked(input));
-			}
-		});
+		this.container.addEventListener(
+			"change",
+			(e) => {
+				const input = e.target;
+				if (!isElement(input) || !input.classList.contains("dt-checkbox")) return;
+				const td = input.closest(".dt-cell");
+				if (!td) return;
+				const isHeader = !!input.closest(".dt-row-header");
+				if (isHeader) {
+					this.rowmanager.checkAll(isChecked(input));
+				} else {
+					const rowIndex = Number(td.getAttribute("data-row-index"));
+					this.rowmanager.checkRow(rowIndex, isChecked(input));
+				}
+			},
+			{ signal: this.containerAbort.signal },
+		);
 	}
 
 	/**
@@ -946,24 +995,28 @@ export default class CarbonDataTable {
 	 * `data-row-index` is not a data row's.
 	 */
 	bindTreeToggles(): void {
-		this.container.addEventListener("click", (e) => {
-			if (!this.options.treeView) return;
-			if (!isElement(e.target)) return;
-			const toggle = e.target.closest(".dt-tree-node__toggle");
-			if (!toggle) return;
-			const td = toggle.closest(".dt-cell");
-			if (!td || td.closest("thead")) return;
-			const rowIndex = Number(td.getAttribute("data-row-index"));
-			if (!Number.isFinite(rowIndex)) return;
-			// A toggle inside a <button> would otherwise submit an enclosing
-			// form; the click still reaches the cell-focus handler, which is
-			// what a click anywhere else in the cell does anyway.
-			e.preventDefault();
-			const row = this.engine.table.getRow(this.rowIdFor(rowIndex));
-			// `typeof`, not truthiness, for the reason given in `cellHTML`.
-			const expanded = !!row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
-			this.setExpanded(rowIndex, !expanded);
-		});
+		this.container.addEventListener(
+			"click",
+			(e) => {
+				if (!this.options.treeView) return;
+				if (!isElement(e.target)) return;
+				const toggle = e.target.closest(".dt-tree-node__toggle");
+				if (!toggle) return;
+				const td = toggle.closest(".dt-cell");
+				if (!td || td.closest("thead")) return;
+				const rowIndex = Number(td.getAttribute("data-row-index"));
+				if (!Number.isFinite(rowIndex)) return;
+				// A toggle inside a <button> would otherwise submit an enclosing
+				// form; the click still reaches the cell-focus handler, which is
+				// what a click anywhere else in the cell does anyway.
+				e.preventDefault();
+				const row = this.engine.table.getRow(this.rowIdFor(rowIndex));
+				// `typeof`, not truthiness, for the reason given in `cellHTML`.
+				const expanded = !!row && typeof row.getIsExpanded === "function" && row.getIsExpanded();
+				this.setExpanded(rowIndex, !expanded);
+			},
+			{ signal: this.containerAbort.signal },
+		);
 	}
 
 	syncSelectionToEngine(): void {
@@ -1128,10 +1181,16 @@ export default class CarbonDataTable {
 		// would keep steering this instance's stale selection
 		if (this.navigation) this.navigation.unbind();
 		if (this.editing) this.editing.unbind();
+		if (this.containerAbort) this.containerAbort.abort();
 		if (this.style) this.style.destroy();
 		if (this.engine) this.engine.destroy();
 		this.container.innerHTML = "";
 		this.container.classList.remove("datatable", this.scopeClass);
+		// Only if WE are still the registered instance (see `mountedOn`): a
+		// caller can hold a stale reference to an instance a later
+		// reconstruction on the same container already replaced, and that
+		// call must not unregister the table that replaced it.
+		if (mountedOn.get(this.container) === this) mountedOn.delete(this.container);
 	}
 
 	getColumn(colIndex: DataTableColIndex): DataTableColumn | undefined {

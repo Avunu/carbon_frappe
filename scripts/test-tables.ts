@@ -35,6 +35,7 @@ const SUITES: readonly Suite[] = [
 	["grid", "child-table Grid — >10 columns, live controls, inherited API"],
 	["list", "List view — cell reuse, bulk actions, subclass safety"],
 	["query-report", "Query Report — the third-party report-script hook surface"],
+	["datatable-remount", "frappe.DataTable reconstructed on the same wrapper, ERPNext-style"],
 	["dark", "g100 parity across all three surfaces"],
 ];
 
