@@ -429,13 +429,18 @@ export default class CarbonGrid extends Grid {
 		// still inside the same synchronous call, asks `grid_pagination` to
 		// `go_to_page(1, true)` — which ends here, in `render_result_rows`,
 		// while `visible_columns` is still `null`. Stock frappe is safe: its
-		// `render_result_rows` builds rows only, and nothing reads the column
-		// list again until `Grid#refresh` runs `setup_visible_columns()`.
-		// This adapter rebuilds the engine columns on every render, so iterate
-		// against `null` and the whole form switch dies with
+		// `GridRow.setup_columns()` (grid_row.js:729) calls
+		// `setup_visible_columns()` itself before reading the list, so every
+		// fresh row re-derives it lazily. This adapter rebuilds the engine
+		// columns before the rows exist, so iterate against the null and the
+		// whole form switch dies with
 		// "TypeError: this.visible_columns is not iterable" — and the form
-		// keeps showing the PREVIOUS document. Rebuild the column set here so
-		// the re-render always has real columns to walk.
+		// keeps showing the PREVIOUS document. Call the same lazy rebuild
+		// here so the re-render always has real columns to walk. Note the
+		// timing still matches stock: at this instant `frm.doc` is the OLD
+		// document (switch_doc swaps `docname` last), so the freshly built
+		// column set uses the old doc's permlevel visibility — exactly when
+		// stock's first row render builds its `columns_list` too.
 		if (!this.visible_columns || !this.visible_columns.length) {
 			this.setup_visible_columns();
 		}
@@ -492,8 +497,8 @@ export default class CarbonGrid extends Grid {
 				align: ["Int", "Currency", "Float", "Percent"].includes(df.fieldtype)
 					? "right"
 					: df.fieldtype === "Check"
-					? "center"
-					: "left",
+						? "center"
+						: "left",
 				sortable: false,
 				filterable: true,
 				pinned: df.sticky ? "start" : undefined,
