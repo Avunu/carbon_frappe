@@ -219,6 +219,26 @@ interface SearchProbe {
 	after: number;
 	inputs: number;
 }
+
+/** `seeded` — the two Contacts the document-switch case navigates between. */
+interface SwitchSeedProbe {
+	a: string;
+	b: string;
+}
+
+/** `switched` — the form after A → list → B, where A's child table was empty. */
+interface SwitchProbe {
+	docname: string;
+	firstName: string;
+	title: string;
+	/** `visible_columns` of the grid that was empty on A, after the switch */
+	visibleColumns: number;
+	/** engine rows rendered for B's one email row */
+	rows: number;
+	errorsBefore: number;
+	errorsAfter: number;
+	errors: string[];
+}
 const BASE = process.env.CF_SITE_URL || "http://localhost:8794";
 const SHOT = process.env.CF_SHOT_DIR || new URL("../../.dev-dist/screenshots/", import.meta.url).pathname;
 fs.mkdirSync(SHOT, { recursive: true });
@@ -842,6 +862,75 @@ try {
 		search.rows < 20 && search.before === 0 && search.after === 1 && search.inputs > 0,
 		JSON.stringify(search),
 	);
+
+	// --- switching documents ------------------------------------------------
+	// `FrappeForm#switch_doc` nulls every grid's `visible_columns` and
+	// re-renders the rows BEFORE the new docname is set (form.js:537-539).
+	// Upstream rebuilds the columns lazily through the rows it refreshes, so a
+	// grid that had NO rows on the first document never rebuilt them; this
+	// grid reads `visible_columns` directly for the engine's columns and used
+	// to throw there — mid-`refresh()`, so the form kept the first document's
+	// title and values. Contact is in core and its `email_ids` table is
+	// optional, which makes the empty-then-populated pair cheap to seed.
+	const seeded = await page.eval<SwitchSeedProbe>(`(async () => {
+    const mk = async (first_name, email_ids) => {
+      const existing = await frappe.db.get_list('Contact', { filters: { first_name }, fields: ['name'] });
+      for (const c of existing) await frappe.db.delete_doc('Contact', c.name);
+      const r = await frappe.call('frappe.client.insert', { doc: { doctype: 'Contact', first_name, email_ids } });
+      return r.message.name;
+    };
+    const a = await mk('CF Switch A', []);
+    const b = await mk('CF Switch B', [{ email_id: 'cf-switch-b@example.com', is_primary: 1 }]);
+    return { a, b };
+  })()`);
+	const errorsBefore = page.consoleErrors().length;
+	await page.eval(`frappe.set_route('Form', 'Contact', ${JSON.stringify(seeded.a)})`);
+	await page.waitFor(
+		`!!window.cur_frm && cur_frm.doctype === 'Contact' && cur_frm.docname === ${JSON.stringify(seeded.a)} && !!cur_frm.fields_dict.email_ids.grid.grid_rows`,
+	);
+	await page.eval(`frappe.set_route('List', 'Contact')`);
+	await page.waitFor(`frappe.get_route()[0] === 'List' && !!(cur_list && cur_list.doctype === 'Contact')`);
+	await page.eval(`frappe.set_route('Form', 'Contact', ${JSON.stringify(seeded.b)})`);
+	// The failing shape never reaches docname B, so a plain wait would only
+	// time out; wait for the router to settle on B's route, then read the form.
+	await page.waitFor(`frappe.get_route().join('/') === 'Form/Contact/' + ${JSON.stringify(seeded.b)}`);
+	await new Promise((r) => setTimeout(r, 1500));
+	const switched = await page.eval<SwitchProbe>(`(() => {
+    const grid = cur_frm.fields_dict.email_ids.grid;
+    return {
+      docname: cur_frm.docname,
+      firstName: cur_frm.doc.first_name,
+      title: cur_frm.page.title + ' | ' + document.title,
+      visibleColumns: grid.visible_columns ? grid.visible_columns.length : -1,
+      rows: grid.wrapper.find('tbody.rows tr.grid-row').length,
+      errorsBefore: ${errorsBefore},
+      errorsAfter: 0,
+      errors: [],
+    };
+  })()`);
+	switched.errorsAfter = page.consoleErrors().length;
+	switched.errors = page.consoleErrors().slice(errorsBefore);
+	console.log(JSON.stringify(switched));
+	ok(
+		"switching to a document whose child table was empty on the last one loads it",
+		switched.docname === seeded.b && switched.firstName === "CF Switch B" && switched.rows === 1,
+		JSON.stringify({ docname: switched.docname, first: switched.firstName, rows: switched.rows }),
+	);
+	ok(
+		"the page title is the new document's",
+		switched.title.startsWith("CF Switch B |") && switched.title.includes("| CF Switch B"),
+		JSON.stringify(switched.title),
+	);
+	ok(
+		"the empty grid rebuilt its columns instead of throwing",
+		switched.visibleColumns > 0 && switched.errorsAfter === switched.errorsBefore,
+		switched.errors.slice(0, 2).join(" | "),
+	);
+	await page.eval(`(async () => {
+    await frappe.set_route('List', 'Contact');
+    for (const n of ${JSON.stringify([seeded.a, seeded.b])}) await frappe.db.delete_doc('Contact', n);
+    return true;
+  })()`);
 
 	await page.screenshot(SHOT + "/bench-grid.png");
 	const errs = page.consoleErrors();
