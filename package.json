@@ -39,7 +39,7 @@
 		"upgrade": "npx npm-check-updates -u && yarn install && yarn build"
 	},
 	"dependencies": {
-		"@carbon/charts": "1.27.19",
+		"@carbon/charts": "1.27.20",
 		"@carbon/styles": "1.115.0",
 		"@tanstack/table-core": "9.2.4",
 		"@tanstack/virtual-core": "3.17.11"
@@ -50,7 +50,7 @@
 		"@ibm/plex-mono": "2.5.0",
 		"@ibm/plex-sans": "1.1.0",
 		"@types/node": "^26.5.1",
-		"frappe-types": "^16.3.0",
+		"frappe-types": "^16.3.1",
 		"oxfmt": "^0.68.0",
 		"oxlint": "^1.83.0",
 		"sass": "1.104.1",

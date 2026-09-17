@@ -23,3 +23,6 @@ dist
 
 # tsc --build cache (project references); never source
 *.tsbuildinfo
+
+# tmp files for diagnosis
+tmp

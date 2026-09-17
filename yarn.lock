@@ -34,10 +34,10 @@
     hashery "^1.5.1"
     keyv "^5.6.0"
 
-"@carbon/charts@1.27.19":
-  version "1.27.19"
-  resolved "https://registry.yarnpkg.com/@carbon/charts/-/charts-1.27.19.tgz#6b651ed6fdcdb14d5d6516374b05ca3999b36d60"
-  integrity sha512-123YEECrNA1OQMvZWmOnaXjUQcezn4jRsKKT0qI/Ju0ldNHpHx6ruU0cq78spwjBWYjA0ubjnnebK1F107j5fw==
+"@carbon/charts@1.27.20":
+  version "1.27.20"
+  resolved "https://registry.yarnpkg.com/@carbon/charts/-/charts-1.27.20.tgz#9ce34c7b5089175e09360b9979209a4ef715b5b4"
+  integrity sha512-XzrraMRk1TzV1JZNB+8WPb3JJ4pTrehLvMteA9CKuPKQIElc5YigD2jWKOoHNzgDV+Lp8qtv1LXmYxLnTNikrw==
   dependencies:
     "@carbon/colors" "^11.37.0"
     "@carbon/utils-position" "^1.3.0"
@@ -1504,10 +1504,10 @@ flatted@^3.4.2:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.4.4.tgz#aeeca2a506303f0cee61c59e6c9f2a88d2f29fc6"
   integrity sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==
 
-frappe-types@^16.3.0:
-  version "16.3.0"
-  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.3.0.tgz#9c4efe15ae43578eb457d1ee3a9db6573a999eeb"
-  integrity sha512-YJcyuYKADdWuzA34ISIrXdABNQAWneNVcVKkWVJXIrKNo4r1nv1cpOJUMrE+T6bxLMlS5e7Kq1LEzxpswlXNOA==
+frappe-types@^16.3.1:
+  version "16.3.1"
+  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.3.1.tgz#ccdb85451e0b2a434549a562a684902bd18b62b2"
+  integrity sha512-aS9YVGAT3JPYr+AzgVtQXuRHHd+colvLkROw4pOi6DlOfS5AbEUFapN4fn3/hMY9qlNPACHOSDmvWPzBsLFIrw==
   dependencies:
     "@types/jquery" "^3.5"
 
