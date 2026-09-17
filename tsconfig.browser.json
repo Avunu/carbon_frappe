@@ -17,6 +17,6 @@
 	"include": ["carbon_frappe/public/js/**/*.ts", "carbon_frappe/public/js/**/*.d.ts", "dev/**/*.ts"],
 	// `carbon_frappe/public/js/generated` is deliberately NOT excluded: its one
 	// file is emitted as a checked `.ts` module (see scripts/generate-chart-palettes.ts)
-	// precisely so carbon_charts.bundle.ts's import of it resolves.
+	// precisely so carbon_charts.ts's import of it resolves.
 	"exclude": ["node_modules", "carbon_frappe/public/dist"]
 }

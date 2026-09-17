@@ -17,9 +17,11 @@
  * Nothing from either package ships at runtime; both are devDependencies.
  *
  * The output is a `.ts` module for the same reason chart-palettes.ts is: it is
- * imported by carbon_anatomy.bundle.ts and so belongs to the browser
- * type-check program, and annotated `string` exports state the contract
- * without a hand-written `.d.ts` that could drift from what is emitted.
+ * imported by carbon_anatomy.bundle.js (the esbuild entry, since 2026-09-17 —
+ * before that the code itself was the `.ts` entry) and so belongs to the
+ * browser type-check program, and annotated `string` exports state the
+ * contract without a hand-written `.d.ts` that could drift from what is
+ * emitted.
  */
 import fs from "node:fs";
 import path from "node:path";

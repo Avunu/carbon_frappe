@@ -12,22 +12,19 @@
 // Both patches delegate to the original, so upstream behaviour changes carry
 // through and re-applying is a no-op.
 //
-// The bundle entry is `.ts`, and that MOVES the assets.json key — the output
-// name is unchanged, the key is not. frappe's esbuild globs
-// `*.bundle.{js,ts,…}` (esbuild/esbuild.js:258) and emits
-// `dist/js/carbon_desk.bundle.<hash>.js` whatever the entry extension was, but
-// it keys assets.json by the ENTRY basename —
-// `path.basename(info.entryPoint)` (esbuild.js:450) — so a normal
-// `bench build` files this under `carbon_desk.bundle.ts`. Only the
-// `--using-cached` path keys off the OUTPUT name (`update_assets_obj`,
-// esbuild.js:181-185) and still writes `carbon_desk.bundle.js`.
-//
-// hooks.py keeps asking for `.js`, the one name BOTH paths can be made to
-// answer, and scripts/patch-assets.ts re-points that key at the freshly built
-// file after a normal build. Verified by building: `include_script` does a bare
-// dict lookup with no extension fallback (frappe/utils/jinja_globals.py:151-156),
-// so without that step the `.js` key silently keeps whatever stale hash an
-// older build left in assets.json.
+// The esbuild entry for this code is the thin `carbon_desk.bundle.js` beside
+// it, and that is deliberate: frappe's esbuild keys assets.json by the ENTRY
+// basename (`path.basename(info.entryPoint)`, esbuild.js:450) and emits
+// `dist/js/carbon_desk.bundle.<hash>.js` whatever the entry extension was,
+// while the `--using-cached` path keys off the OUTPUT name
+// (`update_assets_obj`, esbuild.js:181-185). When the code WAS the entry
+// (`carbon_desk.bundle.ts`), the normal/watch path wrote the key under
+// `carbon_desk.bundle.ts`, which nothing loads, so the served `.bundle.js` key
+// silently kept its stale hash after every watch rebuild. The code moved here
+// (a non-`*.bundle.*` name) 2026-09-17 and a thin `.js` entry imports it, so
+// both keying paths agree in every build mode; scripts/patch-assets.ts's JS
+// re-point is now a no-op tripwire. `include_script` does a bare dict lookup
+// with no extension fallback (frappe/utils/jinja_globals.py:151-156).
 
 import type { FrappeFormatters } from "frappe-types";
 

@@ -8,7 +8,8 @@
  * Both outputs are committed. Run via `npm run codegen` after Carbon bumps.
  *
  * The JS output is a `.ts` module, not a `.js` one, because it is imported by
- * carbon_charts.bundle.ts and therefore has to be part of the browser
+ * carbon_charts.ts (the esbuild entry is the thin carbon_charts.bundle.js) and
+ * therefore has to be part of the browser
  * type-check program. Emitting `.js` meant either excluding `generated/` from
  * tsconfig.browser.json — which makes the import unresolvable — or shipping a
  * hand-written sibling `.d.ts` that could drift from what is actually emitted.

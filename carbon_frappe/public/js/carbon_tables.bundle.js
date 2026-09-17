@@ -16,22 +16,18 @@
 // frappe's, so `frappe.views.ReportView`, `frappe.ui.form.ControlTable` and
 // `window.DataTable` all exist by the time this runs.
 //
-// The bundle entry is `.ts`, and that MOVES the assets.json key — the output
-// name is unchanged, the key is not. frappe's esbuild globs
-// `*.bundle.{js,ts,…}` (esbuild/esbuild.js:258) and emits
-// `dist/js/carbon_tables.bundle.<hash>.js` whatever the entry extension was, but
-// it keys assets.json by the ENTRY basename —
-// `path.basename(info.entryPoint)` (esbuild.js:450) — so a normal
-// `bench build` files this under `carbon_tables.bundle.ts`. Only the
-// `--using-cached` path keys off the OUTPUT name (`update_assets_obj`,
-// esbuild.js:181-185) and still writes `carbon_tables.bundle.js`.
-//
-// hooks.py keeps asking for `.js`, the one name BOTH paths can be made to
-// answer, and scripts/patch-assets.ts re-points that key at the freshly built
-// file after a normal build. Verified by building: `include_script` does a bare
-// dict lookup with no extension fallback (frappe/utils/jinja_globals.py:151-156),
-// so without that step the `.js` key silently keeps whatever stale hash an
-// older build left in assets.json.
+// The bundle entry is `.js`, deliberately. frappe's esbuild keys assets.json
+// by the ENTRY basename — `path.basename(info.entryPoint)` (esbuild.js:450) —
+// and emits `dist/js/carbon_tables.bundle.<hash>.js` whatever the extension
+// was, while the `--using-cached` path keys off the OUTPUT name
+// (`update_assets_obj`, esbuild.js:181-185). When the entry was `.ts` the
+// normal/watch path wrote the key under `carbon_tables.bundle.ts`, which
+// nothing loads, so the served `.bundle.js` key silently kept its stale hash
+// after every watch rebuild. With the entry named `.js`, both keying paths
+// agree in every build mode — watch, full build, `--using-cached` — and
+// scripts/patch-assets.ts's JS re-point became a no-op tripwire. Renamed from
+// `.ts` 2026-09-17; `include_script` still does a bare dict lookup with no
+// extension fallback (frappe/utils/jinja_globals.py:151-156).
 import { assertPatches } from "./anatomy/patch.ts";
 import installDataTable from "./tables/datatable/install.ts";
 import installGrid from "./tables/grid/install.ts";
