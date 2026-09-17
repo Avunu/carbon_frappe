@@ -415,6 +415,29 @@ export default class CarbonGrid extends Grid {
 		return $col && $col.length ? $col.get(0) : null;
 	}
 
+	/**
+	 * `visible_columns`, rebuilt first if it is unset.
+	 *
+	 * frappe builds it lazily and only ever through a row: `GridRow#setup_columns`
+	 * calls `setup_visible_columns()` (grid_row.js:729), and the header row is
+	 * always rendered before the body (grid.js:523 → 534), so upstream can read
+	 * the field unguarded from a body row. `FrappeForm#switch_doc` breaks that
+	 * order: it sets `visible_columns = null` on every grid and immediately
+	 * re-renders the body through `go_to_page(1, true)` (form.js:537-539),
+	 * before `refresh()` rebuilds the head. Upstream survives because the rows
+	 * being refreshed rebuild the columns, and a grid with no rows reads
+	 * nothing. This grid reads the field directly to derive the engine's
+	 * columns, so the rebuild has to be here — otherwise a child table that was
+	 * empty on the previous document throws mid-`refresh()` and the form never
+	 * switches (the header keeps the old title, the fields keep the old values).
+	 */
+	visible_columns_or_build(): Array<[GridDocField, number]> {
+		this.setup_visible_columns();
+		const visible = this.visible_columns;
+		if (!visible) throw new Error("carbon_frappe: setup_visible_columns() left visible_columns unset");
+		return visible;
+	}
+
 	/** Engine column specs derived from `visible_columns`, plus the gutters. */
 	build_engine_columns(): CarbonColumnSpec<GridRowData>[] {
 		const node_of = (
@@ -462,7 +485,7 @@ export default class CarbonGrid extends Grid {
 			},
 		];
 
-		for (const [df, width] of this.visible_columns) {
+		for (const [df, width] of this.visible_columns_or_build()) {
 			columns.push({
 				id: df.fieldname,
 				label: __(df.label, null, df.parent),
