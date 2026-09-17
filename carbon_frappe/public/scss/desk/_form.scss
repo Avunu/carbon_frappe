@@ -18,6 +18,12 @@
 // and the panel beneath it are already at the SAME layer, so the selected chip
 // matching --cds-layer-01 is what makes it read as attached to the panel.
 .form-tabs-list {
+	// Not Carbon's anatomy: frappe's own rule (desk/form.scss:484-490), left
+	// unmasked once this stopped drawing its own same-purpose line. Carbon's
+	// contained tabs use background-colour continuity, not a divider, to join
+	// the selected chip to the panel below it — cancelled here rather than
+	// left to repaint through --border-color -> --carbon-border-subtle.
+	border-bottom: none;
 	border-radius: 0;
 	transition: none; // frappe animates `top` for 0.5s while sticky
 
