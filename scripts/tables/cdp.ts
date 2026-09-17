@@ -365,8 +365,20 @@ export async function newPage(port: number): Promise<Page> {
 				}
 				await new Promise((wake) => setTimeout(wake, interval));
 			}
+			// What the page looked like when the wait gave up — the URL, title
+			// and visible text say "setup wizard", "server error" or "login" at a
+			// glance, and the console errors say why a bundle did not boot.
+			let where = "";
+			try {
+				where = await page.eval<string>(
+					`location.href + ' | ' + document.title + ' | ' + (document.body ? document.body.innerText.replace(/\\s+/g, ' ').slice(0, 400) : '<no body>')`,
+				);
+			} catch (e) {
+				where = `<page unreadable: ${e instanceof Error ? e.message : String(e)}>`;
+			}
+			const errors = page.consoleErrors().slice(-5).join(" || ");
 			throw new Error(
-				`waitFor timed out: ${String(expr).slice(0, 200)} (last: ${JSON.stringify(last)?.slice(0, 300)})`,
+				`waitFor timed out: ${String(expr).slice(0, 200)} (last: ${JSON.stringify(last)?.slice(0, 300)})\n  page: ${where}\n  console: ${errors || "none"}`,
 			);
 		},
 		/**
