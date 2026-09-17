@@ -1,13 +1,23 @@
-// Form chrome: tabs and inline messages.
+// Form chrome: tabs, card backdrop and inline messages.
 @use "@carbon/colors" as c;
 
 // -- Tabs --------------------------------------------------------------------
-// Carbon line tabs: 40px tall, 16px inline padding, a 2px $border-interactive
-// underline on the selected tab. frappe uses `padding: 10px 0` with a 15px
-// side margin and a 1px $text-color underline, and compensates the active
-// state with `padding-bottom: 9px`.
+// Carbon's CONTAINED tabs (@carbon/styles tabs/_tabs.scss): every chip fills a
+// $layer-accent background with a 1px $border-strong divider against its
+// neighbour (an inset box-shadow, so it never affects the chip's box model);
+// the selected chip switches to $layer with a 2px $border-interactive TOP
+// accent — also an inset box-shadow, not a bottom border — in place of the
+// divider, and the chip immediately after it drops its own divider so it
+// doesn't draw against the selected chip's now-plain edge.
+//
+// Non-light, not light: the LIGHT contained variant paints the selected chip
+// $background instead of $layer, for tabs sitting directly on the page canvas.
+// .form-page already sits at $layer (--card-bg = --cds-layer-01,
+// map/_colors-legacy.scss), and .form-tabs-list / .form-tab-content are
+// siblings inside it (frappe/js/frappe/form/layout.js:29,45-51) — the tab bar
+// and the panel beneath it are already at the SAME layer, so the selected chip
+// matching --cds-layer-01 is what makes it read as attached to the panel.
 .form-tabs-list {
-	border-bottom: 1px solid var(--carbon-border-subtle);
 	border-radius: 0;
 	transition: none; // frappe animates `top` for 0.5s while sticky
 
@@ -16,22 +26,55 @@
 		padding: 0 16px;
 		margin: 0;
 		color: var(--cds-text-secondary);
-		// reserve the underline so selecting a tab doesn't shift the row
-		border-bottom: 2px solid transparent;
+		background-color: var(--cds-layer-accent-01);
+		box-shadow: -1px 0 0 0 var(--cds-border-strong-01);
 		border-radius: 0;
 
 		&:hover {
 			color: var(--cds-text-primary);
-			background-color: var(--cds-layer-hover-01);
+		}
+
+		&:hover:not(.active) {
+			background-color: var(--cds-layer-accent-hover-01);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--cds-focus);
+			outline-offset: -2px;
+			font-weight: inherit;
 		}
 
 		&.active {
-			padding-bottom: 0;
 			font-weight: var(--font-weight-semibold);
 			color: var(--cds-text-primary);
-			border-bottom: 2px solid var(--cds-border-interactive);
+			background-color: var(--cds-layer-01);
+			// The top accent, not a bottom border: a bottom-border equivalent
+			// would need `padding-bottom` compensation to avoid shifting the
+			// row on selection; an inset shadow needs none.
+			box-shadow: inset 0 2px 0 0 var(--cds-border-interactive);
+
+			&:hover {
+				background-color: var(--cds-layer-01);
+			}
 		}
 	}
+
+	// The chip right after the selected one has no divider to draw against:
+	// the selected chip's own trailing edge is plain, not $border-strong.
+	.form-tabs .nav-item:has(.nav-link.active) + .nav-item .nav-link {
+		box-shadow: none;
+	}
+}
+
+// -- Card / backdrop ----------------------------------------------------------
+// frappe's own .form-page rule (js/frappe/form/layout.js:29 builds it;
+// desk/form.scss:25-28 styles it) already paints --card-bg
+// (= --cds-layer-01). It has never had the 1px hairline `.frappe-card` gives
+// every other list/report/workspace surface (desk/_misc.scss:5-11) — this adds
+// only that border, so the form reads as the same kind of card, without
+// restating the background frappe core already gets right.
+.std-form-layout > .form-layout > .form-page {
+	border: 1px solid var(--carbon-border-subtle);
 }
 
 // -- Inline messages ---------------------------------------------------------

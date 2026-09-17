@@ -1,16 +1,18 @@
-// carbon_frappe desk shim — tags formatted data values with `carbon-num` so the
-// stylesheet can set IBM Plex Mono on them.
+// carbon_frappe desk shim — two independent patches with nothing in common but
+// living in the one bundle frappe loads last (see the assets.json note below):
+// tagging formatted data values with `carbon-num` so the stylesheet can set IBM
+// Plex Mono on them, and defaulting the desk to frappe's own full-width layout.
 //
-// Why JS at all: most numerics are reachable from CSS (list rows carry
-// .text-right, grid cells carry [data-fieldtype]), but frappe-datatable — the
-// report view, query reports, data import preview — emits only positional
+// Why JS at all (numerics): most numerics are reachable from CSS (list rows
+// carry .text-right, grid cells carry [data-fieldtype]), but frappe-datatable —
+// the report view, query reports, data import preview — emits only positional
 // classes (.dt-cell--col-N) with no fieldtype or alignment hook. Alignment there
 // comes from a stylesheet frappe injects at runtime, which CSS cannot read. The
 // one thing every numeric render path DOES share is frappe.form.formatters, so
 // tagging at the formatter reaches all of them at once.
 //
-// Both patches delegate to the original, so upstream behaviour changes carry
-// through and re-applying is a no-op.
+// Both formatter patches delegate to the original, so upstream behaviour
+// changes carry through and re-applying is a no-op.
 //
 // The bundle entry is `.ts`, and that MOVES the assets.json key — the output
 // name is unchanged, the key is not. frappe's esbuild globs
@@ -78,3 +80,32 @@ function patchFormatters(): boolean {
 if (!patchFormatters()) {
 	document.addEventListener("DOMContentLoaded", patchFormatters);
 }
+
+// -- Full width by default ----------------------------------------------------
+//
+// frappe already ships the width toggle this theme wants on: `body.full-width`
+// removes the 900px `--page-max-width` clamp from the form, form-footer,
+// Workspaces dashboard, tree view and timeline together (frappe's own
+// `body:not(.full-width) &` guards throughout desk/form.scss, desk/desktop.scss,
+// desk/tree.scss, desk/timeline.scss — Carbon's grid has no equivalent single
+// hardcoded cap to replace it with, so "not clamped" is the whole change). It
+// is read from `localStorage.container_fullwidth` on every boot
+// (ui/toolbar/toolbar.js `set_fullwidth_if_enabled`, called from
+// `Application.startup()`, desk.js:42) and flipped by hand through the
+// sidebar's existing "Toggle Full Width" menu item
+// (ui/sidebar/sidebar_header.js), which keeps working as each user's personal
+// override in either direction — this only changes what a browser that has
+// never touched the key gets by default.
+//
+// Ordering this runs at matters: `container_fullwidth` is read inside
+// `$(document).ready(() => frappe.start_app())` (desk.js:14-25), and this
+// script is `app_include_js`, a plain synchronous <script> that executes
+// during page parse — strictly before that ready handler fires. Setting the
+// key here is therefore always seen on the very first read, with no race.
+function defaultFullWidth(): void {
+	if (window.localStorage.getItem("container_fullwidth") === null) {
+		window.localStorage.setItem("container_fullwidth", "true");
+	}
+}
+
+defaultFullWidth();
