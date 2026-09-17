@@ -486,31 +486,24 @@ export async function login(page: Page, base: string, user = "Administrator", pw
 	let lastProbe: string | undefined;
 
 	for (let attempt = 1; Date.now() < deadline; attempt++) {
+		// `/login` only to give the page an origin to fetch from; the login itself
+		// is the API call, so the server's answer (401 wrong password, 417,
+		// 503…) is what ends up in the log rather than a form that silently
+		// stayed put.
 		await page.goto(`${base}/login`);
 		try {
-			await page.waitFor(`!!document.querySelector('#login_email')`, { timeout: 20000 });
-		} catch {
-			// already authenticated? fall through to the check below
-		}
-
-		try {
-			await page.eval(`
-        (() => {
-          const email = document.querySelector('#login_email');
-          const pass = document.querySelector('#login_password');
-          if (!email || !pass) return false;
-          email.value = ${JSON.stringify(user)};
-          pass.value = ${JSON.stringify(pwd)};
-          email.dispatchEvent(new Event('input', { bubbles: true }));
-          pass.dispatchEvent(new Event('input', { bubbles: true }));
-          document.querySelector('.btn-login').click();
-          return true;
-        })()
-      `);
-		} catch {
-			// Submitting navigates, and an evaluation in flight when that happens
-			// rejects with an exception CDP reports as `undefined`. Nothing is wrong
-			// — the click landed. Fall through to the confirmation poll.
+			lastProbe = await page.eval<string>(
+				`(async () => {
+           const r = await fetch('/api/method/login', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+             body: JSON.stringify({ usr: ${JSON.stringify(user)}, pwd: ${JSON.stringify(pwd)} }),
+           });
+           return 'login ' + r.status + ' ' + (await r.text()).slice(0, 300);
+         })()`,
+			);
+		} catch (e) {
+			lastProbe = `login threw ${e instanceof Error ? e.message : String(e)}`;
 		}
 
 		const until = Date.now() + 20000;
