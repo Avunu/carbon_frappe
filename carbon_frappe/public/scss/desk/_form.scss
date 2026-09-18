@@ -54,6 +54,13 @@
 			font-weight: var(--font-weight-semibold);
 			color: var(--cds-text-primary);
 			background-color: var(--cds-layer-01);
+			// frappe's own `.active` (desk/form.scss:505-510) sets `border: 0`
+			// on the base `.nav-link` but re-adds `border-bottom: 1px solid
+			// var(--text-color)` on `.active` specifically — the base rule left
+			// nothing for THIS selector to override, so it stayed live and
+			// darker than the tab-list one, since --text-color isn't a border
+			// alias at all. Cancel it explicitly, same as the container's.
+			border-bottom: none;
 			// The top accent, not a bottom border: a bottom-border equivalent
 			// would need `padding-bottom` compensation to avoid shifting the
 			// row on selection; an inset shadow needs none.
