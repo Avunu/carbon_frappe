@@ -1,9 +1,6 @@
 // carbon_frappe chart shim — puts every frappe.Chart series on an
 // @carbon/charts categorical palette, and re-themes them when the desk theme
 // changes. Loaded via app_include_js after frappe's desk bundles.
-// carbon_frappe chart shim — puts every frappe.Chart series on an
-// @carbon/charts categorical palette, and re-themes them when the desk theme
-// changes. Loaded via app_include_js after frappe's desk bundles.
 //
 // The esbuild entry for this code is the thin `carbon_charts.bundle.js` beside
 // it, NOT this file: frappe's esbuild keys assets.json by the ENTRY basename
