@@ -52,6 +52,26 @@
 	}
 }
 
+// frappe already makes .form-tabs-list `position: sticky` (desk/form.scss:
+// 484-485) and toggles between these two classes on scroll (layout.js's
+// `setup_events`) to pin it directly below .page-head — but the `top` it
+// pins to (desk/form.scss:527-535) is `calc(var(--navbar-height))`, which
+// only equals ".page-head's own height" by coincidence in stock frappe,
+// where both --navbar-height and --page-head-height happen to be 48px.
+// Carbon's two-row breadcrumb eyebrow + heading makes .page-head genuinely
+// taller (96px+, and it varies — a wrapped title, a longer trail), so
+// sticking at a stale 48px put the tab bar HALFWAY INSIDE the (taller,
+// higher z-index) header instead of below it — confirmed live, scrolled: the
+// tab bar's top half rendered behind .page-head. `--cf-page-head-height` is
+// .page-head's own measured height (js/anatomy/page_head_metrics.ts, a
+// ResizeObserver so it stays right as the header's content changes), and is
+// what these two need instead — not frappe's `.show-navbar` sub-case, which
+// nothing in frappe or this theme ever toggles.
+.form-tabs-sticky-up,
+.form-tabs-sticky-down {
+	top: var(--cf-page-head-height, 96px);
+}
+
 // -- Card / backdrop ----------------------------------------------------------
 // The canvas-with-a-card split lives ONE level lower than PR #24 first put
 // it: breadcrumb, title and the tab row above are uncoloured (desk/_list.scss,

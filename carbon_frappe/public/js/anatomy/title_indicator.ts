@@ -19,19 +19,38 @@
 // Moving the pill INTO the heading's own li sidesteps the whole problem: a
 // single-line flex row has no wrapped-content ambiguity to get wrong.
 //
-// `page.js:146` is what this leans on: `this.indicator = this.wrapper.find(
-// ".title-area .indicator-pill")`, so the pill is always reachable at that
-// path regardless of what `set_indicator()`/`clear_indicator()` did to its
-// OTHER classes (both strip `page-indicator-pill`, `page.html`'s own
-// template class, the first time either runs — a bare `.removeClass()` with
-// no argument — which is why this targets `.indicator-pill`, not that one).
+// `page.js:146` is what this leans on for the FIRST relocation: `this.indicator
+// = this.wrapper.find(".title-area .indicator-pill")`, so the pill starts out
+// reachable by a DOM search regardless of what `set_indicator()`/
+// `clear_indicator()` did to its other classes (both strip `page-indicator-
+// pill`, page.html's own template class, the first time either runs — a bare
+// `.removeClass()` with no argument — which is why this targets
+// `.indicator-pill`, not that one).
+//
+// After the FIRST relocation, a DOM search stops being enough: frappe's own
+// breadcrumb rebuild (breadcrumbs.js:281, a bare `$(".navbar-breadcrumbs")
+// .empty()`) DETACHES whatever is inside that `<ul>` on every route change —
+// including the li this patch moved the pill into. Nothing in frappe ever
+// re-attaches a detached indicator; that rebuild only ever expected its OWN
+// crumb `<li>`s to live there. A `.find()` cannot locate a node that is no
+// longer in the tree, so subsequent runs reach for frappe's own STABLE
+// reference instead — `cur_frm.page.indicator` — which stays valid whether or
+// not the node is currently attached, letting it be re-appended every route.
+// Confirmed live: without this, the pill survived exactly one relocation and
+// then silently vanished on the next in-app navigation.
 import { record } from "./patch.ts";
 
 function relocate(): boolean {
 	const $container = $(".page-container:visible").first();
 	const $lastCrumb = $container.find(".page-title .navbar-breadcrumbs > li:last-child").first();
-	const $pill = $container.find(".title-area .indicator-pill").first();
-	if (!$lastCrumb.length || !$pill.length) return false;
+	if (!$lastCrumb.length) return false;
+
+	const frm = window.cur_frm;
+	const $pill =
+		frm && frm.page.indicator.length
+			? frm.page.indicator
+			: $container.find(".title-area .indicator-pill").first();
+	if (!$pill.length) return false;
 
 	// Idempotent by construction: `.append()` on a node already in the
 	// document MOVES it rather than cloning, so calling this again this route

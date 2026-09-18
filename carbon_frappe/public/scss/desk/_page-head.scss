@@ -23,10 +23,39 @@
 	// eyebrow above it (Products PageHeader). The head is a flex row whose left
 	// cell is now two lines tall, so the action cell rides its bottom edge.
 	.page-head-content {
+		position: relative;
 		height: auto;
 		min-height: 48px;
 		align-items: flex-end;
 		padding-block: 12px;
+
+		// The rule IBM Products' own PageHeader draws under its breadcrumb bar
+		// by default (`PageHeaderBreadcrumbBar`'s `border` prop, true unless
+		// told otherwise), full width — under .page-actions too, not just the
+		// title column beside it. It used to be a border on the title's own
+		// li (still visible in git blame), which can only ever be as wide as
+		// that li's own box: `.navbar-breadcrumbs` is a WRAPPING flex
+		// container, and a wrapping flex container's intrinsic size is
+		// computed as though nothing wrapped, not as the widest of its
+		// actual wrapped rows — the same sizing quirk documented on
+		// `.navbar-breadcrumbs` below, and the same reason the pill needed
+		// moving rather than positioning in place.
+		//
+		// A pseudo-element sidesteps it entirely: full width of
+		// `.page-head-content` needs no measurement, only `top` does — the
+		// title li's own top edge, wherever the trail's wrapped line(s)
+		// happen to end. js/anatomy/page_head_metrics.ts measures that
+		// (ResizeObserver on .page-head, so a title that wraps to a second
+		// line or a badge that appears moves the rule without a route
+		// change) and writes it to `--cf-trail-rule-top`.
+		&::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: var(--cf-trail-rule-top, 44px);
+			border-top: 1px solid var(--carbon-border-subtle);
+		}
 	}
 }
 
@@ -63,25 +92,24 @@
 		flex-wrap: wrap;
 		align-items: baseline;
 
-		// The rule IBM Products' own PageHeader draws under its breadcrumb bar
-		// by default (`PageHeaderBreadcrumbBar`'s `border` prop, true unless
-		// told otherwise) — there's no separate breadcrumb-row element here to
-		// hang it on (the trail and the heading are the same flex-wrapping
-		// list), so it lands on the one thing that already sits on its own
-		// line below the trail: this li.
-		//
-		// Also the heading's OWN row: Carbon puts a status tag beside a page
-		// title, and title_indicator.ts relocates frappe's `.indicator-pill`
-		// here (from `.title-area`, where the sizing quirk above stranded it)
-		// so `align-items: center` is what actually keeps trail, heading and
+		// The heading's OWN row: Carbon puts a status tag beside a page title,
+		// and title_indicator.ts relocates frappe's `.indicator-pill` here
+		// (from `.title-area`, where the sizing quirk above stranded it) so
+		// `align-items: center` is what actually keeps trail, heading and
 		// pill on one row now, not `.title-area`'s.
+		//
+		// The rule itself no longer lives on this li (see
+		// `.page-head-content::before`'s own comment for why), but the
+		// spacing either side of it still does: `margin-top` is the gap
+		// between the trail and the rule (page_head_metrics.ts positions the
+		// rule at this li's own top edge, i.e. right where the margin ends),
+		// `padding-top` the gap between the rule and the heading text.
 		> li:last-child {
 			display: flex;
 			align-items: center;
 			gap: 8px;
 			flex: 0 0 100%;
 			margin-top: var(--margin-sm);
-			border-top: 1px solid var(--carbon-border-subtle);
 			padding-top: var(--padding-sm);
 
 			// the "/" divider is for a trail, not for the heading below it
