@@ -58,19 +58,60 @@
 // this file's Tabs section), matching Carbon's own reference products, and
 // only the panel BELOW the tabs — .form-tab-content, a sibling of
 // .form-tabs-list inside .form-page (frappe/js/frappe/form/layout.js:29,45-51)
-// — gets the canvas tint. Each tab's own pane (frappe/js/frappe/form/tab.js:43)
-// is the white card floating in it: the same border+background this file used
-// to put on .form-page itself, one tab at a time rather than all of them
-// wrapped together with the (now uncoloured) tab row.
+// — gets the canvas tint.
 .form-tab-content {
 	background: var(--bg-color);
 	padding: var(--padding-md);
 }
 
-.form-tab-content .tab-pane {
+// One card per SECTION (frappe/js/frappe/form/section.js builds
+// .form-section.card-section — form.js:226-241's `card_layout: true` puts it
+// on every document form's sections), floating on .form-tab-content's canvas
+// above, rather than one card per tab: Cloud Pak's own reference groups
+// settings into separate named panels ("Run", "NLS"), not one undivided sheet.
+//
+// frappe's own `hide_border` (a Section Break docfield; section.js:51-52
+// toggles `.hide-border` on the section's OWN wrapper) already means "no
+// divider below me, the next section continues this one" for the single
+// bottom hairline frappe core draws — see its own `.hide-border { border-
+// bottom: none; padding-bottom: 0; ... }` a few lines up in desk/form.scss.
+// Extended here to the full card this file adds: a hide-border section drops
+// ITS trailing edge (border + gap), and the section immediately after it
+// drops its OWN leading edge to match — the only way CSS can express "my
+// preceding sibling has hide-border" is the adjacent-sibling combinator, the
+// same idiom this file's own Tabs section already uses for divider
+// suppression. A run of any length collapses into one unbroken card
+// regardless of how many sections it spans; a DocType with no `hide_border`
+// set anywhere gets the full Cloud-Pak-style one-card-per-section look, and
+// existing DocTypes that already use `hide_border` purely to avoid a
+// visually busy stack of layout-only sections keep exactly that effect here.
+.form-section.card-section {
 	background: var(--card-bg);
 	border: 1px solid var(--carbon-border-subtle);
-	padding-block: var(--padding-sm);
+	border-radius: 0;
+	margin-bottom: var(--padding-md);
+	padding-bottom: var(--padding-sm);
+
+	&.hide-border {
+		border-bottom: none;
+		margin-bottom: 0;
+	}
+}
+
+// The second selector is not redundant: a hide-border section's very next
+// DOM sibling is sometimes a conditionally-EMPTY section (`depends_on` fields
+// all hidden on this particular document — frappe's own .empty-section,
+// display:none) sitting between it and the section actually meant to
+// continue its card — confirmed live on Sales Invoice (taxes_section, then
+// the always-present-but-often-empty section_break_43, then totals_section).
+// `+` only sees literal DOM adjacency, so both hops need spelling out; a
+// second empty section in the same gap is not.
+.form-section.card-section.hide-border + .form-section.card-section,
+.form-section.card-section.hide-border
+	+ .form-section.card-section.empty-section
+	+ .form-section.card-section {
+	border-top: none;
+	margin-top: 0;
 }
 
 // -- Inline messages ---------------------------------------------------------
