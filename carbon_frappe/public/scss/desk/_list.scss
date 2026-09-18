@@ -130,6 +130,21 @@
 	transition: none;
 }
 
+// The ambient canvas everything else in the desk sits on (frappe:
+// desk/page.scss:54-59), uncoloured for the same reason and at the same
+// desk-wide scope as .page-head above: with the canvas tint scoped to
+// .form-tab-content specifically, this outer layer painting it too just
+// leaked gray into two places nothing else claims — a form's own
+// right-hand .form-sidebar (frappe/scss/desk/form_sidebar.scss, itself
+// unpainted, so it showed whatever sat behind it) and the empty space below
+// short content, wherever .page-container is taller than what it holds.
+// Workspaces are unaffected: their canvas is its own explicit rule
+// (desk/_widgets.scss, `[data-page-route="Workspaces"] .layout-main-section`),
+// not this ambient one.
+.page-container {
+	background: var(--card-bg);
+}
+
 .page-title .title-text,
 .page-title h3 {
 	font-size: var(--text-2xl);

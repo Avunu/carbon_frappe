@@ -31,6 +31,7 @@
 // older build left in assets.json.
 import { assertPatches } from "./anatomy/patch.ts";
 import "./anatomy/editable_title.ts";
+import "./anatomy/title_indicator.ts";
 import "./anatomy/ui_shell.ts";
 
 $(document).ready(assertPatches);

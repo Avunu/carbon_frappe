@@ -161,7 +161,6 @@ export const SELECTORS: readonly SelectorEntry[] = [
 	["page-actions", "frappe/public/js/frappe/ui/page.html"],
 	["page-head-content", "frappe/public/js/frappe/ui/page.html"],
 	["title-area", "frappe/public/js/frappe/ui/page.html"],
-	["page-indicator-pill", "frappe/public/js/frappe/ui/page.html"],
 	["title-text", "frappe/public/js/frappe/ui/page.js"],
 	// form
 	["like-disabled-input", "frappe/public/js/frappe/form/controls/base_input.js"],
@@ -296,6 +295,11 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"editable-title class on .title-area (marks a renameable doc)",
 		"frappe/public/js/frappe/form/toolbar.js",
 		/"editable-title"/,
+	],
+	[
+		"Page.indicator resolves via .title-area .indicator-pill (title_indicator.ts relocates it)",
+		"frappe/public/js/frappe/ui/page.js",
+		/this\.indicator = this\.wrapper\.find\("\.title-area \.indicator-pill"\)/,
 	],
 	[
 		"frappe.router event emitter (editable title, UI Shell re-mount)",

@@ -33,9 +33,6 @@
 .page-title {
 	flex: 1;
 
-	// The trail and the document's status pill sit side by side, with the pill
-	// on the heading's line: Carbon puts a status tag beside a page title, and
-	// it is what keeps the head two rows tall instead of three.
 	.title-area {
 		display: flex;
 		align-items: flex-end;
@@ -46,9 +43,20 @@
 	}
 
 	// frappe truncates the whole trail to one line; the heading needs to wrap.
-	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs so the
-	// pill stays next to the heading, while still letting a long title shrink
-	// and wrap rather than push the pill off the row.
+	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs, while
+	// still letting a long title shrink and wrap rather than overflow the row.
+	//
+	// NOT what sizes the pill's position, despite `.navbar-breadcrumbs` being a
+	// flex CONTAINER whose own `width`/`fit-content` looks like it should: a
+	// wrapping flex container's intrinsic size is computed as though nothing
+	// wrapped (every crumb plus the heading, summed on one hypothetical line),
+	// not as the widest of its actual wrapped rows — confirmed live, `width:
+	// fit-content` still measured ~495px against a ~340px rendered heading. No
+	// CSS sizing keyword asks for "as wide as my widest wrapped line", so the
+	// pill cannot be positioned as this container's flex sibling and read as
+	// adjacent to the heading; see js/anatomy/title_indicator.ts, which moves
+	// it inside the heading's own li instead, where a single-line flex row has
+	// none of this ambiguity.
 	.navbar-breadcrumbs {
 		flex: 0 1 auto;
 		min-width: 0;
@@ -61,7 +69,16 @@
 		// hang it on (the trail and the heading are the same flex-wrapping
 		// list), so it lands on the one thing that already sits on its own
 		// line below the trail: this li.
+		//
+		// Also the heading's OWN row: Carbon puts a status tag beside a page
+		// title, and title_indicator.ts relocates frappe's `.indicator-pill`
+		// here (from `.title-area`, where the sizing quirk above stranded it)
+		// so `align-items: center` is what actually keeps trail, heading and
+		// pill on one row now, not `.title-area`'s.
 		> li:last-child {
+			display: flex;
+			align-items: center;
+			gap: 8px;
 			flex: 0 0 100%;
 			margin-top: var(--margin-sm);
 			border-top: 1px solid var(--carbon-border-subtle);
@@ -72,12 +89,6 @@
 				content: none;
 			}
 		}
-	}
-
-	// bottom-aligned lands the pill on the heading's descender space; the small
-	// lift optically centres it against the 28px cap height
-	.page-indicator-pill {
-		margin-bottom: 4px;
 	}
 }
 

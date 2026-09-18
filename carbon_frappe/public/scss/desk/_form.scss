@@ -60,6 +60,12 @@
 // .form-tabs-list inside .form-page (frappe/js/frappe/form/layout.js:29,45-51)
 // — gets the canvas tint.
 .form-tab-content {
+	// frappe's own `margin-top: var(--margin-sm)` (desk/form.scss:523-526) sat
+	// above the flowing content it used to be; now it sits above THIS box's own
+	// background, so it opened a strip of .form-page's white between the tab
+	// row and the canvas instead of the intended gray gutter. Zeroed — the
+	// padding below is the gutter now.
+	margin-top: 0;
 	background: var(--bg-color);
 	padding: var(--padding-md);
 }
