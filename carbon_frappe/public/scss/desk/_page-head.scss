@@ -55,9 +55,17 @@
 		flex-wrap: wrap;
 		align-items: baseline;
 
+		// The rule IBM Products' own PageHeader draws under its breadcrumb bar
+		// by default (`PageHeaderBreadcrumbBar`'s `border` prop, true unless
+		// told otherwise) — there's no separate breadcrumb-row element here to
+		// hang it on (the trail and the heading are the same flex-wrapping
+		// list), so it lands on the one thing that already sits on its own
+		// line below the trail: this li.
 		> li:last-child {
 			flex: 0 0 100%;
-			margin-top: 2px;
+			margin-top: var(--margin-sm);
+			border-top: 1px solid var(--carbon-border-subtle);
+			padding-top: var(--padding-sm);
 
 			// the "/" divider is for a trail, not for the heading below it
 			> a::before {

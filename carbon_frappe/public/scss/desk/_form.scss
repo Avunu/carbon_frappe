@@ -2,28 +2,16 @@
 @use "@carbon/colors" as c;
 
 // -- Tabs --------------------------------------------------------------------
-// Carbon's CONTAINED tabs (@carbon/styles tabs/_tabs.scss): every chip fills a
-// $layer-accent background with a 1px $border-strong divider against its
-// neighbour (an inset box-shadow, so it never affects the chip's box model);
-// the selected chip switches to $layer with a 2px $border-interactive TOP
-// accent — also an inset box-shadow, not a bottom border — in place of the
-// divider, and the chip immediately after it drops its own divider so it
-// doesn't draw against the selected chip's now-plain edge.
-//
-// Non-light, not light: the LIGHT contained variant paints the selected chip
-// $background instead of $layer, for tabs sitting directly on the page canvas.
-// .form-page already sits at $layer (--card-bg = --cds-layer-01,
-// map/_colors-legacy.scss), and .form-tabs-list / .form-tab-content are
-// siblings inside it (frappe/js/frappe/form/layout.js:29,45-51) — the tab bar
-// and the panel beneath it are already at the SAME layer, so the selected chip
-// matching --cds-layer-01 is what makes it read as attached to the panel.
+// Carbon LINE tabs, not contained: Carbon's own usage guidance (line tabs are
+// "commonly used... for large content areas using the entire page for layout,
+// not connected to any other components"; contained tabs are for "defined
+// content areas like sub-pages", "always attached to a tab panel... using the
+// SAME layer token as the selected tab") puts a top-level document form
+// squarely in the line-tabs case — contained is the nested-panel pattern, not
+// this one. 40px tall, 16px inline padding, a 2px $border-interactive
+// underline on the selected tab, matching frappe's own 40px row height.
 .form-tabs-list {
-	// Not Carbon's anatomy: frappe's own rule (desk/form.scss:484-490), left
-	// unmasked once this stopped drawing its own same-purpose line. Carbon's
-	// contained tabs use background-colour continuity, not a divider, to join
-	// the selected chip to the panel below it — cancelled here rather than
-	// left to repaint through --border-color -> --carbon-border-subtle.
-	border-bottom: none;
+	border-bottom: 1px solid var(--carbon-border-subtle);
 	border-radius: 0;
 	transition: none; // frappe animates `top` for 0.5s while sticky
 
@@ -32,16 +20,13 @@
 		padding: 0 16px;
 		margin: 0;
 		color: var(--cds-text-secondary);
-		background-color: var(--cds-layer-accent-01);
-		box-shadow: -1px 0 0 0 var(--cds-border-strong-01);
+		// reserve the underline so selecting a tab doesn't shift the row
+		border-bottom: 2px solid transparent;
 		border-radius: 0;
 
 		&:hover {
 			color: var(--cds-text-primary);
-		}
-
-		&:hover:not(.active) {
-			background-color: var(--cds-layer-accent-hover-01);
+			background-color: var(--cds-layer-hover-01);
 		}
 
 		&:focus-visible {
@@ -51,43 +36,41 @@
 		}
 
 		&.active {
+			padding-bottom: 0;
 			font-weight: var(--font-weight-semibold);
 			color: var(--cds-text-primary);
-			background-color: var(--cds-layer-01);
-			// frappe's own `.active` (desk/form.scss:505-510) sets `border: 0`
-			// on the base `.nav-link` but re-adds `border-bottom: 1px solid
-			// var(--text-color)` on `.active` specifically — the base rule left
-			// nothing for THIS selector to override, so it stayed live and
-			// darker than the tab-list one, since --text-color isn't a border
-			// alias at all. Cancel it explicitly, same as the container's.
-			border-bottom: none;
-			// The top accent, not a bottom border: a bottom-border equivalent
-			// would need `padding-bottom` compensation to avoid shifting the
-			// row on selection; an inset shadow needs none.
-			box-shadow: inset 0 2px 0 0 var(--cds-border-interactive);
-
-			&:hover {
-				background-color: var(--cds-layer-01);
-			}
+			// Setting the property here — rather than a box-shadow accent, as a
+			// contained tab would — is what beats frappe's own `.active` rule
+			// (desk/form.scss:505-510, `border-bottom: 1px solid
+			// var(--text-color)`) outright: same selector specificity, and
+			// this bundle loads after frappe's, so whichever one actually sets
+			// `border-bottom` wins. A box-shadow accent leaves the property
+			// unset and lets frappe's declaration through — see the two fixes
+			// that chased exactly that leak across #24's earlier commits.
+			border-bottom: 2px solid var(--cds-border-interactive);
 		}
-	}
-
-	// The chip right after the selected one has no divider to draw against:
-	// the selected chip's own trailing edge is plain, not $border-strong.
-	.form-tabs .nav-item:has(.nav-link.active) + .nav-item .nav-link {
-		box-shadow: none;
 	}
 }
 
 // -- Card / backdrop ----------------------------------------------------------
-// frappe's own .form-page rule (js/frappe/form/layout.js:29 builds it;
-// desk/form.scss:25-28 styles it) already paints --card-bg
-// (= --cds-layer-01). It has never had the 1px hairline `.frappe-card` gives
-// every other list/report/workspace surface (desk/_misc.scss:5-11) — this adds
-// only that border, so the form reads as the same kind of card, without
-// restating the background frappe core already gets right.
-.std-form-layout > .form-layout > .form-page {
+// The canvas-with-a-card split lives ONE level lower than PR #24 first put
+// it: breadcrumb, title and the tab row above are uncoloured (desk/_list.scss,
+// this file's Tabs section), matching Carbon's own reference products, and
+// only the panel BELOW the tabs — .form-tab-content, a sibling of
+// .form-tabs-list inside .form-page (frappe/js/frappe/form/layout.js:29,45-51)
+// — gets the canvas tint. Each tab's own pane (frappe/js/frappe/form/tab.js:43)
+// is the white card floating in it: the same border+background this file used
+// to put on .form-page itself, one tab at a time rather than all of them
+// wrapped together with the (now uncoloured) tab row.
+.form-tab-content {
+	background: var(--bg-color);
+	padding: var(--padding-md);
+}
+
+.form-tab-content .tab-pane {
+	background: var(--card-bg);
 	border: 1px solid var(--carbon-border-subtle);
+	padding-block: var(--padding-sm);
 }
 
 // -- Inline messages ---------------------------------------------------------

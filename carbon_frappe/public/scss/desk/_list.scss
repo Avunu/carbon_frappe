@@ -115,9 +115,16 @@
 	}
 }
 
-// page head: flat $background bar with heading-03 title (20px / 400)
+// page head: flat $layer-01 bar with heading-03 title (20px / 400).
+//
+// NOT $background: Carbon's own page-header guidance (and every reference
+// product built on it) keeps breadcrumb/title/tab chrome uncoloured, with the
+// canvas tint reserved for a deeper content region — see desk/_form.scss's
+// `.form-tab-content` for where that tint actually lives on a document form.
+// Desk-wide on purpose: this is the one `.page-head` every route shares
+// (list, report, workspace, form), so all of them go uncoloured together.
 .page-head {
-	background: var(--bg-color);
+	background: var(--card-bg);
 	border-bottom: 1px solid var(--carbon-border-subtle);
 	// frappe animates `top` for 0.5s on scroll
 	transition: none;
