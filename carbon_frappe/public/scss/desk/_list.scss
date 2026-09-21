@@ -145,6 +145,22 @@
 	background: var(--card-bg);
 }
 
+// .page-container's own PARENT, and the actual scrolling element (frappe:
+// desk/main.scss:37, `.main-section { overflow: scroll; }`) — its background
+// is what showed through the one gap .page-container's own fix above cannot
+// reach: frappe's user-onboarding widget (billing.bundle.js,
+// user_onboarding.bundle.js) reserves room for its own floating "Getting
+// Started" panel by setting `.main-section`'s `padding-bottom` to 90px
+// directly, in JS, AFTER everything this app's CSS can see has already
+// rendered — that reserved strip sits OUTSIDE .page-container's own box
+// entirely (below it, not inside it), so it kept showing the ambient canvas
+// even once .page-container itself went uncoloured. Confirmed live: scrolled
+// a document all the way down, the gray strip was `.main-section`'s own
+// (transparent) background over `body`'s.
+.main-section {
+	background: var(--card-bg);
+}
+
 .page-title .title-text,
 .page-title h3 {
 	font-size: var(--text-2xl);

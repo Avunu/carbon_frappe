@@ -72,6 +72,22 @@
 	top: var(--cf-page-head-height, 96px);
 }
 
+// The SAME stale-height bug, a second place: frappe's own form sidebar
+// (form_sidebar.scss, `body[data-route^="Form"] .layout-side-section`) is
+// ALSO `position: sticky`, meant to stick right below .page-head and fill
+// the rest of the viewport — but it uses `var(--page-head-height)` directly
+// (the correctly-NAMED variable this time, not --navbar-height, but frappe's
+// own value behind it is the same stale 48px constant). At the real ~95px
+// height, `top: 48px` tries to stick 48px into .page-head's own box, and
+// `height: calc(100vh - 48px)` over-measures by the same amount — together
+// that is indistinguishable from not sticking at all: the sidebar scrolls
+// with the page instead of staying put, confirmed live (its rect moved by
+// the full scroll delta). Same fix, same variable.
+body[data-route^="Form"] .layout-side-section {
+	top: var(--cf-page-head-height, 96px);
+	height: calc(100vh - var(--cf-page-head-height, 96px));
+}
+
 // -- Card / backdrop ----------------------------------------------------------
 // The canvas-with-a-card split lives ONE level lower than PR #24 first put
 // it: breadcrumb, title and the tab row above are uncoloured (desk/_list.scss,
