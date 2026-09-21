@@ -74,18 +74,41 @@
 
 // The SAME stale-height bug, a second place: frappe's own form sidebar
 // (form_sidebar.scss, `body[data-route^="Form"] .layout-side-section`) is
-// ALSO `position: sticky`, meant to stick right below .page-head and fill
-// the rest of the viewport — but it uses `var(--page-head-height)` directly
-// (the correctly-NAMED variable this time, not --navbar-height, but frappe's
-// own value behind it is the same stale 48px constant). At the real ~95px
-// height, `top: 48px` tries to stick 48px into .page-head's own box, and
-// `height: calc(100vh - 48px)` over-measures by the same amount — together
-// that is indistinguishable from not sticking at all: the sidebar scrolls
-// with the page instead of staying put, confirmed live (its rect moved by
-// the full scroll delta). Same fix, same variable.
+// ALSO `position: sticky`, meant to stick right below .page-head — but it
+// uses `var(--page-head-height)` directly (the correctly-NAMED variable this
+// time, not --navbar-height, but frappe's own value behind it is the same
+// stale 48px constant). Fixing just `top` (as below) was not enough on its
+// own: frappe's rule also sets `height: calc(100vh - page-head-height)`
+// directly on the sidebar, and `.layout-main.layout-two-column` (the flex
+// row it shares with the tab content) has no `align-items` of its own —
+// which defaults to `stretch`. An element with an EXPLICIT height still
+// contributes that exact height to the row's own auto-height calculation
+// (stretch only resolves auto-sized items afterwards), so on any document
+// short enough that the tab content needs less than one viewport, the
+// sidebar's own forced height becomes the row's height outright — leaving
+// the sidebar exactly as tall as its own containing block, i.e. zero room
+// for `position: sticky` to have anything to stick WITHIN. Confirmed live on
+// a short Customer form: row height and sidebar height were identical to
+// three decimal places, and the sidebar moved pixel-for-pixel with scroll —
+// indistinguishable from `position: static`. A long form (many sections)
+// happened to hide this, since its tab content alone already exceeds one
+// viewport and so was always taller than the sidebar's forced height,
+// giving it slack by accident.
+//
+// `max-height` in place of `height`, plus `align-self: flex-start` to opt
+// this one item out of the row's default stretch, fixes it at the source:
+// the sidebar now sizes to its OWN content (capped at one viewport for a
+// pathologically long attachments/tags list, scrolling internally past
+// that via frappe's own `overflow-y: auto`), never to the row's height, so
+// there is always slack to stick within regardless of document length.
+// Confirmed live post-fix on the same short document: sidebar top now
+// lands exactly at .page-head's bottom edge, identical to the tab bar,
+// through the full scroll range.
 body[data-route^="Form"] .layout-side-section {
 	top: var(--cf-page-head-height, 96px);
-	height: calc(100vh - var(--cf-page-head-height, 96px));
+	height: auto;
+	max-height: calc(100vh - var(--cf-page-head-height, 96px));
+	align-self: flex-start;
 }
 
 // -- Card / backdrop ----------------------------------------------------------
