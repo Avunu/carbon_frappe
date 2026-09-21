@@ -331,11 +331,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1789650162,
-        "narHash": "sha256-gwkN31F2zA90bWSDFQbcxMUZU3HtiWx3n+Y3TOojlCc=",
+        "lastModified": 1789668915,
+        "narHash": "sha256-oGyQBkZcao7fFnB5+AmnU1vzCzQGR8098xijXanr2WQ=",
         "owner": "Avunu",
         "repo": "frappe-nix",
-        "rev": "8fd37b5f1fd7cba78e72bfb636daba91343dc00e",
+        "rev": "e21ca39a006552fe8f23d33b444eff70782be659",
         "type": "github"
       },
       "original": {
@@ -874,11 +874,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1789286504,
-        "narHash": "sha256-eiEK7cKZORNEvX0GeF3RtNEF/JXhgf2RqSp3230q13E=",
+        "lastModified": 1789546076,
+        "narHash": "sha256-zVxLZiSnmaaPLwnhj7pwmqe3axBg/C6nG5JZsJMh2g4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ef34387ddd751e1ab8857adf4676492d32eb24ec",
+        "rev": "b1b875982b17dabde9b4a37f3e229e74913e6db3",
         "type": "github"
       },
       "original": {
