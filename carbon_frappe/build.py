@@ -14,23 +14,22 @@ from frappe.utils.redis_wrapper import ClientCache
 SHADOWED_BUNDLES = ("desk", "website", "login", "email")
 
 # This app's own JS bundles. They need healing for a different reason than the
-# CSS above: frappe writes assets.json from two functions that disagree about
-# the key as soon as a bundle entry is a `.ts` file.
+# CSS above — historically: frappe writes assets.json from two functions that
+# disagreed about the key as soon as a bundle entry was a `.ts` file.
 #
 #   * every build (including `bench watch`) ends in `write_assets_json`, which
 #     keys by the ENTRY basename — `path.basename(info.entryPoint)`,
-#     frappe/esbuild/esbuild.js:450. For us that is `carbon_desk.bundle.ts`.
+#     frappe/esbuild/esbuild.js:450. For us that was `carbon_desk.bundle.ts`.
 #   * `bench build --using-cached` ends in `update_assets_obj`, which keys by
 #     the OUTPUT basename minus the hash (esbuild.js:181-185). esbuild emits
 #     `.js` whatever the entry was, so that is `carbon_desk.bundle.js`.
 #
-# hooks.py's `app_include_js` can only name one, and `include_script` is a bare
-# dict lookup with no extension fallback (frappe/utils/jinja_globals.py:151-156).
-# It names `.js`. Without this, the `.js` key keeps whatever stale hash an older
-# build left behind and the desk quietly serves last month's theme — with no
-# error anywhere. scripts/patch-assets.ts does the same repair, but only runs
-# under `bench build` (esbuild.js:88 gates it off in watch mode), so this hook
-# is what covers migrate/install.
+# The entries were renamed to `.js` 2026-09-17 (the TS code moved beside them,
+# behind thin import-only entries), so both keying paths now agree and this
+# hook is a no-op tripwire: if it ever re-points a key again, an entry's name
+# disagrees with its output again. It stays because hooks run it free on
+# migrate/install, and `include_script` still does a bare dict lookup with no
+# extension fallback (frappe/utils/jinja_globals.py:151-156).
 JS_BUNDLES = ("carbon_charts", "carbon_desk", "carbon_anatomy", "carbon_tables")
 
 

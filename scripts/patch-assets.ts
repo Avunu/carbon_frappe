@@ -104,23 +104,19 @@ for (const [jsonName, cssDir, keyPrefix] of [
 
 // Re-point the `.js` bundle keys at the freshly built files.
 //
-// frappe writes assets.json from TWO functions that disagree about the key the
-// moment a bundle entry is a `.ts` file:
+// HISTORICAL: this loop used to REPAIR a real disagreement — when the bundle
+// entries were `.ts` files, frappe's `write_assets_json` keyed by the ENTRY
+// basename (`carbon_desk.bundle.ts`, frappe/esbuild/esbuild.js:450) while the
+// `--using-cached` path keyed by the OUTPUT name (`carbon_desk.bundle.js`,
+// esbuild.js:181-185), and hooks.py looks up the `.js` name only. Every build
+// therefore left the `.js` key stale unless this ran.
 //
-//   * a normal `bench build` ends in `write_assets_json`, which keys by the
-//     ENTRY basename — `path.basename(info.entryPoint)`
-//     (frappe/esbuild/esbuild.js:450). That is `carbon_desk.bundle.ts`.
-//   * `bench build --using-cached` ends in `update_assets_obj`, which keys by
-//     the OUTPUT basename with the hash segment dropped (esbuild.js:181-185).
-//     esbuild emits `.js` whatever the entry was, so that is
-//     `carbon_desk.bundle.js`.
-//
-// hooks.py can only name one, and `include_script` is a bare dict lookup with
-// no extension fallback (frappe/utils/jinja_globals.py:151-156). It names
-// `.js`, which the cached path and every pre-migration build already produce;
-// this loop supplies it on the normal path. Skipping it does not fail loudly —
-// the `.js` key keeps whatever stale hash an older build left behind, and the
-// desk quietly runs last month's theme.
+// 2026-09-17 the entries were renamed to `.js` (thin entries; the TS code
+// moved beside them), so BOTH keying paths now agree on `.bundle.js` in every
+// build mode — watch included. This loop no longer changes anything on a
+// healthy build; it stays as a TRIPWIRE: if it ever re-points a key again,
+// someone re-introduced an entry whose name disagrees with its output, and
+// that is a code change to investigate rather than drift to heal.
 //
 // No rtl variant: that prefix is a CSS-only convention (esbuild.js:451-453).
 const jsAssetsPath = path.join(assetsDir, "assets.json");

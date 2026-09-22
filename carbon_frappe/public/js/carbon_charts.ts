@@ -1,6 +1,15 @@
 // carbon_frappe chart shim — puts every frappe.Chart series on an
 // @carbon/charts categorical palette, and re-themes them when the desk theme
 // changes. Loaded via app_include_js after frappe's desk bundles.
+//
+// The esbuild entry for this code is the thin `carbon_charts.bundle.js` beside
+// it, NOT this file: frappe's esbuild keys assets.json by the ENTRY basename
+// (`path.basename(info.entryPoint)`, esbuild.js:450), while hooks.py looks up
+// the OUTPUT basename minus the hash. When the code WAS the entry
+// (`carbon_charts.bundle.ts`), every watch-driven rebuild refreshed a key
+// nothing loads and left the served `.bundle.js` key silently stale. Moved here
+// (a non-`*.bundle.*` name) 2026-09-17 behind a thin `.js` entry so both
+// keying paths agree in every build mode.
 import { light, dark, heatmap } from "./generated/chart-palettes.ts";
 import type {
 	FrappeBaseChart,
