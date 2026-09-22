@@ -139,21 +139,24 @@ pre,
 	border-radius: var(--border-radius-full);
 }
 
-// Form surface. Under g10 frappe's own default is already right: .form-page
-// paints from --card-bg (= layer-01, #ffffff) and the page body is --bg-color
-// (= background, #f4f4f4), so the record reads as a white card on a gray canvas
-// and the transparent .form-footer below it shows that canvas by itself. The
-// swap and the full-width :has() tint that used to live here only existed to
-// undo the White theme's inverted ladder; both are deleted.
+// Form surface. .form-page's tab content carries the canvas tint now
+// (desk/_form.scss's Card/backdrop section) — the shell around it (page head,
+// tabs, and this footer) is uncoloured, so the "comment area" reads as part
+// of the same plain surface as the breadcrumb/title/tabs above the form, not
+// as a continuation of a gray canvas. .form-footer sits OUTSIDE .form-page
+// (a sibling in .std-form-layout, frappe/js/frappe/form/form.js), directly on
+// the page canvas otherwise, so it needs the same explicit --card-bg every
+// other uncoloured surface gets.
 .form-footer {
+	background: var(--card-bg);
 	padding-block: 20px;
 
-	// Fields default to field-02 (the on-a-card step), but the footer sits on the
-	// page canvas, where field-02 is the same tone. Step the editor the other way
-	// so it reads as a raised input: #ffffff light / #262626 dark.
+	// Fields default to field-02, the correct step for a field sitting on a
+	// layer-01 card — which this footer now is, same as every other input on
+	// the page, so no special-casing is needed here any more.
 	.comment-input-container .ql-editor,
 	.comment-input-wrapper .ql-editor {
-		background-color: var(--cds-field-01);
+		background-color: var(--cds-field-02);
 	}
 
 	// the timeline's "Activity" heading + actions rows hardcode var(--bg-color)

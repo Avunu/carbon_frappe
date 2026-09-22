@@ -1,11 +1,15 @@
-// Form chrome: tabs and inline messages.
+// Form chrome: tabs, card backdrop and inline messages.
 @use "@carbon/colors" as c;
 
 // -- Tabs --------------------------------------------------------------------
-// Carbon line tabs: 40px tall, 16px inline padding, a 2px $border-interactive
-// underline on the selected tab. frappe uses `padding: 10px 0` with a 15px
-// side margin and a 1px $text-color underline, and compensates the active
-// state with `padding-bottom: 9px`.
+// Carbon LINE tabs, not contained: Carbon's own usage guidance (line tabs are
+// "commonly used... for large content areas using the entire page for layout,
+// not connected to any other components"; contained tabs are for "defined
+// content areas like sub-pages", "always attached to a tab panel... using the
+// SAME layer token as the selected tab") puts a top-level document form
+// squarely in the line-tabs case — contained is the nested-panel pattern, not
+// this one. 40px tall, 16px inline padding, a 2px $border-interactive
+// underline on the selected tab, matching frappe's own 40px row height.
 .form-tabs-list {
 	border-bottom: 1px solid var(--carbon-border-subtle);
 	border-radius: 0;
@@ -25,13 +29,154 @@
 			background-color: var(--cds-layer-hover-01);
 		}
 
+		&:focus-visible {
+			outline: 2px solid var(--cds-focus);
+			outline-offset: -2px;
+			font-weight: inherit;
+		}
+
 		&.active {
 			padding-bottom: 0;
 			font-weight: var(--font-weight-semibold);
 			color: var(--cds-text-primary);
+			// Setting the property here — rather than a box-shadow accent, as a
+			// contained tab would — is what beats frappe's own `.active` rule
+			// (desk/form.scss:505-510, `border-bottom: 1px solid
+			// var(--text-color)`) outright: same selector specificity, and
+			// this bundle loads after frappe's, so whichever one actually sets
+			// `border-bottom` wins. A box-shadow accent leaves the property
+			// unset and lets frappe's declaration through — see the two fixes
+			// that chased exactly that leak across #24's earlier commits.
 			border-bottom: 2px solid var(--cds-border-interactive);
 		}
 	}
+}
+
+// frappe already makes .form-tabs-list `position: sticky` (desk/form.scss:
+// 484-485) and toggles between these two classes on scroll (layout.js's
+// `setup_events`) to pin it directly below .page-head — but the `top` it
+// pins to (desk/form.scss:527-535) is `calc(var(--navbar-height))`, which
+// only equals ".page-head's own height" by coincidence in stock frappe,
+// where both --navbar-height and --page-head-height happen to be 48px.
+// Carbon's two-row breadcrumb eyebrow + heading makes .page-head genuinely
+// taller (96px+, and it varies — a wrapped title, a longer trail), so
+// sticking at a stale 48px put the tab bar HALFWAY INSIDE the (taller,
+// higher z-index) header instead of below it — confirmed live, scrolled: the
+// tab bar's top half rendered behind .page-head. `--cf-page-head-height` is
+// .page-head's own measured height (js/anatomy/page_head_metrics.ts, a
+// ResizeObserver so it stays right as the header's content changes), and is
+// what these two need instead — not frappe's `.show-navbar` sub-case, which
+// nothing in frappe or this theme ever toggles.
+.form-tabs-sticky-up,
+.form-tabs-sticky-down {
+	top: var(--cf-page-head-height, 96px);
+}
+
+// The SAME stale-height bug, a second place: frappe's own form sidebar
+// (form_sidebar.scss, `body[data-route^="Form"] .layout-side-section`) is
+// ALSO `position: sticky`, meant to stick right below .page-head — but it
+// uses `var(--page-head-height)` directly (the correctly-NAMED variable this
+// time, not --navbar-height, but frappe's own value behind it is the same
+// stale 48px constant). Fixing just `top` (as below) was not enough on its
+// own: frappe's rule also sets `height: calc(100vh - page-head-height)`
+// directly on the sidebar, and `.layout-main.layout-two-column` (the flex
+// row it shares with the tab content) has no `align-items` of its own —
+// which defaults to `stretch`. An element with an EXPLICIT height still
+// contributes that exact height to the row's own auto-height calculation
+// (stretch only resolves auto-sized items afterwards), so on any document
+// short enough that the tab content needs less than one viewport, the
+// sidebar's own forced height becomes the row's height outright — leaving
+// the sidebar exactly as tall as its own containing block, i.e. zero room
+// for `position: sticky` to have anything to stick WITHIN. Confirmed live on
+// a short Customer form: row height and sidebar height were identical to
+// three decimal places, and the sidebar moved pixel-for-pixel with scroll —
+// indistinguishable from `position: static`. A long form (many sections)
+// happened to hide this, since its tab content alone already exceeds one
+// viewport and so was always taller than the sidebar's forced height,
+// giving it slack by accident.
+//
+// `max-height` in place of `height`, plus `align-self: flex-start` to opt
+// this one item out of the row's default stretch, fixes it at the source:
+// the sidebar now sizes to its OWN content (capped at one viewport for a
+// pathologically long attachments/tags list, scrolling internally past
+// that via frappe's own `overflow-y: auto`), never to the row's height, so
+// there is always slack to stick within regardless of document length.
+// Confirmed live post-fix on the same short document: sidebar top now
+// lands exactly at .page-head's bottom edge, identical to the tab bar,
+// through the full scroll range.
+body[data-route^="Form"] .layout-side-section {
+	top: var(--cf-page-head-height, 96px);
+	height: auto;
+	max-height: calc(100vh - var(--cf-page-head-height, 96px));
+	align-self: flex-start;
+}
+
+// -- Card / backdrop ----------------------------------------------------------
+// The canvas-with-a-card split lives ONE level lower than PR #24 first put
+// it: breadcrumb, title and the tab row above are uncoloured (desk/_list.scss,
+// this file's Tabs section), matching Carbon's own reference products, and
+// only the panel BELOW the tabs — .form-tab-content, a sibling of
+// .form-tabs-list inside .form-page (frappe/js/frappe/form/layout.js:29,45-51)
+// — gets the canvas tint.
+.form-tab-content {
+	// frappe's own `margin-top: var(--margin-sm)` (desk/form.scss:523-526) sat
+	// above the flowing content it used to be; now it sits above THIS box's own
+	// background, so it opened a strip of .form-page's white between the tab
+	// row and the canvas instead of the intended gray gutter. Zeroed — the
+	// padding below is the gutter now.
+	margin-top: 0;
+	background: var(--bg-color);
+	padding: var(--padding-md);
+}
+
+// One card per SECTION (frappe/js/frappe/form/section.js builds
+// .form-section.card-section — form.js:226-241's `card_layout: true` puts it
+// on every document form's sections), floating on .form-tab-content's canvas
+// above, rather than one card per tab: Cloud Pak's own reference groups
+// settings into separate named panels ("Run", "NLS"), not one undivided sheet.
+//
+// frappe's own `hide_border` (a Section Break docfield; section.js:51-52
+// toggles `.hide-border` on the section's OWN wrapper) already means "no
+// divider below me, the next section continues this one" for the single
+// bottom hairline frappe core draws — see its own `.hide-border { border-
+// bottom: none; padding-bottom: 0; ... }` a few lines up in desk/form.scss.
+// Extended here to the full card this file adds: a hide-border section drops
+// ITS trailing edge (border + gap), and the section immediately after it
+// drops its OWN leading edge to match — the only way CSS can express "my
+// preceding sibling has hide-border" is the adjacent-sibling combinator, the
+// same idiom this file's own Tabs section already uses for divider
+// suppression. A run of any length collapses into one unbroken card
+// regardless of how many sections it spans; a DocType with no `hide_border`
+// set anywhere gets the full Cloud-Pak-style one-card-per-section look, and
+// existing DocTypes that already use `hide_border` purely to avoid a
+// visually busy stack of layout-only sections keep exactly that effect here.
+.form-section.card-section {
+	background: var(--card-bg);
+	border: 1px solid var(--carbon-border-subtle);
+	border-radius: 0;
+	margin-bottom: var(--padding-md);
+	padding-bottom: var(--padding-sm);
+
+	&.hide-border {
+		border-bottom: none;
+		margin-bottom: 0;
+	}
+}
+
+// The second selector is not redundant: a hide-border section's very next
+// DOM sibling is sometimes a conditionally-EMPTY section (`depends_on` fields
+// all hidden on this particular document — frappe's own .empty-section,
+// display:none) sitting between it and the section actually meant to
+// continue its card — confirmed live on Sales Invoice (taxes_section, then
+// the always-present-but-often-empty section_break_43, then totals_section).
+// `+` only sees literal DOM adjacency, so both hops need spelling out; a
+// second empty section in the same gap is not.
+.form-section.card-section.hide-border + .form-section.card-section,
+.form-section.card-section.hide-border
+	+ .form-section.card-section.empty-section
+	+ .form-section.card-section {
+	border-top: none;
+	margin-top: 0;
 }
 
 // -- Inline messages ---------------------------------------------------------

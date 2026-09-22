@@ -23,19 +23,45 @@
 	// eyebrow above it (Products PageHeader). The head is a flex row whose left
 	// cell is now two lines tall, so the action cell rides its bottom edge.
 	.page-head-content {
+		position: relative;
 		height: auto;
 		min-height: 48px;
 		align-items: flex-end;
 		padding-block: 12px;
+
+		// The rule IBM Products' own PageHeader draws under its breadcrumb bar
+		// by default (`PageHeaderBreadcrumbBar`'s `border` prop, true unless
+		// told otherwise), full width — under .page-actions too, not just the
+		// title column beside it. It used to be a border on the title's own
+		// li (still visible in git blame), which can only ever be as wide as
+		// that li's own box: `.navbar-breadcrumbs` is a WRAPPING flex
+		// container, and a wrapping flex container's intrinsic size is
+		// computed as though nothing wrapped, not as the widest of its
+		// actual wrapped rows — the same sizing quirk documented on
+		// `.navbar-breadcrumbs` below, and the same reason the pill needed
+		// moving rather than positioning in place.
+		//
+		// A pseudo-element sidesteps it entirely: full width of
+		// `.page-head-content` needs no measurement, only `top` does — the
+		// title li's own top edge, wherever the trail's wrapped line(s)
+		// happen to end. js/anatomy/page_head_metrics.ts measures that
+		// (ResizeObserver on .page-head, so a title that wraps to a second
+		// line or a badge that appears moves the rule without a route
+		// change) and writes it to `--cf-trail-rule-top`.
+		&::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: var(--cf-trail-rule-top, 44px);
+			border-top: 1px solid var(--carbon-border-subtle);
+		}
 	}
 }
 
 .page-title {
 	flex: 1;
 
-	// The trail and the document's status pill sit side by side, with the pill
-	// on the heading's line: Carbon puts a status tag beside a page title, and
-	// it is what keeps the head two rows tall instead of three.
 	.title-area {
 		display: flex;
 		align-items: flex-end;
@@ -46,30 +72,51 @@
 	}
 
 	// frappe truncates the whole trail to one line; the heading needs to wrap.
-	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs so the
-	// pill stays next to the heading, while still letting a long title shrink
-	// and wrap rather than push the pill off the row.
+	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs, while
+	// still letting a long title shrink and wrap rather than overflow the row.
+	//
+	// NOT what sizes the pill's position, despite `.navbar-breadcrumbs` being a
+	// flex CONTAINER whose own `width`/`fit-content` looks like it should: a
+	// wrapping flex container's intrinsic size is computed as though nothing
+	// wrapped (every crumb plus the heading, summed on one hypothetical line),
+	// not as the widest of its actual wrapped rows — confirmed live, `width:
+	// fit-content` still measured ~495px against a ~340px rendered heading. No
+	// CSS sizing keyword asks for "as wide as my widest wrapped line", so the
+	// pill cannot be positioned as this container's flex sibling and read as
+	// adjacent to the heading; see js/anatomy/title_indicator.ts, which moves
+	// it inside the heading's own li instead, where a single-line flex row has
+	// none of this ambiguity.
 	.navbar-breadcrumbs {
 		flex: 0 1 auto;
 		min-width: 0;
 		flex-wrap: wrap;
 		align-items: baseline;
 
+		// The heading's OWN row: Carbon puts a status tag beside a page title,
+		// and title_indicator.ts relocates frappe's `.indicator-pill` here
+		// (from `.title-area`, where the sizing quirk above stranded it) so
+		// `align-items: center` is what actually keeps trail, heading and
+		// pill on one row now, not `.title-area`'s.
+		//
+		// The rule itself no longer lives on this li (see
+		// `.page-head-content::before`'s own comment for why), but the
+		// spacing either side of it still does: `margin-top` is the gap
+		// between the trail and the rule (page_head_metrics.ts positions the
+		// rule at this li's own top edge, i.e. right where the margin ends),
+		// `padding-top` the gap between the rule and the heading text.
 		> li:last-child {
+			display: flex;
+			align-items: center;
+			gap: 8px;
 			flex: 0 0 100%;
-			margin-top: 2px;
+			margin-top: var(--margin-sm);
+			padding-top: var(--padding-sm);
 
 			// the "/" divider is for a trail, not for the heading below it
 			> a::before {
 				content: none;
 			}
 		}
-	}
-
-	// bottom-aligned lands the pill on the heading's descender space; the small
-	// lift optically centres it against the 28px cap height
-	.page-indicator-pill {
-		margin-bottom: 4px;
 	}
 }
 

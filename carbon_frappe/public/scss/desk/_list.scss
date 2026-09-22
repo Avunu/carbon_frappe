@@ -115,12 +115,50 @@
 	}
 }
 
-// page head: flat $background bar with heading-03 title (20px / 400)
+// page head: flat $layer-01 bar with heading-03 title (20px / 400).
+//
+// NOT $background: Carbon's own page-header guidance (and every reference
+// product built on it) keeps breadcrumb/title/tab chrome uncoloured, with the
+// canvas tint reserved for a deeper content region — see desk/_form.scss's
+// `.form-tab-content` for where that tint actually lives on a document form.
+// Desk-wide on purpose: this is the one `.page-head` every route shares
+// (list, report, workspace, form), so all of them go uncoloured together.
 .page-head {
-	background: var(--bg-color);
+	background: var(--card-bg);
 	border-bottom: 1px solid var(--carbon-border-subtle);
 	// frappe animates `top` for 0.5s on scroll
 	transition: none;
+}
+
+// The ambient canvas everything else in the desk sits on (frappe:
+// desk/page.scss:54-59), uncoloured for the same reason and at the same
+// desk-wide scope as .page-head above: with the canvas tint scoped to
+// .form-tab-content specifically, this outer layer painting it too just
+// leaked gray into two places nothing else claims — a form's own
+// right-hand .form-sidebar (frappe/scss/desk/form_sidebar.scss, itself
+// unpainted, so it showed whatever sat behind it) and the empty space below
+// short content, wherever .page-container is taller than what it holds.
+// Workspaces are unaffected: their canvas is its own explicit rule
+// (desk/_widgets.scss, `[data-page-route="Workspaces"] .layout-main-section`),
+// not this ambient one.
+.page-container {
+	background: var(--card-bg);
+}
+
+// .page-container's own PARENT, and the actual scrolling element (frappe:
+// desk/main.scss:37, `.main-section { overflow: scroll; }`) — its background
+// is what showed through the one gap .page-container's own fix above cannot
+// reach: frappe's user-onboarding widget (billing.bundle.js,
+// user_onboarding.bundle.js) reserves room for its own floating "Getting
+// Started" panel by setting `.main-section`'s `padding-bottom` to 90px
+// directly, in JS, AFTER everything this app's CSS can see has already
+// rendered — that reserved strip sits OUTSIDE .page-container's own box
+// entirely (below it, not inside it), so it kept showing the ambient canvas
+// even once .page-container itself went uncoloured. Confirmed live: scrolled
+// a document all the way down, the gray strip was `.main-section`'s own
+// (transparent) background over `body`'s.
+.main-section {
+	background: var(--card-bg);
 }
 
 .page-title .title-text,
