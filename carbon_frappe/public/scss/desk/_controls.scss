@@ -68,6 +68,43 @@ select.form-control,
 	padding-inline-end: 32px;
 }
 
+// ---- Select chevron and placeholder -----------------------------------------
+// frappe pins both at `top: 3px` (common/global.scss), an offset that centres
+// them in ITS 28px field. In a 40px Carbon field they ride 6px high: the
+// chevron and the "Status" placeholder of a list's standard filter sat visibly
+// above every text field's value beside them. The placeholder's `left: 12px`
+// was likewise 4px right of the 8px inline inset the value text and every
+// other field's placeholder use (--input-padding).
+//
+// The chevron is centred on the field's own box rather than re-offset, so no
+// field height can strand it again. Selector list, not one rule: frappe's grid
+// variant (common/grid.scss, `top: 9px` at (0,6,0)) would otherwise keep its
+// own `top` and, with `bottom: 0` from here, land 4.5px LOW in child tables.
+// The `.xs` compounds match frappe's own (0,5,0) list-filter variant.
+.frappe-control[data-fieldtype="Select"] .control-input,
+.frappe-control[data-fieldtype="Select"].form-group,
+.grid-body .editable-row .frappe-control[data-fieldtype="Select"].form-group {
+	.select-icon,
+	.select-icon.xs {
+		top: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+	}
+}
+
+// Centred by transform rather than flex so the placeholder keeps frappe's
+// `.ellipsis` truncation. No context re-offsets it, so the base pair suffices.
+.frappe-control[data-fieldtype="Select"] .control-input,
+.frappe-control[data-fieldtype="Select"].form-group {
+	.placeholder,
+	.placeholder.xs {
+		top: 50%;
+		left: 8px;
+		transform: translateY(-50%);
+	}
+}
+
 // Invalid state: Carbon uses a 2px support-error outline (not a red border)
 .frappe-control.has-error {
 	input,

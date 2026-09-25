@@ -27,7 +27,10 @@
 		height: auto;
 		min-height: 48px;
 		align-items: flex-end;
-		padding-block: 12px;
+		// The bottom inset is the title row's, and matches the gap the title
+		// li leaves above it (see `> li:last-child` below), so the row sits
+		// centred between the rule and the head's bottom border.
+		padding-block: 12px 8px;
 
 		// The rule IBM Products' own PageHeader draws under its breadcrumb bar
 		// by default (`PageHeaderBreadcrumbBar`'s `border` prop, true unless
@@ -103,14 +106,27 @@
 		// spacing either side of it still does: `margin-top` is the gap
 		// between the trail and the rule (page_head_metrics.ts positions the
 		// rule at this li's own top edge, i.e. right where the margin ends),
-		// `padding-top` the gap between the rule and the heading text.
+		// `padding-top` the gap between the rule and the title row.
+		//
+		// The row itself is 40px, IBM Products PageHeader's own title
+		// `min-block-size` ($spacing-08) and the height of the md buttons in
+		// .page-actions beside it. Heading-04's 36px line box used to be the
+		// row, and .page-head-content's `align-items: flex-end` bottom-aligned
+		// the 40px buttons to it, which put them 2px above the heading's centre
+		// and 3px under the rule against 13px over the bottom border. At equal
+		// heights the bottom alignment is a centre alignment, and 8px above
+		// (here) plus 8px below (.page-head-content's padding-block-end) makes
+		// the band symmetric. content-box so `min-height` is the row alone,
+		// not the row plus the gap above it.
 		> li:last-child {
 			display: flex;
 			align-items: center;
 			gap: 8px;
 			flex: 0 0 100%;
+			box-sizing: content-box;
+			min-height: var(--btn-height);
 			margin-top: var(--margin-sm);
-			padding-top: var(--padding-sm);
+			padding-top: 8px;
 
 			// the "/" divider is for a trail, not for the heading below it
 			> a::before {
