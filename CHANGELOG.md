@@ -1,5 +1,14 @@
 # Changelog
 
+## [16.0.1](https://github.com/Avunu/carbon_frappe/compare/v16.0.0...v16.0.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* align list toolbars and make table editors fill their cell ([2461392](https://github.com/Avunu/carbon_frappe/commit/24613923517390041fd90014deab82e1b0f31dec))
+* align the page-head actions and list filter toolbar ([aa8f42c](https://github.com/Avunu/carbon_frappe/commit/aa8f42c54aba17c2dc2b40756b15383b79d9e43b))
+* make single-line table editors fill their cell ([310090c](https://github.com/Avunu/carbon_frappe/commit/310090c7c856a83b7f21d40a1650232530a20783))
+
 ## [16.0.0](https://github.com/Avunu/carbon_frappe/compare/v0.1.0...v16.0.0) (2026-09-22)
 
 
