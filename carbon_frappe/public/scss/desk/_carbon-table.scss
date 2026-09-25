@@ -1264,11 +1264,40 @@
 			// frappe's controls reserve a wide trailing inset for their own
 			// affordances (a Link keeps 44px for the open-record arrow). In a
 			// grid cell that is most of the column, so trim it to the icon.
+			// The leading inset is the static cell's own 16px, so the value
+			// does not jump sideways when its editor opens over it.
 			padding-block: 0;
-			padding-inline: 0 var(--cds-spacing-06, 1.5rem);
+			padding-inline: var(--cds-spacing-05, 1rem) var(--cds-spacing-06, 1.5rem);
 
 			&:focus {
 				outline: none;
+			}
+		}
+
+		// `block-size: 100%` on the field above only resolves if every box
+		// between it and the mount has a definite height, and frappe's wrapper
+		// chain (`.frappe-control > .form-group > .control-input-wrapper >
+		// .control-input`, plus `.link-field > .awesomplete` around a Link's
+		// input) is all `height: auto`. So the percentage fell back to the
+		// field's content height: every single-line editor opened as an 18px
+		// strip pinned to the top of the 48px row, and a Select, sized by its
+		// longest option as a flex item, also stopped short of the cell's
+		// trailing edge. The control stretches to the mount on both axes and
+		// each wrapper passes the height down. Not the Check editor, whose own
+		// rule below centres the box inside the control; a full-height
+		// `.form-group` there would pin it to the top instead.
+		> .frappe-control:not([data-fieldtype="Check"]) {
+			flex: 1 1 auto;
+			align-self: stretch;
+			min-inline-size: 0;
+
+			.form-group,
+			.control-input-wrapper,
+			.control-input,
+			.link-field,
+			.awesomplete {
+				block-size: 100%;
+				margin: 0;
 			}
 		}
 
@@ -1318,8 +1347,8 @@
 	// control is a <textarea>) is a popover anchored to the cell's top edge:
 	// it keeps the cell's width, grows downward, and carries the focus frame
 	// and a shadow itself, because the td's inset outline only frames the
-	// 48px row. `align-items: stretch` so frappe's wrapper chain
-	// (`.frappe-control > .form-group > .control-input-wrapper`) fills it.
+	// 48px row. The single-line rule above already stretches frappe's wrapper
+	// chain; `align-items: stretch` keeps it from centring in the taller box.
 	.dt-cell__edit--multiline {
 		inset-block-end: auto;
 		block-size: auto;
@@ -1329,11 +1358,6 @@
 		outline: 2px solid var(--cds-focus);
 		outline-offset: -2px;
 		box-shadow: 0 2px 6px var(--cds-shadow, rgb(0 0 0 / 30%));
-
-		> .frappe-control {
-			flex: 1 1 auto;
-			min-inline-size: 0;
-		}
 
 		textarea {
 			block-size: 7.5rem;

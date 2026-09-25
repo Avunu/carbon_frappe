@@ -271,6 +271,19 @@ interface CheckEditorProbe {
 	weight: string;
 }
 
+/** A single-line editor's field against the cell it opened in. */
+interface FieldEditorProbe {
+	present: boolean;
+	/** Field height and cell height. */
+	height: number;
+	cell: number;
+	/** Field width over cell width. */
+	widthRatio: number;
+	/** Where the value text starts, from the cell's left edge: editor, then the static cell one row down. */
+	textStart: number;
+	staticStart: number;
+}
+
 /** Space on a focused Check cell: the write and the cell after it. */
 interface CheckToggleProbe {
 	before: unknown;
@@ -735,6 +748,46 @@ try {
 		Math.abs(checkEditor.dx) <= 1 && Math.abs(checkEditor.dy) <= 2,
 		JSON.stringify({ dx: checkEditor.dx, dy: checkEditor.dy }),
 	);
+
+	// A single-line editor fills its cell and keeps the static value's inset.
+	// frappe's wrapper chain between the mount and the field is all
+	// `height: auto`, so the field's `block-size: 100%` fell back to its
+	// content: every Data/Select/Link editor opened as an 18px strip pinned to
+	// the top of the 48px row, its text flush to the cell's edge 16px left of
+	// the value it replaced, and a Select shrank to its longest option.
+	for (const [label, col] of [
+		["Data", editCols.data],
+		["Select", editCols.select],
+	] as const) {
+		const field = await page.eval<FieldEditorProbe>(`(() => {
+      const dt = cur_list.datatable;
+      dt.navigation.focus(${col}, 0);
+      dt.navigation.activateFocused();
+      const td = document.querySelector('tbody .dt-cell--editing');
+      const f = td && td.querySelector('.dt-cell__edit input, .dt-cell__edit select');
+      const below = document.querySelector('tbody .dt-cell[data-col-index="${col}"][data-row-index="' + dt.datamanager.rowViewOrder[1] + '"]');
+      const range = document.createRange();
+      if (below) range.selectNodeContents(below.querySelector('.dt-cell__content'));
+      const c = td ? td.getBoundingClientRect() : { left: 0, width: 1, height: 0 };
+      const r = f ? f.getBoundingClientRect() : { left: 0, width: 0, height: 0 };
+      const cb = below ? below.getBoundingClientRect() : { left: 0 };
+      const res = { present: !!f, height: Math.round(r.height), cell: Math.round(c.height), widthRatio: r.width / c.width,
+                    textStart: Math.round(r.left + (f ? parseFloat(getComputedStyle(f).paddingLeft) : 0) - c.left),
+                    staticStart: Math.round(range.getBoundingClientRect().left - cb.left) };
+      dt.editing.deactivate(false);
+      return res;
+    })()`);
+		ok(
+			`the ${label} editor fills its cell`,
+			field.present && field.height >= field.cell - 2 && field.widthRatio > 0.85,
+			JSON.stringify(field),
+		);
+		ok(
+			`the ${label} editor's text starts where the static value does`,
+			Math.abs(field.textStart - field.staticStart) <= 1,
+			JSON.stringify(field),
+		);
+	}
 
 	// Space toggles a focused Check cell through setValue
 	await page.eval(

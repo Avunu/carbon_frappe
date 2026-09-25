@@ -198,6 +198,29 @@
 	}
 }
 
+// The filter, group-by (report view) and sort toolbar beside a list's standard
+// filters. frappe builds all three from .btn-sm (base_list.js, group_by.js,
+// sort_selector.html), which sizes by padding and line-height to ~30px, and
+// only .page-actions buttons pick up --btn-height (desk/page.scss). Next to 40px Carbon fields they read as a
+// shorter, top-hung strip. Carbon pairs a button to the field it sits beside,
+// so they take the field height; frappe's own margins (the section's 3px plus
+// the group's 5px) already land the groups on the fields' 8px top edge.
+// The icon-only pair (clear filters, sort direction) goes square, as every
+// Carbon icon-only button is.
+.page-form {
+	.filter-selector .btn,
+	.group-by-selector .btn,
+	.sort-selector .btn {
+		height: var(--btn-height);
+	}
+
+	.filter-x-button,
+	.btn-order {
+		width: var(--btn-height);
+		padding: 0;
+	}
+}
+
 // list paging area -> flat Carbon pagination-style buttons
 .list-paging-area {
 	border-top: 1px solid var(--carbon-border-subtle);
