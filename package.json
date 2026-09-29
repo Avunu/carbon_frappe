@@ -40,20 +40,20 @@
 	},
 	"dependencies": {
 		"@carbon/charts": "1.27.20",
-		"@carbon/styles": "1.115.0",
+		"@carbon/styles": "1.116.0",
 		"@tanstack/table-core": "9.2.4",
 		"@tanstack/virtual-core": "3.17.11"
 	},
 	"devDependencies": {
-		"@carbon/icon-helpers": "^10.82.0",
-		"@carbon/icons": "11.88.0",
+		"@carbon/icon-helpers": "^10.83.0",
+		"@carbon/icons": "11.89.0",
 		"@ibm/plex-mono": "2.5.0",
 		"@ibm/plex-sans": "1.1.0",
-		"@types/node": "^26.6.2",
+		"@types/node": "^26.6.3",
 		"frappe-types": "^16.3.1",
 		"oxfmt": "^0.70.0",
 		"oxlint": "^1.85.0",
-		"sass": "1.104.1",
+		"sass": "1.105.0",
 		"stylelint": "^17.15.0",
 		"stylelint-config-standard-scss": "^17.0.0",
 		"typescript": "^7.0.2"
