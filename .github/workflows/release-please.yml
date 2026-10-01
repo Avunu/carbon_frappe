@@ -5,7 +5,8 @@ name: release
 # the release: the tag and the GitHub release are cut, and `version-16` — the
 # production branch, what `bench get-app --branch version-16` installs — is
 # fast-forwarded to the release commit. Nothing else ever writes to
-# `version-16` (check.yml's `version-16` job is the alarm if something does).
+# `version-16` (check.yml's `version-16` job is the alarm if something pushes
+# there, and version-branch-guard.yml fails a pull request aimed at it).
 #
 # The version is 16.x.y because the theme is for frappe v16 — the major is the
 # frappe major, never something a commit subject decides. `guard-major` checks

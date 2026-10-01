@@ -1,0 +1,48 @@
+name: version-branch guard
+
+# `version-*` is the production line — what `bench get-app --branch version-16`
+# installs — and only release-please.yml writes it, by fast-forwarding it to a
+# release commit that is already on `develop`. A pull request into it is
+# therefore always a mistake: #39 (2026-09-30) targeted `version-16`, landed a
+# change `develop` never saw, and from then on no release could fast-forward
+# the branch.
+#
+# This turns that mistake red where it is made. It is visible, not blocking:
+# `version-*` carries no required checks, because release-please's own
+# fast-forward is a ref update that would have to satisfy them too, and
+# github-actions[bot] cannot be a ruleset bypass actor.
+#
+# It runs on every pull request, not only those into `version-*`, so that
+# retargeting a pull request (`edited`) replaces a red result with a green
+# one instead of leaving the stale failure on the head commit. It takes a few
+# seconds and checks nothing out.
+#
+# A workflow file is read from the merge of the pull request into its base, so
+# this guards a pull request into `version-*` once that branch carries the
+# file — that is, from the first release that fast-forwards it onto a
+# `develop` that has this. A direct push to `version-*` is the other half of
+# the same mistake; check.yml's `version-16` job is that alarm.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions: {}
+
+jobs:
+  base-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Pull requests go to develop
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          case "$BASE" in
+            version-*)
+              echo "::error title=Wrong base branch::#${NUMBER} targets ${BASE}, which only release-please.yml writes. Retarget it to develop: gh pr edit ${NUMBER} --base develop"
+              exit 1
+              ;;
+          esac
+          echo "base is ${BASE}"
