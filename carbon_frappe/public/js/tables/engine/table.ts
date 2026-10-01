@@ -1032,6 +1032,21 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		column: CarbonColumn<TData>,
 		colIndex: number,
 	): void {
+		this.renderHeaderLabel(entry, header, column, colIndex);
+		// Resizing is independent of who renders the label: an adapter's
+		// `renderHeader` hook (the Grid's) and a non-sortable column both used to
+		// return before this, which left every child-table column unresizable.
+		// The handle goes on the <th>, beside the content node, so neither path
+		// can clobber it.
+		this.wireResizeHandle(entry, header, column);
+	}
+
+	renderHeaderLabel(
+		entry: HeaderCellEntry,
+		header: CarbonHeader<TData> | undefined,
+		column: CarbonColumn<TData>,
+		colIndex: number,
+	): void {
 		if (typeof this.options.renderHeader === "function") {
 			this.options.renderHeader(entry, header, column, colIndex, this);
 			return;
@@ -1101,7 +1116,6 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 			iconNode.innerHTML = iconHtml;
 			entry.iconHtml = iconHtml;
 		}
-		this.wireResizeHandle(entry, header, column);
 	}
 
 	/** Carbon puts the resize affordance on the header cell's trailing edge. */
