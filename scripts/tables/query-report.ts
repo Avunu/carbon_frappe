@@ -252,7 +252,7 @@ try {
 	// Selection cascade, on a standalone CarbonDataTable rather than this
 	// suite's report: "Database Storage Usage By Tables" is flat, and the
 	// cascade's whole subject is what a group header does to the rows under it.
-	// Two groups of two, which is the shape little_cocalico's Print Queue has
+	// Two groups of two, which is the shape a custom Print Queue report has
 	// (a fabric, then its jobs) and enough to catch a cascade that leaks into a
 	// sibling group.
 	await page.eval<true>(`(() => {

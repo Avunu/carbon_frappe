@@ -490,7 +490,7 @@ export class RowManagerShim {
 	 * (`rowmanager.js:95`) writes one index and knows nothing about the tree,
 	 * so a tree report's group header was a checkbox that selected the header
 	 * and none of the rows under it — and under it is where every row with a
-	 * payload lives (little_cocalico's Print Queue puts the work orders on the
+	 * payload lives (a custom Print Queue report puts the work orders on the
 	 * jobs and nothing but a label on the group).
 	 *
 	 * TanStack can cascade — that is `enableSubRowSelection` — but not here:

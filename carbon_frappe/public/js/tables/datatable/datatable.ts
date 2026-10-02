@@ -1020,7 +1020,7 @@ export default class CarbonDataTable {
 	 * itself: the toggle owns two icon spans and an SVG apiece, so the click
 	 * usually lands on a descendant — and a report is free to render its own
 	 * element carrying the class, which the stock delegated handler accepted and
-	 * which some do (little_cocalico's Print Queue renders a labelled button).
+	 * which some do (a client's custom Print Queue report renders a labelled button).
 	 *
 	 * The header is excluded: a `thead` cell has no row to expand, and its
 	 * `data-row-index` is not a data row's.
