@@ -173,15 +173,15 @@ node scripts/dev-table.ts --serve   # the engine alone, on :8123, with no bench
 
 ### Conventions, and what enforces them
 
-| Surface                              | Format             | Lint                                                                                          | Types                                        | Tests                                          |
-| ------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------- |
-| TypeScript (browser, scripts, tests) | oxfmt              | oxlint — `no-explicit-any` and `ban-ts-comment` are errors: no escape hatches                 | `tsc --build`, strict, `skipLibCheck: false` | `node --test` (unit), CDP suites (integration) |
-| SCSS                                 | oxfmt              | stylelint (standard-scss) + `audit-tokens`                                                    | —                                            | compiled by `nix build` and `yarn compile`     |
+| Surface                              | Format             | Lint                                                                                                | Types                                        | Tests                                          |
+| ------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------- |
+| TypeScript (browser, scripts, tests) | oxfmt              | oxlint — `no-explicit-any` and `ban-ts-comment` are errors: no escape hatches                       | `tsc --build`, strict, `skipLibCheck: false` | `node --test` (unit), CDP suites (integration) |
+| SCSS                                 | oxfmt              | stylelint (standard-scss) + `audit-tokens`                                                          | —                                            | compiled by `nix build` and `yarn compile`     |
 | Python                               | ruff format (tabs) | ruff — frappe's set at our strictest app's level + SIM/C4/PIE/PERF/T20; semgrep with frappe's rules | ty                                           | `bench run-tests --app carbon_frappe`          |
-| JSON / YAML / TOML / Markdown        | oxfmt              | —                                                                                             | —                                            | —                                              |
-| Workflows                            | oxfmt              | actionlint + zizmor (third-party actions hash-pinned)                                         | —                                            | —                                              |
-| Nix                                  | `nix fmt`          | statix + deadnix, `nix flake check`                                                           | —                                            | `nix build`                                    |
-| Commits                              | —                  | committed (conventional, frappe's types); no `!`/`BREAKING CHANGE` — see Releasing            | —                                            | —                                              |
+| JSON / YAML / TOML / Markdown        | oxfmt              | —                                                                                                   | —                                            | —                                              |
+| Workflows                            | oxfmt              | actionlint + zizmor (third-party actions hash-pinned)                                               | —                                            | —                                              |
+| Nix                                  | `nix fmt`          | statix + deadnix, `nix flake check`                                                                 | —                                            | `nix build`                                    |
+| Commits                              | —                  | committed (conventional, frappe's types); no `!`/`BREAKING CHANGE` — see Releasing                  | —                                            | —                                              |
 
 Doctype JSON is left exactly as frappe's exporter writes it. Generated files (`public/js/generated`, `public/scss/generated`, the fonts) are formatted by their generators and CI fails if `yarn codegen` would change them.
 
