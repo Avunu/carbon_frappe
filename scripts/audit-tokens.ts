@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Drift audit — runs warn-only on every `bench build` (via the package
- * `build` script) and strict in CI (`npm run audit`). Six checks:
+ * `build` script) and strict in CI (`yarn audit:drift`). Six checks:
  *
  *  1. Carbon token references: every `var(--cds-*)` we reference (without a
  *     fallback) must exist in @carbon/themes' emitted token set.
