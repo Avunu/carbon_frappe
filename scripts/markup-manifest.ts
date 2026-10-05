@@ -441,6 +441,42 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe/public/js/frappe/ui/notifications/notifications.js",
 		/\$\("\.standard-items-sections"\)/,
 	],
+
+	// --- AI assistant takeover (js/anatomy/shell/assistant.ts) --------------
+	// apps/flow is not frappe's, and CI checks frappe out alone, so its panel
+	// (#flow-root, frappe.flow.panel.{show,hide,toggle,visible}) cannot be listed
+	// here; the runtime guard for it is `isFlowPanel` and the drift record
+	// "Carbon AI assistant (flow takeover)". What the takeover leans on in frappe is:
+	[
+		"keys.add_shortcut drops the key's existing handlers first (registering Ctrl+I replaces flow's)",
+		"frappe/public/js/frappe/ui/keyboard.js",
+		/frappe\.ui\.keys\.off\(shortcut, page\);\s*\/\/ attach new handler\s*frappe\.ui\.keys\.on\(shortcut, handler\)/,
+	],
+	[
+		"keys.off without a page removes EVERY handler for the key (flow's included)",
+		"frappe/public/js/frappe/ui/keyboard.js",
+		/frappe\.ui\.keys\.off = function \(key, page\)[\s\S]{0,200}?if \(!page\) return false/,
+	],
+	[
+		"an action that returns nothing gets preventDefault (Ctrl+I is the browser's own binding)",
+		"frappe/public/js/frappe/ui/keyboard.js",
+		/prevent_default \|\| prevent_default === undefined/,
+	],
+	[
+		"app_ready fires inside startup(), after make_sidebar (why the takeover runs when the header mounts)",
+		"frappe/public/js/frappe/desk.js",
+		/this\.make_sidebar\(\);[\s\S]{0,1200}?trigger\("app_ready"\)/,
+	],
+	[
+		"the sidebar's DOM is prepended to <body> on every build (what a full-width panel makes inert)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/\)\.prependTo\("body"\)/,
+	],
+	[
+		"the window-level Escape handler blurs the active element (the failed-load panel stops the event first)",
+		"frappe/public/js/frappe/ui/keyboard.js",
+		/function handle_escape_key\(\) \{\s*close_grid_and_dialog\(\);\s*document\.activeElement\?\.blur\(\);/,
+	],
 	[
 		"frappe.is_mobile threshold (the shell never mounts below it)",
 		"frappe/public/js/frappe/utils/common.js",

@@ -136,7 +136,7 @@ jobs:
       - name: Install frappe's node_modules
         run: yarn --cwd ../frappe install --frozen-lockfile --ignore-scripts --non-interactive
       - run: yarn compile
-      - run: yarn audit
+      - run: yarn audit:drift
 
   bench:
     if: github.ref != 'refs/heads/version-16'

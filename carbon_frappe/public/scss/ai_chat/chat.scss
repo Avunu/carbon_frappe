@@ -1,0 +1,16 @@
+// The lazy chat stylesheet: compiled by scripts/build-ai-chat.ts (sass JS API, load
+// paths including node_modules) to public/dist/ai_chat/chat.<hash>.css and linked by
+// the header button on first open. Not an entry of frappe's own build, so nothing
+// here is in the desk bundle; desk/_ai-chat.scss holds the always-loaded part.
+//
+// Everything is `cf-ai-` prefixed and reads the --cds-* tokens the desk bundle
+// already emits (light and dark follow the page; the host lives on <body>, outside
+// the header's g100 zone).
+@use "panel";
+@use "messages";
+@use "feedback";
+@use "history";
+@use "home";
+@use "approval";
+@use "attachments";
+@use "code-snippet-theme";

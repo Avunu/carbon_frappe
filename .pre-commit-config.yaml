@@ -11,7 +11,7 @@
 #
 # `yarn -s` and `uv` come from the frappe-nix shell; ty is not a hook because
 # it needs the bench's interpreter (`yarn typecheck:py`), and the audits need
-# a frappe checkout (`yarn audit`) — both run in CI's `bench` job.
+# a frappe checkout (`yarn audit:drift`) — both run in CI's `bench` job.
 default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [pre-commit]
 fail_fast: false

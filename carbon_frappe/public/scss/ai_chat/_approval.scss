@@ -1,0 +1,118 @@
+// The approval card for a paused run. Markup: js/ai_chat/view/approval.ts.
+@use "@carbon/styles/scss/type";
+
+// the controls are toggled with `hidden`, which loses to the display of a custom
+// element's own :host rule and to the flex rules below unless this outranks both
+.cf-ai-approval [hidden] {
+	display: none;
+}
+
+.cf-ai-approval {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-block-start: 1rem;
+	// a tabindex=-1 fallback focus target after the last answer; the ring would only mark a box
+	&:focus {
+		outline: none;
+	}
+}
+
+.cf-ai-approval__question {
+	min-inline-size: 0;
+	padding: 1rem;
+	background: var(--cds-layer-01);
+	border: 1px solid var(--cds-border-subtle-01);
+}
+
+.cf-ai-approval__title {
+	@include type.type-style("heading-compact-01");
+
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	color: var(--cds-text-primary);
+}
+
+.cf-ai-approval__icon {
+	flex: none;
+	// aligns the 16px glyph with the first line of the 18px line height
+	margin-block-start: 1px;
+	fill: var(--cds-icon-primary);
+}
+
+.cf-ai-approval__title-text {
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
+.cf-ai-approval__prompt {
+	@include type.type-style("body-compact-01");
+
+	margin-block-start: 0.5rem;
+	color: var(--cds-text-secondary);
+	overflow-wrap: anywhere;
+	// a prompt written by the model carries its own line breaks
+	white-space: pre-wrap;
+}
+
+.cf-ai-approval__question > cds-aichat-code-snippet {
+	display: block;
+	margin-block-start: 0.75rem;
+}
+
+.cf-ai-approval__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-start: 1rem;
+}
+
+.cf-ai-approval__redirect-row {
+	margin-block-start: 1rem;
+}
+
+.cf-ai-approval__redirect {
+	@include type.type-style("body-01");
+
+	display: block;
+	box-sizing: border-box;
+	padding: 0.5rem 1rem;
+	border: 0;
+	background: var(--cds-field-02);
+	border-block-end: 1px solid var(--cds-border-strong-01);
+	color: var(--cds-text-primary);
+	inline-size: 100%;
+	min-block-size: 4rem;
+	outline: 2px solid transparent;
+	outline-offset: -2px;
+	resize: vertical;
+
+	&::placeholder {
+		color: var(--cds-text-placeholder);
+	}
+
+	&:focus {
+		outline-color: var(--cds-focus);
+	}
+}
+
+.cf-ai-approval__redirect-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+}
+
+.cf-ai-approval__result {
+	@include type.type-style("label-02");
+
+	margin-block-start: 0.75rem;
+	color: var(--cds-text-secondary);
+	overflow-wrap: anywhere;
+}
+
+// a decided card stays readable as a record but no longer looks like a prompt
+.cf-ai-approval--locked .cf-ai-approval__question {
+	background: transparent;
+}

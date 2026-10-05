@@ -322,14 +322,15 @@ def _brand_declarations(p, dark):
 		("--primary", p["brand"]),
 		("--primary-color", p["brand"]),
 	]
-	if not dark:
-		# Carbon g100 keeps focus, interactive icons and the tertiary button
-		# white; only g10 draws them in the interactive colour.
-		decls += [
-			("--cds-focus", p["brand"]),
-			("--cds-icon-interactive", p["brand"]),
-			("--cds-button-tertiary", p["brand"]),
-		]
+	# Carbon g100 keeps focus, interactive icons and the tertiary button white; only g10
+	# draws them in the interactive colour. Dark restates the white because the light block
+	# is on html:root, which also matches in dark and out-ranks Carbon's own dark values.
+	accent = "#ffffff" if dark else p["brand"]
+	decls += [
+		("--cds-focus", accent),
+		("--cds-icon-interactive", accent),
+		("--cds-button-tertiary", accent),
+	]
 	return decls
 
 
