@@ -18,6 +18,9 @@
 //                    (shell/utilities.ts)
 //   6 Switcher     — the desktop's icons (apps + workspaces, nested as on
 //                    /desk), in a right header panel (shell/switcher.ts)
+//   7 Assistant    — when flow is installed, the AI chat's action just before
+//                    the switcher; its panel is a body-level aside
+//                    (shell/assistant.ts)
 //
 // Everything the header shows is read from `frappe.app.sidebar` (shell/model.ts):
 // frappe's Workspace Sidebar is what resolves a route to a workspace, names the
@@ -53,6 +56,9 @@ import { menu20 } from "../generated/shell-icons.ts";
 import { esc, required } from "./shell/dom.ts";
 import { readModel } from "./shell/model.ts";
 import type { ShellModel } from "./shell/model.ts";
+import { mountAssistant } from "./shell/assistant.ts";
+import type { ShellAssistant } from "./shell/assistant.ts";
+import { shouldMountAssistant } from "./shell/assistant_gate.ts";
 import { mountNav } from "./shell/nav.ts";
 import type { ShellNav } from "./shell/nav.ts";
 import { mountSwitcher } from "./shell/switcher.ts";
@@ -77,6 +83,7 @@ interface Shell {
 	nav: ShellNav;
 	global: HTMLElement;
 	switcher: ShellSwitcher;
+	assistant: ShellAssistant | null;
 	lastSignature: string;
 }
 
@@ -106,6 +113,37 @@ function syncMenuButton(s: Shell, expanded: boolean, disabled: boolean): void {
 	s.menu.disabled = disabled;
 }
 
+/** The harvest appends; the switcher is Carbon's "furthest right icon" and the assistant's action sits just before it. */
+function placeActions(s: Shell): void {
+	s.global.appendChild(s.switcher.button);
+	if (s.assistant) s.global.insertBefore(s.assistant.button, s.switcher.button);
+}
+
+/** What a click on one of the harvested utilities (search, bell, account) does to the right-side surfaces. */
+function closeSurfaces(s: Shell): void {
+	s.switcher.close();
+	if (s.assistant) s.assistant.close();
+}
+
+/**
+ * The assistant is optional (flow may be absent) and must never take the header
+ * down with it: a throw leaves the bar as it was, minus the action. It rides on the
+ * header, so below the mobile breakpoint (where `mount()` leaves frappe's header alone)
+ * there is no trigger and no panel.
+ */
+function mountOptionalAssistant(global: HTMLElement): ShellAssistant | null {
+	if (!shouldMountAssistant(window.frappe && frappe.boot)) return null;
+	try {
+		const assistant = mountAssistant(global);
+		record("Carbon AI assistant (mount)", true);
+		return assistant;
+	} catch (e) {
+		record("Carbon AI assistant (mount)", false);
+		console.error(e);
+		return null;
+	}
+}
+
 function project(): void {
 	const s = shell;
 	if (!s) return;
@@ -115,9 +153,8 @@ function project(): void {
 	s.nav.render(model);
 	s.switcher.render(model);
 	syncMenuButton(s, model.expanded, model.menuDisabled);
-	harvestUtilities(s.global, () => s.switcher.close());
-	// the harvest appends; the switcher is Carbon's "furthest right icon"
-	s.global.appendChild(s.switcher.button);
+	harvestUtilities(s.global, () => closeSurfaces(s));
+	placeActions(s);
 	s.nav.layout();
 }
 
@@ -176,11 +213,22 @@ function mount(): boolean {
 	const nav = mountNav(header);
 	header.insertBefore(nav.el, global);
 	const switcher = mountSwitcher(header, global);
-	switcher.onOpen(() => {
+	const assistant = mountOptionalAssistant(global);
+	const yieldToOpened = (): void => {
 		nav.closeAll();
 		const panel = global.querySelector(".dropdown-notifications");
 		if (panel) panel.classList.add("hidden");
+	};
+	switcher.onOpen(() => {
+		yieldToOpened();
+		if (assistant) assistant.close();
 	});
+	if (assistant) {
+		assistant.onOpen(() => {
+			yieldToOpened();
+			switcher.close();
+		});
+	}
 
 	menu.addEventListener("click", () => {
 		const sidebar = window.frappe && frappe.app && frappe.app.sidebar;
@@ -194,7 +242,7 @@ function mount(): boolean {
 		if (btn) btn.click();
 	});
 
-	shell = { header, menu, name, nav, global, switcher, lastSignature: "" };
+	shell = { header, menu, name, nav, global, switcher, assistant, lastSignature: "" };
 	project();
 
 	// the bar's fit depends on the viewport and on what the global bar holds;
@@ -242,8 +290,8 @@ if (window.frappe && frappe.router && typeof frappe.router.on === "function") {
 		setTimeout(() => {
 			const s = shell;
 			if (!s) return;
-			harvestUtilities(s.global, () => s.switcher.close());
-			s.global.appendChild(s.switcher.button);
+			harvestUtilities(s.global, () => closeSurfaces(s));
+			placeActions(s);
 			s.nav.layout();
 		}, 200);
 	});
@@ -312,8 +360,8 @@ if (typeof MutationObserver === "function") {
 				// is frappe's to keep
 				const s = shell;
 				if (!s) return;
-				harvestUtilities(s.global, () => s.switcher.close());
-				s.global.appendChild(s.switcher.button);
+				harvestUtilities(s.global, () => closeSurfaces(s));
+				placeActions(s);
 				s.nav.layout();
 				return;
 			}

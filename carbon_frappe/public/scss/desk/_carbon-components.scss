@@ -43,6 +43,12 @@
 @use "@carbon/styles/scss/components/ui-shell/switcher/switcher";
 @use "@carbon/styles/scss/components/badge-indicator/badge-indicator";
 
+// -- AI assistant host (desk/_ai-chat.scss, anatomy/shell/assistant.ts) -------
+// The loading and failure states render before the lazy chat stylesheet exists,
+// so Carbon's own markup for them has to be in the desk bundle.
+@use "@carbon/styles/scss/components/inline-loading/inline-loading";
+@use "@carbon/styles/scss/components/notification/inline-notification";
+
 @include data-table.data-table;
 @include data-table-sort.data-table-sort;
 @include data-table-action.data-table-action;
@@ -55,3 +61,6 @@
 @include header-panel.header-panel;
 @include switcher.switcher;
 @include badge-indicator.badge-indicator;
+
+@include inline-loading.inline-loading;
+@include inline-notification.inline-notification;

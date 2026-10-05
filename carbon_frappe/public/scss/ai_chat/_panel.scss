@@ -1,0 +1,60 @@
+// The shell, its header, the body that holds home, the message list and the restore
+// failure, the prompt line and the screen-reader regions. Markup: js/ai_chat/view/panel.ts.
+// The restore failure is styled by `.cf-ai-status` (desk/_ai-chat.scss), the same
+// notification the host shows when the chat module itself fails to load.
+
+.cf-ai-shell {
+	display: block;
+	block-size: 100%;
+}
+
+// holds .cf-ai-home and .cf-ai-messages in the shell's messages slot; the shell gives
+// that slot a definite height but does not scroll it, so the scrolling is below.
+// Positioned because the conversation list (view/history.ts) is laid over it.
+.cf-ai-body {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	block-size: 100%;
+	min-block-size: 0;
+
+	> [hidden] {
+		display: none;
+	}
+}
+
+// A conversation switch is loading: the old rows stay until the new ones arrive. The list
+// overlay is left alone so a second pick can still override the first.
+.cf-ai-body--loading > :is(.cf-ai-home, .cf-ai-messages, .cf-ai-status) {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+// Expanded: the shell centres only the input in a column (`content-max-width`), so the
+// messages and the greeting take the same column here. The padding is on the scroll
+// container, not the list, so the scrollbar stays at the panel's edge.
+.cf-ai-shell[content-max-width] {
+	.cf-ai-messages {
+		box-sizing: border-box;
+		padding-inline: max(0px, calc((100% - var(--cds-aichat-messages-max-width, 672px)) / 2));
+	}
+
+	.cf-ai-home {
+		margin-inline: auto;
+		inline-size: 100%;
+		max-inline-size: var(--cds-aichat-messages-max-width, 672px);
+	}
+}
+
+// the live regions (js/ai_chat/announce.ts) and a label for a control that shows no text
+.cf-ai-visually-hidden {
+	position: absolute;
+	overflow: hidden;
+	padding: 0;
+	border: 0;
+	margin: -1px;
+	block-size: 1px;
+	clip-path: inset(50%);
+	inline-size: 1px;
+	white-space: nowrap;
+}

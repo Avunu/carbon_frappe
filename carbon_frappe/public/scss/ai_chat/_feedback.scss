@@ -1,0 +1,15 @@
+// The thumbs under a finished reply and the comment panel a thumbs-down opens
+// (js/ai_chat/view/feedback.ts). The footer's side margins are shared with the body and the
+// steps, in _messages.scss.
+@use "@carbon/styles/scss/spacing";
+
+.cf-ai-message__footer {
+	display: flex;
+	flex-wrap: wrap;
+	margin-block-start: spacing.$spacing-03;
+
+	// the panel opens under the thumbs, across the whole footer
+	cds-aichat-feedback {
+		flex: 1 0 100%;
+	}
+}

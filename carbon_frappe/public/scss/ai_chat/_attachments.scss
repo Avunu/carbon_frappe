@@ -1,0 +1,174 @@
+// The composer's attach button, chips, progress strip, refusal line and drop overlay, and the read-only
+// chips under a sent message. Markup: js/ai_chat/view/attachments.ts.
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+
+// a custom display on these would beat the UA rule that `hidden` relies on
+.cf-ai-upload-status[hidden],
+.cf-ai-attach-error[hidden],
+.cf-ai-drop[hidden],
+.cf-ai-message__files[hidden] {
+	display: none;
+}
+
+// -- the progress strip under the chips -------------------------------------------
+
+.cf-ai-upload-status {
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	padding-block: spacing.$spacing-02;
+	padding-inline: spacing.$spacing-03;
+	gap: spacing.$spacing-03;
+}
+
+.cf-ai-upload-status__bar {
+	position: relative;
+	overflow: hidden;
+	flex: 1;
+	background: var(--cds-layer-accent-01);
+	block-size: 4px;
+	min-inline-size: 0;
+}
+
+.cf-ai-upload-status__fill {
+	position: absolute;
+	background: var(--cds-interactive);
+	inline-size: 0;
+	inset-block: 0;
+	inset-inline-start: 0;
+}
+
+// After the last byte is sent flow reads the file (OCR can take seconds) and there is nothing to measure.
+// The still half bar is the whole indication for a reader who asked for reduced motion.
+.cf-ai-upload-status__bar--indeterminate .cf-ai-upload-status__fill {
+	inline-size: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.cf-ai-upload-status__fill {
+		transition: inline-size 100ms linear;
+	}
+
+	.cf-ai-upload-status__bar--indeterminate .cf-ai-upload-status__fill {
+		animation: cf-ai-upload-sweep 1.5s ease-in-out infinite;
+		transition: none;
+	}
+}
+
+// Both parts are plain backgrounds, which forced colors flattens to Canvas: the track needs an edge and the
+// fill a system colour, or the bar (and the OCR phase's half bar) vanishes.
+@media (forced-colors: active) {
+	.cf-ai-upload-status__bar {
+		outline: 1px solid CanvasText;
+	}
+
+	.cf-ai-upload-status__fill {
+		background: Highlight;
+		forced-color-adjust: none;
+	}
+}
+
+@keyframes cf-ai-upload-sweep {
+	from {
+		inset-inline-start: -50%;
+	}
+
+	to {
+		inset-inline-start: 100%;
+	}
+}
+
+// -- the chips ---------------------------------------------------------------------
+
+// Carbon paints a chip with --cds-layer, which is white in the light theme: on the white shell and
+// messages the chip would be bare text. The accent layer is the grey the user's bubble uses.
+.cf-ai-uploads,
+.cf-ai-file {
+	--cds-layer: var(--cds-layer-accent-01);
+}
+
+// -- the line under the editor ---------------------------------------------------
+
+// `overflow-wrap` inherits into the message's shadow root; without it an unbroken file name (underscores,
+// a hash, CJK) widens the message past the panel, where the shell clips it.
+.cf-ai-attach-error {
+	box-sizing: border-box;
+	inline-size: 100%;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+
+	cds-aichat-error-message {
+		min-inline-size: 0;
+	}
+}
+
+// -- dropping files on the panel -------------------------------------------------
+
+// Over the messages only: the shell's header and input take the drag too, but the body is the big target.
+// Above the rows, below the conversation list (z-index 2), which would otherwise be dimmed by it.
+.cf-ai-drop {
+	position: absolute;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	background: color-mix(in srgb, var(--cds-background) 92%, transparent);
+	border: 2px dashed var(--cds-focus);
+	color: var(--cds-text-primary);
+	gap: spacing.$spacing-05;
+	inset: 0;
+	pointer-events: none;
+
+	svg {
+		block-size: spacing.$spacing-07;
+		fill: var(--cds-icon-primary);
+		inline-size: spacing.$spacing-07;
+	}
+}
+
+.cf-ai-drop__text {
+	margin: 0;
+	@include type.type-style("heading-compact-01");
+}
+
+// -- the files of a sent message -------------------------------------------------
+
+// The user's body is a row that pushes the bubble to the end; the chips go under the bubble, so a column.
+.cf-ai-message--user .cf-ai-message__body {
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+// Right-aligned and wrapping, so chips fill from the trailing edge in upload order.
+.cf-ai-message__files {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	padding: 0;
+	margin: 0;
+	gap: spacing.$spacing-03;
+	list-style: none;
+	// lets a long name truncate instead of widening the row
+	max-inline-size: 100%;
+	min-inline-size: 0;
+}
+
+.cf-ai-message__bubble + .cf-ai-message__files {
+	margin-block-start: spacing.$spacing-03;
+}
+
+.cf-ai-message__file {
+	max-inline-size: 100%;
+	min-inline-size: 0;
+}
+
+// Carbon's file-uploader-item inside carries a trailing margin sized for the composer's strip; here the
+// list's gap does that job and the margin would hold the row off the bubble's edge.
+.cf-ai-file {
+	margin-inline-end: 0;
+	max-inline-size: 100%;
+	min-inline-size: 0;
+}

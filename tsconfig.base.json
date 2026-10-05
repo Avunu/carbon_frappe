@@ -34,6 +34,27 @@
 		// The point of frappe-types is that the desk API is checked. Silencing its
 		// declarations here would defeat the exercise.
 		"skipLibCheck": false,
-		"forceConsistentCasingInFileNames": true
+		"forceConsistentCasingInFileNames": true,
+
+		// Two @carbon/ai-chat-components entry points cannot be typechecked with
+		// `skipLibCheck: false`, and neither can be fixed from here:
+		//   - markdown/index.js: its declarations import `MarkdownRendererSlotDescriptor`
+		//     and `RenderTokenTreeOptions` from a file that upstream's `stripInternal`
+		//     already removed them from (still the case in 1.12.0-rc.1);
+		//   - feedback/index.js: it imports markdown, and reaches
+		//     @carbon/web-components' text-input.d.ts, which declares
+		//     `set value(v: string): any;` (TS1095: a setter has no return type).
+		// Both are only imported for their registration side effect, so the import is
+		// pointed at an empty module for the checker. The elements' typed surface is
+		// the local interfaces in ai_chat/elements.ts. These paths must never reach
+		// esbuild: scripts/build-ai-chat.ts passes it no tsconfig.
+		"paths": {
+			"@carbon/ai-chat-components/es/components/markdown/index.js": [
+				"./carbon_frappe/public/js/ai_chat/shims/empty-module.d.ts"
+			],
+			"@carbon/ai-chat-components/es/components/feedback/index.js": [
+				"./carbon_frappe/public/js/ai_chat/shims/empty-module.d.ts"
+			]
+		}
 	}
 }

@@ -21,9 +21,11 @@
 	},
 	"type": "module",
 	"scripts": {
-		"build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only",
+		"build": "node scripts/patch-assets.ts --warn-only && node scripts/audit-tokens.ts --warn-only && node scripts/audit-markup.ts --warn-only && node scripts/build-ai-chat.ts",
+		"build:chat": "node scripts/build-ai-chat.ts",
+		"watch:chat": "node scripts/build-ai-chat.ts --watch",
 		"codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts && node scripts/generate-shell-icons.ts",
-		"audit": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict",
+		"audit:drift": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict && node scripts/build-ai-chat.ts --check",
 		"compile": "node scripts/dev-compile.ts",
 		"typecheck": "tsc --build",
 		"format": "oxfmt",
@@ -39,9 +41,10 @@
 		"upgrade": "npx npm-check-updates -u && yarn install && yarn build"
 	},
 	"dependencies": {
-		"@carbon/charts": "1.27.20",
+		"@carbon/ai-chat-components": "1.12.0",
+		"@carbon/charts": "1.27.21",
 		"@carbon/styles": "1.116.0",
-		"@tanstack/table-core": "9.2.4",
+		"@tanstack/table-core": "9.2.6",
 		"@tanstack/virtual-core": "3.17.11"
 	},
 	"devDependencies": {
@@ -49,12 +52,14 @@
 		"@carbon/icons": "11.89.0",
 		"@ibm/plex-mono": "2.5.0",
 		"@ibm/plex-sans": "1.1.0",
-		"@types/node": "^26.6.3",
+		"@types/node": "^26.6.4",
+		"@types/react": "^19.3.0",
+		"esbuild": "0.28.2",
 		"frappe-types": "^16.3.1",
-		"oxfmt": "^0.71.0",
-		"oxlint": "^1.86.0",
-		"sass": "1.105.0",
-		"stylelint": "^17.15.0",
+		"oxfmt": "^0.72.0",
+		"oxlint": "^1.87.0",
+		"sass": "1.105.1",
+		"stylelint": "^17.16.0",
 		"stylelint-config-standard-scss": "^17.0.0",
 		"typescript": "^7.0.2"
 	},
