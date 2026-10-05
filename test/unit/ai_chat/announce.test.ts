@@ -104,7 +104,13 @@ describe("announcementText", () => {
 		for (const opener of [" *a", " [a", " _a", " **a", " `a", " <a"]) {
 			const started = performance.now();
 			const out = announcementText(opener.repeat(60_000), 1000);
-			assert.ok(performance.now() - started < 100, `${opener} took too long`);
+			// The reply is cut to a fixed prefix first, so this takes about 30 ms on a fast machine and a few
+			// times that on a shared CI runner. Without the cut the lazy emphasis patterns are quadratic:
+			// 20k openers took 1.5 s and this input would take over ten, so 1 s separates the two.
+			assert.ok(
+				performance.now() - started < 1000,
+				`${opener} took ${Math.round(performance.now() - started)}ms`,
+			);
 			assert.ok(out.length <= 1000);
 		}
 	});
