@@ -39,6 +39,7 @@
 		"upgrade": "npx npm-check-updates -u && yarn install && yarn build"
 	},
 	"dependencies": {
+		"@carbon/ai-chat-components": "1.11.0",
 		"@carbon/charts": "1.27.20",
 		"@carbon/styles": "1.116.0",
 		"@tanstack/table-core": "9.2.4",
@@ -50,6 +51,8 @@
 		"@ibm/plex-mono": "2.5.0",
 		"@ibm/plex-sans": "1.1.0",
 		"@types/node": "^26.6.3",
+		"@types/react": "^19.3.0",
+		"esbuild": "0.28.2",
 		"frappe-types": "^16.3.1",
 		"oxfmt": "^0.71.0",
 		"oxlint": "^1.86.0",
