@@ -20,6 +20,9 @@
  *  4b. This app's own `*.bundle.js` keys still resolve to a file that exists.
  *     Since the entry points became `.ts` those keys are no longer written by
  *     a plain build, so they can silently rot to a swept hash.
+ *  4c. The lazy AI chat build (public/dist/ai_chat) is complete: its manifest
+ *     parses, names an entry and a stylesheet that exist, and every relative
+ *     import inside it resolves.
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -127,6 +130,74 @@ if (fs.existsSync(assetsPath)) {
 				`the desk is loading a missing or stale bundle. ` +
 				`Re-run \`node scripts/patch-assets.ts\`. ` +
 				`Usual cause: a build that did not run this app's build command, i.e. \`bench watch\`.`,
+		);
+	}
+}
+
+// Check 4c: the lazy AI chat build is whole.
+//
+// Not an assets.json entry, so none of the checks above can see it, and a missing or
+// half-written build fails only at the first click on the header button (the loader
+// shows its "could not be loaded" notice). A tree with no build at all is normal for a
+// fresh checkout and CI, so that case is a note, not a finding; a manifest that
+// names something absent is one.
+const chatDist = path.join(appRoot, "carbon_frappe", "public", "dist", "ai_chat");
+const chatManifestPath = path.join(chatDist, "manifest.json");
+if (!fs.existsSync(chatDist)) {
+	console.log(
+		"[audit-markup] public/dist/ai_chat not built — run `yarn build:chat` (the AI assistant cannot load without it)",
+	);
+} else if (!fs.existsSync(chatManifestPath)) {
+	warn(
+		"public/dist/ai_chat has no manifest.json — the build was interrupted or never finished. Run `yarn build:chat`.",
+	);
+} else {
+	checkChatDist();
+}
+
+function checkChatDist(): void {
+	let manifest: unknown;
+	try {
+		manifest = JSON.parse(fs.readFileSync(chatManifestPath, "utf-8"));
+	} catch (e) {
+		warn(`dist/ai_chat/manifest.json is unreadable (${e instanceof Error ? e.message : String(e)})`);
+		return;
+	}
+	if (!isRecord(manifest)) {
+		warn("dist/ai_chat/manifest.json is not an object — the loader will reject it");
+		return;
+	}
+	for (const key of ["entry", "css"]) {
+		const name = manifest[key];
+		if (typeof name !== "string") {
+			warn(`dist/ai_chat/manifest.json has no "${key}" string — the loader will reject it`);
+		} else if (!fs.existsSync(path.join(chatDist, name))) {
+			warn(`dist/ai_chat/manifest.json names ${key} ${name}, which does not exist. Run \`yarn build:chat\`.`);
+		}
+	}
+
+	// A chunk swept out from under the entry looks like a working build until the code or
+	// table that needs it renders. Minified ESM writes `from"./x.js"` and `import("./x.js")`
+	// with no space, hence `\s*`.
+	const relativeImport = /(?:\bfrom|\bimport)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g;
+	const missing = new Set<string>();
+	const scan = (dir: string): void => {
+		for (const dirent of fs.readdirSync(dir, { withFileTypes: true })) {
+			const full = path.join(dir, dirent.name);
+			if (dirent.isDirectory()) scan(full);
+			else if (dirent.name.endsWith(".js")) {
+				for (const match of fs.readFileSync(full, "utf-8").matchAll(relativeImport)) {
+					const target = path.resolve(dir, match[1] ?? "");
+					if (!fs.existsSync(target)) missing.add(path.relative(chatDist, target));
+				}
+			}
+		}
+	};
+	scan(chatDist);
+	if (missing.size) {
+		warn(
+			`dist/ai_chat imports ${missing.size} file(s) that do not exist (e.g. ${[...missing][0]}) — ` +
+				`a partial or hand-edited build. Run \`yarn build:chat\`.`,
 		);
 	}
 }
