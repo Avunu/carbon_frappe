@@ -477,9 +477,12 @@ try {
 			light.border === "rgb(57, 57, 57)",
 		JSON.stringify(light),
 	);
+	// The assistant trigger is a fifth cell when flow is installed
+	const expectedCells =
+		4 + ((await page.eval<boolean>(`!!document.querySelector('#cf-ai-trigger')`)) ? 1 : 0);
 	ok(
 		"every utility is a 48x48 cell, no gaps, icon on $icon-secondary",
-		light.cellCount === 4 &&
+		light.cellCount === expectedCells &&
 			light.cells.every(([w, h, c]) => w === 48 && h === 48 && c === "rgb(198, 198, 198)") &&
 			light.gap === 0,
 		JSON.stringify(light.cells),
