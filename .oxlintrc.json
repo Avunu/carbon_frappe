@@ -36,7 +36,12 @@
 	],
 	"overrides": [
 		{
-			"files": ["carbon_frappe/public/js/*.bundle.ts", "test/**"],
+			"files": [
+				"carbon_frappe/public/js/*.bundle.ts",
+				"carbon_frappe/public/js/ai_chat/register.ts",
+				"carbon_frappe/public/js/ai_chat/entry.ts",
+				"test/**"
+			],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}

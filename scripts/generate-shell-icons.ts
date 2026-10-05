@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Dev-time codegen: render the @carbon/icons glyphs the UI Shell header
- * inlines — Menu 20, Close 20, Switcher 20, ChevronDown 16 (twice) — to SVG strings
+ * inlines — Menu 20, Close 20, Switcher 20, AI Launch 20, Error Filled 20, ChevronDown 16 (twice) — to SVG strings
  * and emit:
  *   - carbon_frappe/public/js/generated/shell-icons.ts
  * The output is committed. Run via `npm run codegen` after Carbon bumps.
@@ -101,6 +101,21 @@ const GLYPHS: readonly Glyph[] = [
 		icon: "switcher",
 		size: 20,
 		role: "the app switcher action (HeaderGlobalAction)",
+	},
+	{
+		exportName: "aiLaunch20",
+		icon: "ai-launch",
+		size: 20,
+		role: "the AI assistant action (HeaderGlobalAction)",
+	},
+	{
+		exportName: "errorFilled20",
+		icon: "error--filled",
+		size: 20,
+		// InlineNotification's NotificationIcon (Notification.tsx): the assistant's
+		// load-failure message renders before any Carbon component can.
+		attrs: { class: "cds--inline-notification__icon" },
+		role: "the error inline notification's status icon, pre-classed `cds--inline-notification__icon`",
 	},
 	{
 		exportName: "chevronDown16",

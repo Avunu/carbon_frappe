@@ -1,0 +1,51 @@
+// Dark syntax colours for <cds-aichat-code-snippet>.
+//
+// The snippet declares its own --cds-syntax-* tokens on `:host`, from the White theme,
+// and re-declares them from g90 only under `:host-context([data-theme="g100"])`.
+// Frappe's dark theme is `data-theme="dark"`, so that branch never matches and the
+// snippet keeps light-theme colours on a dark card (poor contrast).
+//
+// A rule from the outer document beats the snippet's own `:host` rule, so the
+// snippet's tokens are re-pointed at an alias that is resolved on :root, where the
+// desk bundle's --cds-syntax-* already follow the page theme. This reaches only
+// snippets in the page's light DOM: the ones in assistant messages are, because
+// the message's <cds-aichat-markdown> renders fences through a `codeBlock` custom
+// renderer (js/ai_chat/elements.ts createCodeBlockRenderer) instead of its own
+// shadow-DOM snippet, which no outer rule can reach.
+@use "sass:map";
+@use "sass:string";
+@use "@carbon/styles/scss/themes";
+
+$tokens: ();
+
+@each $token, $_ in themes.$g10 {
+	@if string.index($token, "syntax-") == 1 {
+		$tokens: map.set($tokens, $token, true);
+	}
+}
+
+:root {
+	@each $token, $_ in $tokens {
+		--cf-ai-#{$token}: var(--cds-#{$token});
+	}
+}
+
+cds-aichat-code-snippet {
+	// Source code reads left to right in every locale. Inherited from an RTL desk, the
+	// direction mirrors braces, flips the line-number gutter and the header, and reorders
+	// lines that start or end with punctuation.
+	direction: ltr;
+	unicode-bidi: isolate;
+
+	@each $token, $_ in $tokens {
+		--cds-#{$token}: var(--cf-ai-#{$token});
+	}
+}
+
+// A fenced block is built only when it nears the viewport (elements.ts
+// createCodeBlockRenderer); until then the wrapper stands in for its height, or the whole
+// history would count as visible at once. An estimate: a line is about 1.125rem and the
+// header and padding about 3rem.
+.cf-ai-code-block[data-pending] {
+	min-block-size: calc(var(--cf-ai-code-lines, 1) * 1.125rem + 3rem);
+}

@@ -1,0 +1,106 @@
+// The empty-conversation screen. Ported from @carbon/ai-chat's HomeScreen.scss
+// (Apache-2.0, IBM Corp.). Markup: js/ai_chat/view/home.ts.
+@use "@carbon/styles/scss/type";
+
+.cf-ai-home {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	justify-content: center;
+	overflow: auto;
+	padding: 0 1rem 2rem;
+	// the body is a flex column; without this the screen is as tall as its content and cannot centre
+	min-block-size: 0;
+}
+
+.cf-ai-home__greeting {
+	@include type.type-style("heading-04");
+
+	margin-block: 2rem 0;
+	color: var(--cds-text-primary);
+}
+
+.cf-ai-home__intro,
+.cf-ai-home__note {
+	@include type.type-style("body-02");
+
+	margin-block: 0.5rem 0;
+	color: var(--cds-text-secondary);
+}
+
+.cf-ai-home__starters {
+	margin-block: 2rem;
+}
+
+.cf-ai-home__starter {
+	display: block;
+	margin-block-end: 0.75rem;
+
+	&:last-child {
+		margin-block-end: 0;
+	}
+}
+
+cds-aichat-button.cf-ai-starter {
+	display: block;
+	max-inline-size: 100%;
+	overflow-wrap: anywhere;
+}
+
+.cf-ai-home__steps {
+	@include type.type-style("body-02");
+
+	padding: 0;
+	margin-block: 1rem 0;
+	margin-inline-start: 1.25rem;
+	color: var(--cds-text-primary);
+	list-style: decimal;
+
+	li + li {
+		margin-block-start: 0.5rem;
+	}
+}
+
+.cf-ai-home__action {
+	margin-block: 1.5rem 2rem;
+}
+
+.cf-ai-home__link {
+	@include type.type-style("body-compact-02");
+
+	color: var(--cds-link-primary);
+	text-decoration: none;
+
+	&:hover {
+		color: var(--cds-link-primary-hover);
+		text-decoration: underline;
+	}
+
+	&:focus-visible {
+		outline: 1px solid var(--cds-focus);
+	}
+}
+
+@keyframes cf-ai-fade-in-up {
+	from {
+		opacity: 0;
+		transform: translateY(32px);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.cf-ai-home__greeting,
+	.cf-ai-home__intro {
+		animation: cf-ai-fade-in-up 240ms var(--carbon-easing-entrance, cubic-bezier(0, 0, 0.3, 1)) 70ms both;
+	}
+
+	.cf-ai-home__starter {
+		animation: cf-ai-fade-in-up 240ms var(--carbon-easing-entrance, cubic-bezier(0, 0, 0.3, 1))
+			calc(var(--index) * 120ms) both;
+	}
+}

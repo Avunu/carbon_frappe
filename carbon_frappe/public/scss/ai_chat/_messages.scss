@@ -1,0 +1,373 @@
+// The message list: scroll container, rows, steps, feedback, stopped and error
+// markers, the processing indicator, the spacer and the jump button. Ported from
+// @carbon/ai-chat's MessageComponent.scss and MessagesComponent.scss (Apache-2.0,
+// IBM Corp.) into `cf-ai-` classes, for the narrow view only: the panel is always narrow,
+// and its expanded state is the shell's centred column, not a wider row layout.
+// Markup: js/ai_chat/view/message_list.ts and message_row.ts.
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+
+// the panel's gutter: where upstream's narrow view puts both the received and the sent column
+$gutter: spacing.$spacing-05;
+// upstream's custom value (not a token) above the avatar line
+$avatar-line-offset: 1.75rem;
+$avatar-size: 1.75rem;
+$jump-size: spacing.$spacing-07;
+// Carbon's inline notification: the details' side margin, and the inset that puts a ghost button's
+// label (its own 0.75rem padding included) under the title: margin + 1.25rem icon + 1rem gap - 0.75rem
+$notification-gutter: 0.8125rem;
+$notification-action-inset: 2.3125rem;
+
+.cf-ai-messages {
+	position: relative;
+	overflow: hidden auto;
+	flex: 1;
+	block-size: 100%;
+	inline-size: 100%;
+	min-block-size: 0;
+	overscroll-behavior: contain;
+	// the desk sets a physical `left` on body; it would keep the rows, and the feedback panel's
+	// title under its logically placed close button, left-aligned in a right-to-left page
+	text-align: start;
+
+	// Chrome makes a scroller with no focusable content keyboard-scrollable; show that it is
+	&:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+	}
+}
+
+// blank space after the last row: lets the pinned row reach the top of the viewport
+.cf-ai-spacer {
+	flex: none;
+	block-size: 0;
+}
+
+// -- earlier messages and the scroll handles --------------------------------------
+
+.cf-ai-earlier {
+	margin-block: spacing.$spacing-03 0;
+	margin-inline: $gutter;
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+// Upstream's MessagesScrollHandle: a tab stop at each end of the scroller that is invisible
+// until focused (the scroller itself takes no focus, or a click in it would), then a tile
+// carrying its text. Enter moves focus into the rows, which have no tab stop of their own.
+// The tile stays out of the flow (it overlays, at the place it would have taken): were it static,
+// a mouse press on "Show earlier messages" would blur it, the content would jump up between
+// mousedown and mouseup, and the click would land elsewhere.
+.cf-ai-scroll-handle {
+	position: absolute;
+	overflow: hidden;
+	padding: 0;
+	border: 0;
+	margin: 0;
+	background: transparent;
+	block-size: 1px;
+	clip-path: inset(50%);
+	color: var(--cds-text-primary);
+	inline-size: 1px;
+	outline: none;
+	white-space: nowrap;
+
+	&:focus {
+		z-index: 1;
+		display: block;
+		overflow: visible;
+		box-sizing: border-box;
+		padding: spacing.$spacing-05;
+		border: 2px solid var(--cds-focus);
+		margin: spacing.$spacing-03 $gutter;
+		background: var(--cds-layer-01);
+		block-size: auto;
+		clip-path: none;
+		cursor: pointer;
+		inline-size: calc(100% - 2 * #{$gutter});
+		text-align: start;
+		white-space: normal;
+		@include type.type-style("body-01");
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+// -- a row ---------------------------------------------------------------------
+
+.cf-ai-message {
+	// where the focus ring starts and ends: below the avatar line's blank offset, above the
+	// last row's bottom padding
+	--cf-ai-ring-top: #{$avatar-line-offset};
+	--cf-ai-ring-bottom: 0px;
+
+	position: relative;
+	display: block;
+	// No margin on rows: it would skew the pin arithmetic, which reads offsetTop and heights
+	margin: 0;
+
+	&:focus {
+		outline: none;
+	}
+
+	&:focus-visible::after {
+		position: absolute;
+		box-sizing: border-box;
+		border: 2px solid var(--cds-focus);
+		content: "";
+		inset-block: var(--cf-ai-ring-top) var(--cf-ai-ring-bottom);
+		inset-inline: 0;
+		pointer-events: none;
+	}
+}
+
+.cf-ai-message--first {
+	padding-block-start: spacing.$spacing-03;
+	--cf-ai-ring-top: calc(#{$avatar-line-offset} + #{spacing.$spacing-03});
+}
+
+.cf-ai-message--last {
+	padding-block-end: spacing.$spacing-06;
+	--cf-ai-ring-bottom: #{spacing.$spacing-06};
+}
+
+.cf-ai-message__avatar-line {
+	display: flex;
+	align-items: center;
+	padding-block-start: $avatar-line-offset;
+}
+
+.cf-ai-message__label {
+	color: var(--cds-text-secondary);
+	@include type.type-style("caption-01");
+}
+
+.cf-ai-message__avatar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: calc((#{spacing.$spacing-07} - #{$avatar-size}) / 2);
+	background: var(--cds-chat-avatar-bot);
+	block-size: $avatar-size;
+	border-radius: 50%;
+	inline-size: $avatar-size;
+
+	svg {
+		block-size: spacing.$spacing-05;
+		fill: var(--cds-icon-inverse);
+		inline-size: spacing.$spacing-05;
+	}
+}
+
+.cf-ai-message--assistant {
+	.cf-ai-message__avatar-line {
+		padding-inline-start: spacing.$spacing-03;
+	}
+
+	.cf-ai-message__label {
+		padding-block: spacing.$spacing-03;
+		padding-inline: spacing.$spacing-03;
+	}
+
+	// the avatar line already says who is talking: a reply that follows a reply does not repeat it
+	+ .cf-ai-message--assistant {
+		padding-block-start: spacing.$spacing-03;
+		--cf-ai-ring-top: #{spacing.$spacing-03};
+
+		.cf-ai-message__avatar-line {
+			display: none;
+		}
+	}
+}
+
+.cf-ai-message--user {
+	.cf-ai-message__avatar-line {
+		justify-content: flex-end;
+		padding-inline-end: $gutter;
+	}
+
+	.cf-ai-message__label {
+		padding-block-end: spacing.$spacing-03;
+		padding-inline-start: spacing.$spacing-03;
+	}
+
+	.cf-ai-message__body {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	+ .cf-ai-message--user {
+		padding-block-start: spacing.$spacing-03;
+		--cf-ai-ring-top: #{spacing.$spacing-03};
+
+		.cf-ai-message__avatar-line {
+			display: none;
+		}
+
+		.cf-ai-message__bubble {
+			border-radius: spacing.$spacing-03;
+		}
+	}
+}
+
+.cf-ai-message__body,
+.cf-ai-message__steps,
+.cf-ai-message__footer {
+	margin-inline: $gutter;
+	min-inline-size: 0;
+}
+
+.cf-ai-message--assistant .cf-ai-message__body {
+	// upstream's narrow view: the reply starts a step below the avatar line
+	margin-block-start: spacing.$spacing-03;
+
+	> * + * {
+		margin-block-start: spacing.$spacing-03;
+	}
+}
+
+// the user's message: a bubble with its tail corner square, mirrored in right-to-left
+.cf-ai-message__bubble {
+	position: relative;
+	padding: spacing.$spacing-03 spacing.$spacing-05;
+	border: 1px solid var(--cds-chat-bubble-user);
+	background: var(--cds-chat-bubble-user);
+	border-end-end-radius: spacing.$spacing-03;
+	border-end-start-radius: spacing.$spacing-03;
+	border-start-end-radius: 0;
+	border-start-start-radius: spacing.$spacing-03;
+	color: var(--cds-chat-bubble-user-text, var(--cds-text-primary));
+	max-inline-size: 100%;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+	@include type.type-style("body-01");
+}
+
+// -- a reply's items -----------------------------------------------------------
+
+.cf-ai-item {
+	position: relative;
+	overflow-wrap: anywhere;
+}
+
+// text only: the error item is a Carbon notification and keeps its own colours and type
+.cf-ai-item--text {
+	color: var(--cds-text-primary);
+	@include type.type-style("body-01");
+}
+
+.cf-ai-item--text cds-aichat-markdown,
+.cf-ai-message__bubble cds-aichat-markdown {
+	display: block;
+}
+
+.cf-ai-stopped {
+	color: var(--cds-text-secondary);
+	@include type.type-style("label-01");
+}
+
+// Carbon's inline notification, which sizes itself for a page: here it fills the column.
+// Its single non-wrapping row (and the 3rem reserved at the end of the details for a close
+// button) comes from a min-width media query on the VIEWPORT, so in a 360px panel on a desktop
+// the action button would sit beside the text and squeeze it to ~180px: wrap the button
+// below the details instead, under the text rather than the icon.
+.cf-ai-error.cds--inline-notification {
+	flex-wrap: wrap;
+	margin: 0;
+	margin-block-start: spacing.$spacing-03;
+	inline-size: 100%;
+	max-inline-size: none;
+	min-inline-size: 0;
+
+	.cds--inline-notification__details {
+		flex: 1 1 100%;
+		margin-inline-end: $notification-gutter;
+		min-inline-size: 0;
+	}
+
+	.cds--inline-notification__action-button {
+		margin-block: 0 spacing.$spacing-03;
+		margin-inline-start: $notification-action-inset;
+		max-inline-size: calc(100% - #{$notification-action-inset});
+	}
+}
+
+// The server's text is a provider's exception chain, a dozen lines in a 360px column; the
+// full text stays in the DOM and in the element's title
+.cf-ai-error .cds--inline-notification__subtitle {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+
+// -- steps (the feedback footer is in _feedback.scss) -----------------------------
+
+.cf-ai-message__steps {
+	margin-block-start: spacing.$spacing-05;
+}
+
+// -- while the model works -----------------------------------------------------
+
+@keyframes cf-ai-fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+.cf-ai-processing {
+	display: flex;
+	align-items: center;
+	margin-inline: $gutter;
+
+	&[hidden] {
+		display: none;
+	}
+
+	cds-aichat-processing {
+		block-size: spacing.$spacing-07;
+	}
+}
+
+// The dots say "working"; the words only join them when the wait is long enough to
+// wonder. Under reduced motion the label still appears after the delay, just without the fade.
+.cf-ai-processing__label {
+	display: flex;
+	align-items: center;
+	padding-inline-start: spacing.$spacing-02;
+	animation: cf-ai-fade-in 600ms 1200ms forwards;
+	block-size: spacing.$spacing-07;
+	color: var(--cds-text-secondary);
+	font-style: italic;
+	opacity: 0;
+	@include type.type-style("label-02");
+
+	@media (prefers-reduced-motion: reduce) {
+		animation-duration: 1ms;
+	}
+}
+
+// -- the jump button -----------------------------------------------------------
+
+// Sticks to the bottom of the viewport while the end of the list is out of view. Its negative
+// top margin cancels its own height, so showing or hiding it never changes the scroll height.
+.cf-ai-scroll-bottom {
+	position: sticky;
+	z-index: 1;
+	margin-block-start: calc(-1 * #{$jump-size});
+	margin-inline: auto;
+	inline-size: $jump-size;
+	inset-block-end: spacing.$spacing-05;
+
+	&[hidden] {
+		display: none;
+	}
+}

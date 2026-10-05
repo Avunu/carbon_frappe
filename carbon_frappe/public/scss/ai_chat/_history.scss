@@ -1,0 +1,88 @@
+// The conversation list laid over the message area (js/ai_chat/view/history.ts). The
+// Carbon history components bring their own shadow styles; this is the overlay around
+// them and the states they have no part for (empty, failed, truncated).
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+
+.cf-ai-history {
+	position: absolute;
+	z-index: 2;
+	background: var(--cds-chat-shell-background, var(--cds-layer-01));
+	inset: 0;
+
+	&[hidden] {
+		display: none;
+	}
+
+	&[aria-busy="true"] {
+		cursor: progress;
+	}
+
+	// a conversation is loading: the pick shows as selected and the rest recede, though a
+	// second pick is still allowed to override the first
+	&--switching cds-aichat-history-panel-item:not([aria-busy="true"]) {
+		opacity: 0.6;
+	}
+}
+
+// Expanded: the shell centres the messages in a column (`content-max-width`); the list takes
+// the same column while the overlay's background stays full-bleed.
+.cf-ai-shell[content-max-width] .cf-ai-history__shell {
+	margin-inline: auto;
+	max-inline-size: var(--cds-aichat-messages-max-width, 672px);
+}
+
+// the Carbon notification's own width rules leave the Try again button squeezing its
+// text column at 360px, so the button sits under it
+.cf-ai-history__error {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	padding-block: spacing.$spacing-04;
+	padding-inline: spacing.$spacing-05;
+	gap: spacing.$spacing-03;
+
+	.cds--inline-notification {
+		inline-size: 100%;
+		margin: 0;
+		max-inline-size: none;
+		min-inline-size: 0;
+	}
+}
+
+.cf-ai-history__empty {
+	padding-block: spacing.$spacing-07;
+	padding-inline: spacing.$spacing-05;
+}
+
+.cf-ai-history__empty-title {
+	@include type.type-style("heading-compact-01");
+
+	margin: 0;
+	color: var(--cds-text-primary);
+}
+
+.cf-ai-history__empty-text {
+	@include type.type-style("body-compact-01");
+
+	margin-block-start: spacing.$spacing-03;
+	color: var(--cds-text-secondary);
+}
+
+.cf-ai-history__note {
+	@include type.type-style("helper-text-01");
+
+	margin: 0;
+	color: var(--cds-text-secondary);
+	padding-block: spacing.$spacing-05;
+	padding-inline: spacing.$spacing-05;
+}
+
+// the delete confirmation's slotted text sits in the Carbon panel's shadow DOM; a long
+// conversation title must wrap there instead of widening the panel
+.cf-ai-history__delete-name {
+	display: block;
+	font-weight: 600;
+	margin-block-end: spacing.$spacing-03;
+	overflow-wrap: anywhere;
+}
