@@ -1,0 +1,144 @@
+// AI assistant host (js/anatomy/shell/assistant.ts) — the part that is always loaded:
+// the panel's frame, its open/closed motion, and the loading and failure states that
+// show before the lazy chat stylesheet (scss/ai_chat/chat.scss) exists. Everything
+// inside the chat itself is in that sheet.
+//
+// The host is on <body>, outside the header's g100 zone, so it follows the page theme.
+// It overlays the page: .main-section is never pushed or resized.
+//
+// An expanded panel (or any panel in a narrow window) covers the page; assistant.ts
+// makes the page inert then, so Tab cannot land on what is hidden.
+@use "@carbon/styles/scss/utilities/layout" as carbon-layout;
+
+// 360px; the chat shell's minimum inline size is 320px
+$ai-width: 22.5rem;
+// the width at which the panel goes full width (NARROW_QUERY in assistant.ts)
+$ai-narrow: 42rem;
+
+// Stacking, against the verified z-indices: .body-sidebar 1020, its mobile overlay 1021,
+// the UI Shell header and its panels 1030, bootstrap's modal backdrop 1040, modals 1050,
+// flow's #flow-root 1040, toasts and #freeze 2000. 1025 puts the panel above the
+// sidebar (an expanded panel covers it) and under the header, so the trigger stays
+// reachable, and under every dialog.
+.cf-ai {
+	--cf-ai-width: #{$ai-width};
+	--cf-ai-z: 1025;
+	--cf-ai-duration: var(--carbon-duration-moderate-02, 240ms);
+
+	position: fixed;
+	z-index: var(--cf-ai-z);
+	// under the fixed 3rem header ($shell-height in desk/_ui-shell.scss)
+	inset-block: 3rem 0;
+	inset-inline-end: 0;
+	overflow: hidden;
+	border-inline-start: 1px solid var(--cds-border-subtle-01);
+	// the chat shell paints the same colour once mounted, so loading to loaded does not flash
+	background: var(--cds-chat-shell-background, var(--cds-layer-01));
+	color: var(--cds-text-primary);
+	inline-size: min(var(--cf-ai-width), 100%);
+	transform: translateX(100%);
+	// removes the closed panel from the tab order and the accessibility tree; the
+	// delay is the slide, so it is not hidden before it finished sliding out
+	visibility: hidden;
+	transition:
+		transform var(--cf-ai-duration) var(--carbon-easing-exit, cubic-bezier(0.2, 0, 1, 0.9)),
+		visibility 0s linear var(--cf-ai-duration);
+
+	// Carbon emits its layout tokens on :root only per component and the desk never does,
+	// so every `min()` and `clamp()` in `.cds--btn` was invalid and its padding fell to 0.
+	// Here they reach the status block's buttons and the chat's own (view/panel.ts).
+	@include carbon-layout.emit-layout-tokens;
+
+	// not while open: this selector outranks `.cf-ai--open`, and would keep the open panel off-screen
+	&:dir(rtl):not(.cf-ai--open) {
+		transform: translateX(-100%);
+	}
+
+	// the layout tokens are not theme tokens, so the audit only accepts them with a fallback (Carbon's sm height)
+	.cds--btn--sm {
+		--cds-layout-size-height: var(--cds-layout-size-height-sm, 2rem);
+	}
+}
+
+.cf-ai--open {
+	transform: none;
+	visibility: visible;
+	transition-delay: 0s;
+	transition-timing-function: var(--carbon-easing-entrance, cubic-bezier(0, 0, 0.3, 1));
+}
+
+.cf-ai--expanded {
+	inline-size: 100%;
+}
+
+// a narrow desktop window; the header does not mount below the desk's mobile breakpoint
+@media (width <= #{$ai-narrow}) {
+	.cf-ai {
+		inline-size: 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cf-ai {
+		transition: none;
+	}
+}
+
+// Flow's own slide-over (#flow-root, apps/flow) is the panel this one replaces. It sets
+// inline styles, hence !important; the class is set for as long as the chat is in charge
+// and removed when the chat fails to load, which hands the panel back.
+body.cf-ai-chat #flow-root {
+	display: none !important;
+}
+
+// -- loading and failure -------------------------------------------------------
+// Carbon's inline loading and inline notification, as the lazy module's markup is not
+// there yet. Both are included once in desk/_carbon-components.scss.
+.cf-ai-status {
+	padding: 1rem;
+
+	&:focus {
+		outline: none;
+	}
+
+	.cds--inline-notification {
+		inline-size: 100%;
+		max-inline-size: none;
+		min-inline-size: 0;
+	}
+}
+
+.cf-ai-status__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+}
+
+// -- toasts --------------------------------------------------------------------
+// Frappe's #alert-container (bottom right, 2000) would sit on the prompt line and its
+// send or stop button. Beside the strip it moves left of it; over a full-width panel
+// it goes to the top, under the header, at the start edge so it clears the chat
+// header's actions. Frappe positions it with physical `right`, hence :dir(ltr).
+@media (width > #{$ai-narrow}) {
+	body.cf-ai-open:not(.cf-ai-expanded):dir(ltr) #alert-container {
+		right: calc(#{$ai-width} + 20px);
+	}
+}
+
+@mixin toasts-over-full-width-panel {
+	#alert-container {
+		inset-block: 3.5rem auto;
+		inset-inline: 20px auto;
+	}
+}
+
+body.cf-ai-open.cf-ai-expanded {
+	@include toasts-over-full-width-panel;
+}
+
+@media (width <= #{$ai-narrow}) {
+	body.cf-ai-open {
+		@include toasts-over-full-width-panel;
+	}
+}

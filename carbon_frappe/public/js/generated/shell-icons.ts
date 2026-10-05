@@ -14,6 +14,12 @@ export const close20: string =
 /** switcher 20 — the app switcher action (HeaderGlobalAction). */
 export const switcher20: string =
 	'<svg focusable="false" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true" width="20" height="20" viewBox="0 0 32 32"><path d="M14 4H18V8H14z"></path><path d="M4 4H8V8H4z"></path><path d="M24 4H28V8H24z"></path><path d="M14 14H18V18H14z"></path><path d="M4 14H8V18H4z"></path><path d="M24 14H28V18H24z"></path><path d="M14 24H18V28H14z"></path><path d="M4 24H8V28H4z"></path><path d="M24 24H28V28H24z"></path></svg>';
+/** ai-launch 20 — the AI assistant action (HeaderGlobalAction). */
+export const aiLaunch20: string =
+	'<svg focusable="false" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true" width="20" height="20" viewBox="0 0 32 32"><path stroke-width="0" d="m15,19l-1.4141,1.4141,3.5859,3.5859H4v-13h-2v13c0,1.1046.8954,2,2,2h13.1719l-3.5859,3.5859,1.4141,1.4141,6-6-6-6Z"></path><path stroke-width="0" d="m24,18v-2h2V4h-2v-2h6v2h-2v12h2v2h-6Z"></path><path stroke-width="0" d="m21,18h2l-5.5-16-3,.0088-5.5,15.9912h2l1.3333-4h7.3335l1.3333,4Zm-8-6l3-9,3,9h-6Z"></path></svg>';
+/** error--filled 20 — the error inline notification's status icon, pre-classed `cds--inline-notification__icon`. */
+export const errorFilled20: string =
+	'<svg focusable="false" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true" class="cds--inline-notification__icon" width="20" height="20" viewBox="0 0 20 20"><path d="M10,1c-5,0-9,4-9,9s4,9,9,9s9-4,9-9S15,1,10,1z M13.5,14.5l-8-8l1-1l8,8L13.5,14.5z"></path><path d="M13.5,14.5l-8-8l1-1l8,8L13.5,14.5z" data-icon-path="inner-path" opacity="0"></path></svg>';
 /** chevron--down 16 — the sub-menu chevron (HeaderMenu), pre-classed `cds--header__menu-arrow`. */
 export const chevronDown16: string =
 	'<svg focusable="false" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true" class="cds--header__menu-arrow" width="16" height="16" viewBox="0 0 16 16"><path d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"></path></svg>';

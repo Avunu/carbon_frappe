@@ -155,6 +155,25 @@ body.cf-has-shell {
 			flex: none;
 			white-space: nowrap;
 		}
+
+		// At phone width the name (184px) pushes the utility cells past the
+		// viewport: with the AI trigger there are five 48px cells beside the
+		// 48px menu button, so 360px has room for the name only if it gives
+		// up space. The 480px bound is where the rigid layout still fits
+		// exactly. Below it the name is the one elastic item, and its prefix
+		// ellipsises instead of spilling over the cells.
+		@media (width <= 30rem) {
+			flex: 0 1 auto;
+			min-inline-size: 0;
+			overflow: hidden;
+
+			.cds--header__name--prefix {
+				flex: 0 1 auto;
+				min-inline-size: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+		}
 	}
 
 	.cds--header__nav,
