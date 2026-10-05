@@ -177,9 +177,10 @@ class TestStylesheet(UnitTestCase):
 	def test_dark_keeps_carbons_white_focus(self):
 		"""g100 draws focus, interactive icons and the tertiary button in white."""
 		css = render_css(config(brand_light="#009d9a"))
-		dark_block = css.split('[data-theme="dark"]')[1]
+		dark_block = css.split('[data-theme="dark"]')[1].split("}")[0]
 		for token in ("--cds-focus", "--cds-icon-interactive", "--cds-button-tertiary"):
-			self.assertNotIn(token, dark_block)
+			self.assertIn(f"{token}: #ffffff;", dark_block)
+			self.assertNotIn(f"{token}: #009d9a", dark_block)
 
 	def test_light_brand_gets_dark_text(self):
 		css = render_css(config(brand_light="#f1c21b"))
