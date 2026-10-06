@@ -1,5 +1,20 @@
 # Changelog
 
+## [16.1.0](https://github.com/Avunu/carbon_frappe/compare/v16.0.1...v16.1.0) (2026-10-05)
+
+
+### Features
+
+* add the AI assistant header action and flow panel takeover ([f1030d4](https://github.com/Avunu/carbon_frappe/commit/f1030d4ff433dad77ce42c31ca4c6fe6423e781d))
+* add the Carbon AI chat assistant, powered by the flow app ([d4bca2f](https://github.com/Avunu/carbon_frappe/commit/d4bca2f785b9e2193824fd53e9d958fe274590c6))
+* **ai-chat:** add the chat views and styles ([b476a7d](https://github.com/Avunu/carbon_frappe/commit/b476a7dcc48be29f515f7f97f78d2e0d984c12cd))
+* **ai-chat:** add the flow adapter and conversation logic ([c4a42e3](https://github.com/Avunu/carbon_frappe/commit/c4a42e3da82c15782813d8b10424a2b0f5888be2))
+
+
+### Bug Fixes
+
+* **brand:** keep Carbon's white focus colour in dark themes ([614004a](https://github.com/Avunu/carbon_frappe/commit/614004a3ee21a41f111c334e997286bf4e558268))
+
 ## [16.0.1](https://github.com/Avunu/carbon_frappe/compare/v16.0.0...v16.0.1) (2026-09-28)
 
 
