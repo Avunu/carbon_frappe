@@ -1,0 +1,10 @@
+{
+	"$schema": "./node_modules/@avunu/docusystem/config.schema.json",
+	"name": "Carbon Frappe",
+	"tagline": "A complete IBM Carbon Design System theme for Frappe and ERPNext, covering the desk, website, login, email, charts, and tables.",
+	"slug": "carbon_frappe",
+	"platform": "frappe",
+	"repo": "https://github.com/Avunu/carbon_frappe",
+	"domain": "carbon-theme.avunu.net",
+	"license": "MIT"
+}
