@@ -129,11 +129,11 @@
     "erpnext": {
       "flake": false,
       "locked": {
-        "lastModified": 1790752150,
-        "narHash": "sha256-4v7I+owpDMPoOeJarVgi1GNWo/pRjMxeNKOORKIaKlA=",
+        "lastModified": 1791294273,
+        "narHash": "sha256-z/YsGXY2iB0M3pEQIPo+aynn9Rs/hAVpGZbvkfE0wBY=",
         "owner": "frappe",
         "repo": "erpnext",
-        "rev": "af63cde4941570ec7b9e12422c68302762cfcf91",
+        "rev": "7474d9e786277383de1242ab882f16856d17a9c9",
         "type": "github"
       },
       "original": {
@@ -304,11 +304,11 @@
     "frappe": {
       "flake": false,
       "locked": {
-        "lastModified": 1790792945,
-        "narHash": "sha256-p4xAONkwcFhJB0wUXMTmvAfO2P6iGGhUWPBHVcWV5J8=",
+        "lastModified": 1791293338,
+        "narHash": "sha256-Cvs/QzkiXCvjtb9FBp5+wfxDD51dO6/jeezsn1FXJsM=",
         "owner": "frappe",
         "repo": "frappe",
-        "rev": "97a5dd93ca5883bcc9c4ef9834120c5cba397b67",
+        "rev": "f20f92d29706510551b4438cc196b0323a7f1a92",
         "type": "github"
       },
       "original": {
