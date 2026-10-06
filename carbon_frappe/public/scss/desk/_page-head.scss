@@ -196,7 +196,6 @@
 		align-items: center;
 		flex: none;
 		color: var(--cds-icon-primary);
-		--icon-stroke: var(--cds-icon-primary);
 		opacity: 0;
 		transition: opacity var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 	}

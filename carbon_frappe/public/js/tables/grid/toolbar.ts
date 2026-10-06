@@ -21,7 +21,7 @@
 // still contains the toolbar. Rebuilding the buttons would have thrown all of
 // that away and left `setup_allow_bulk_edit()` un-hiding orphaned nodes.
 import { CARBON } from "../engine/classes.ts";
-import { icon } from "../engine/icons.ts";
+import { download16, search16, upload16 } from "../../generated/icons.ts";
 import type Grid from "frappe/public/js/frappe/form/grid";
 
 declare global {
@@ -83,12 +83,12 @@ function el<K extends keyof HTMLElementTagNameMap>(
  * and its cached `grid.*_button` handle survive. The old label becomes the
  * accessible name rather than being dropped.
  */
-function toToolbarAction(node: HTMLElement, iconName: string, fallbackLabel: string): HTMLElement {
+function toToolbarAction(node: HTMLElement, glyph: string, fallbackLabel: string): HTMLElement {
 	if (!node || node.__cf_toolbar_action) return node;
 	node.__cf_toolbar_action = true;
 	const label = (node.textContent || "").trim() || fallbackLabel;
 	node.classList.add(CARBON.toolbarAction, "cds--btn", "cds--btn--ghost", "cds--btn--icon-only");
-	node.innerHTML = `${icon(iconName, "sm")}<span class="cds--visually-hidden">${esc(label)}</span>`;
+	node.innerHTML = `${glyph}<span class="cds--visually-hidden">${esc(label)}</span>`;
 	node.setAttribute("title", label);
 	node.setAttribute("aria-label", label);
 	return node;
@@ -200,7 +200,7 @@ export default class GridToolbar {
 			"aria-pressed": "false",
 		});
 		const label = __("Filter rows", null, "Carbon grid toolbar");
-		button.innerHTML = `${icon("es-line-search", "sm")}<span class="cds--visually-hidden">${esc(label)}</span>`;
+		button.innerHTML = `${search16}<span class="cds--visually-hidden">${esc(label)}</span>`;
 		button.setAttribute("title", label);
 		button.setAttribute("aria-label", label);
 		button.addEventListener("click", () => {
@@ -217,8 +217,8 @@ export default class GridToolbar {
 		const w = this.grid.wrapper;
 		const download = w.find(".grid-download").get(0);
 		const upload = w.find(".grid-upload").get(0);
-		if (download) this.content.appendChild(toToolbarAction(download, "es-line-download", __("Download")));
-		if (upload) this.content.appendChild(toToolbarAction(upload, "es-line-upload", __("Upload")));
+		if (download) this.content.appendChild(toToolbarAction(download, download16, __("Download")));
+		if (upload) this.content.appendChild(toToolbarAction(upload, upload16, __("Upload")));
 	}
 
 	/**

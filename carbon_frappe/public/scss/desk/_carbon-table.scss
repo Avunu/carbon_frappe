@@ -184,6 +184,13 @@
 		padding-inline: var(--cds-spacing-03, 0.5rem);
 	}
 
+	// Carbon's glyphs paint by fill (js/generated/icons.ts); Carbon's own sort
+	// icon takes `$icon-primary`, which is what frappe's stroke tint stood in for.
+	.cf-table__sort-glyph {
+		flex: none;
+		fill: var(--cds-icon-primary);
+	}
+
 	// The toolbar and footer only take space when an adapter fills them.
 	&__toolbar:empty,
 	&__footer:empty {
@@ -852,18 +859,6 @@
 			display: inline-flex;
 			align-items: center;
 		}
-	}
-
-	// `es-line-download` is the sprite's only download glyph and it is drawn
-	// with STROKES (`stroke-linecap` paths plus an outline `<circle>`), while
-	// frappe's `.es-icon` rule forces `fill: var(--icon-stroke); stroke-width: 0`
-	// (common/icons.scss:18-22) — which fills the circle and renders a solid
-	// dot. Restoring stroke rendering for this one button is narrower than
-	// substituting a glyph that does not mean "download".
-	.cds--toolbar-content .grid-download svg {
-		fill: none;
-		stroke: currentcolor;
-		stroke-width: 1;
 	}
 
 	// The primary action. Carbon's toolbar primary button is full bar height,

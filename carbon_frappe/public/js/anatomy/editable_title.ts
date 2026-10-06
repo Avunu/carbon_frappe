@@ -14,6 +14,7 @@
 // and it does `element.off("click").on("click", ...)`, so re-running it is
 // safe. The sidebar pencil keeps working exactly as before — this adds a second
 // route to the same dialog, it does not replace one.
+import { edit16 } from "../generated/icons.ts";
 import { record } from "./patch.ts";
 
 function bind(): boolean {
@@ -42,18 +43,16 @@ function bind(): boolean {
 
 	// Carbon's Editable text reveals an edit glyph on the text it edits, and
 	// that glyph is the whole affordance now that desk/_page-head.scss has
-	// dropped the (wrong) link underline. Taken from frappe's own sprite —
-	// the same "square-pen" the sidebar rename button uses — because CSS cannot
-	// reach a sprite and inlining a Carbon glyph would be the one asset in this
-	// theme not sourced from an @carbon package.
+	// dropped the (wrong) link underline. It is Carbon's own Edit glyph,
+	// generated from @carbon/icons (scripts/generate-icons.ts), rather than
+	// frappe's "square-pen" sprite icon: the sprite is frappe's to rename or
+	// drop, and it paints by stroke, which the theme had to override.
 	//
 	// Idempotent: breadcrumbs.js rewrites the crumb's innerHTML on every route
 	// change, which drops the glyph and re-runs this; within a route it must not
 	// stack a second one.
-	if (!$title.children(".cf-title-edit").length && frappe.utils?.icon) {
-		$title.append(
-			`<span class="cf-title-edit" aria-hidden="true">${frappe.utils.icon("square-pen", "sm")}</span>`,
-		);
+	if (!$title.children(".cf-title-edit").length) {
+		$title.append(`<span class="cf-title-edit" aria-hidden="true">${edit16}</span>`);
 	}
 
 	toolbar.setup_editable_title_click_event($title);

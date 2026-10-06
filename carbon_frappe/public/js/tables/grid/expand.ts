@@ -27,6 +27,7 @@
 // walks the same selector to rewrite `idx` after a drag. A permanently
 // present child row carrying that class would be draggable and would corrupt
 // row order. It carries no frappe classes at all.
+import { chevronRight16 } from "../../generated/icons.ts";
 import { CARBON } from "../engine/classes.ts";
 import type Grid from "frappe/public/js/frappe/form/grid";
 import type GridRow from "frappe/public/js/frappe/form/grid_row";
@@ -138,14 +139,6 @@ export interface CarbonGridRow extends GridRow {
 	): this | undefined;
 }
 
-/** Carbon's ChevronRight 16 (@carbon/icons), inlined — the engine has no icon dep. */
-const CHEVRON =
-	'<svg class="' +
-	CARBON.expandSvg +
-	'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"' +
-	' fill="currentColor" aria-hidden="true" focusable="false"' +
-	' preserveAspectRatio="xMidYMid meet"><path d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"/></svg>';
-
 /** ids go into `aria-controls`, so anything outside [A-Za-z0-9_-] has to go. */
 function idSafe(value: unknown): string {
 	return String(value == null ? "" : value).replace(/[^A-Za-z0-9_-]/g, "_");
@@ -218,7 +211,7 @@ export function expandButton(grid_row: CarbonGridRow): HTMLButtonElement {
 		const button = document.createElement("button");
 		button.type = "button";
 		button.className = CARBON.expandRow;
-		button.innerHTML = CHEVRON;
+		button.innerHTML = chevronRight16;
 		button.addEventListener("click", (e) => {
 			e.preventDefault();
 			e.stopPropagation();

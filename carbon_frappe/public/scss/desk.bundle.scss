@@ -15,21 +15,24 @@ $dropdown-border-radius: 0;
 @import "./carbon/fonts";
 
 // -- frappe's desk styles, recompiled ---------------------------------------
-// Faithful mirror of frappe/public/scss/desk.bundle.scss (frappe v16). Because
+// Faithful mirror of frappe/public/scss/desk.bundle.scss (frappe v16.50). Because
 // this bundle SHADOWS frappe's compiled desk.bundle.css wholesale, it must pull
-// in everything frappe's does — including the fontawesome/octicons/leaflet CSS
-// that lives outside desk/index — or those styles vanish desk-wide. Inter is the
-// only intentional omission (replaced by the IBM Plex import above).
-@import "frappe/public/css/fonts/fontawesome/font-awesome.min.css";
-@import "frappe/public/css/octicons/octicons.css";
+// in everything frappe's does, or those styles vanish desk-wide. Inter is the
+// only intentional omission (replaced by the IBM Plex import above). Frappe
+// dropped octicons (#39836), lazy-loads leaflet via leaflet.bundle.css (#39421)
+// and dropped fontawesome (#40571) — importing any of them here fails the build.
 @import "~frappe-charts/dist/frappe-charts.min";
 @import "~plyr/dist/plyr";
 @import "frappe/public/scss/desk/index";
-@import "frappe/public/js/lib/leaflet/leaflet.css";
-@import "frappe/public/js/lib/leaflet_easy_button/easy-button.css";
-@import "frappe/public/js/lib/leaflet_control_locate/L.Control.Locate.css";
-@import "frappe/public/js/lib/leaflet_draw/leaflet.draw.css";
 @import "frappe/public/node_modules/highlight.js/styles/tomorrow.css";
+
+// -- Legacy icon-font classes, as Carbon glyphs -----------------------------
+// Frappe's own code and installed apps still emit `fa fa-lock`, `fa-spinner
+// fa-spin`, `octicon-file-directory`, … after the stylesheets that drew them
+// went away. This draws them with @carbon/icons instead of re-importing icon
+// fonts frappe is dropping. Generated: scripts/generate-icons.ts, from
+// scripts/lib/icon-manifest.ts.
+@import "./generated/legacy-icons";
 
 // -- Carbon layers -----------------------------------------------------------
 @import "./carbon/themes"; // --cds-* emission (White + g100)

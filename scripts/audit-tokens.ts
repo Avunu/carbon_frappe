@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /**
  * Drift audit — runs warn-only on every `bench build` (via the package
- * `build` script) and strict in CI (`yarn audit:drift`). Six checks:
+ * `build` script) and strict in CI (`yarn audit:drift`). Nine checks:
  *
  *  1. Carbon token references: every `var(--cds-*)` we reference (without a
  *     fallback) must exist in @carbon/themes' emitted token set.
  *  2. Frappe variable pins: every espresso/legacy var we declare should still
  *     be declared by frappe (catches upstream renames/removals).
  *  3. Shadow mirrors: the frappe SCSS entry files our shadow bundles
- *     recompile must still exist, and frappe's desk.bundle.scss import list
- *     is diffed against our mirror (catches new imports we should add).
+ *     recompile must still exist, frappe's desk.bundle.scss import list
+ *     is diffed against our mirror (catches new imports we should add), and
+ *     every `frappe/...` file our bundles import must still exist (catches
+ *     imports frappe REMOVED — the octicons/FontAwesome/leaflet break).
  *  4. Mapping premises: the g10 light theme, the semantic pins, the g100 zone.
  *  5. JS hooks: the frappe runtime shapes the theme monkey-patches.
  *  6. Carbon class names: every `cds--*` class the theme's SCSS or JS emits or
  *     targets still exists in @carbon/styles (catches Carbon renames).
+ *  7. Generated icons: js/generated/{shell-icons,icons}.ts and
+ *     scss/generated/_legacy-icons.scss match scripts/lib/icon-manifest.ts and
+ *     the installed @carbon/icons.
+ *  8. Sprite references: the frappe sprite icons the theme still names exist.
+ *  9. Legacy icon classes: every `fa-*` / `octicon-*` an installed app emits is
+ *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts).
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -21,6 +29,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { auditGeneratedIcons, auditLegacyEmitters, auditSpriteReferences } from "./lib/audit-icons.ts";
 
 const require = createRequire(import.meta.url);
 const strict = process.argv.includes("--strict");
@@ -122,6 +131,10 @@ if (!/\.cf-zone-g100\s*\{\s*@include\s+theme\.theme\(\s*themes\.\$g100\s*\)/.tes
 		}
 	}
 }
+
+// ---- Check 7: the generated icon files are current ------------------------
+// Runs before the frappe early-exit: it only needs this app and @carbon/icons.
+auditGeneratedIcons(appRoot, warn);
 
 if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {
 	console.log(`[audit] frappe not found at ${frappeRoot} — skipping frappe-drift checks (set FRAPPE_PATH)`);
@@ -326,16 +339,66 @@ const frappeDesk = fs.readFileSync(
 	"utf-8",
 );
 const ourDesk = fs.readFileSync(path.join(scssRoot, "desk.bundle.scss"), "utf-8");
+/**
+ * What frappe v16.50.0 stopped importing into its desk bundle — octicons
+ * (#39836), leaflet's stylesheets, now lazy-loaded (#39421), and FontAwesome
+ * (#40571). Our mirror follows 16.50, so a frappe that still imports these
+ * PREDATES the mirror: the cause is the pin, not N missing imports.
+ */
+const REMOVED_IN_16_50 = /\/(?:fontawesome|octicons)\/|\/lib\/leaflet/;
+const predatesMirror: string[] = [];
 for (const m of frappeDesk.matchAll(/@import\s+"([^"]+)"/g)) {
 	const imp = m[1];
 	if (imp === undefined) continue;
 	// inter fonts are intentionally replaced by IBM Plex
 	if (imp.includes("inter")) continue;
 	const normalized = imp.replace(/^~/, "").replace(/^\.\//, "");
-	if (!ourDesk.includes(normalized)) {
-		warn(`frappe desk.bundle.scss imports "${imp}" — not present in our desk mirror`);
+	if (ourDesk.includes(normalized)) continue;
+	if (REMOVED_IN_16_50.test(imp)) predatesMirror.push(imp);
+	else warn(`frappe desk.bundle.scss imports "${imp}" — not present in our desk mirror`);
+}
+if (predatesMirror.length) {
+	warn(
+		`the frappe at ${frappeRoot} still imports ${predatesMirror.length} stylesheet(s) our desk mirror dropped ` +
+			`(${predatesMirror.map((i) => path.basename(i)).join(", ")}): it predates frappe v16.50.0, which removed them, and the mirror targets ≥ 16.50 — move the pin (\`nix flake update frappe\`)`,
+	);
+}
+
+// The reverse of the loop above: imports WE make that frappe no longer has.
+// Check 3's diff only ever asked "what did frappe add"; frappe deleting a file
+// (octicons #39836, FontAwesome #40571) left our mirror importing nothing, and
+// the first anyone heard of it was `bench build` failing on a path the
+// postcss plugin had rebased into /tmp. `~pkg` imports and `/node_modules/`
+// paths are not frappe source (they resolve at build time), so they are skipped.
+for (const file of fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss"))) {
+	const text = fs.readFileSync(path.join(scssRoot, file), "utf-8");
+	for (const m of text.matchAll(/^\s*@import\s+"(frappe\/[^"]+)"/gm)) {
+		const spec = m[1];
+		if (spec === undefined || spec.includes("/node_modules/")) continue;
+		const abs = path.join(frappeRoot, spec);
+		const dir = path.dirname(abs);
+		const base = path.basename(abs);
+		const candidates = [
+			abs,
+			`${abs}.scss`,
+			`${abs}.css`,
+			path.join(dir, `_${base}.scss`),
+			path.join(abs, "_index.scss"),
+			path.join(abs, "index.scss"),
+		];
+		if (!candidates.some((c) => fs.existsSync(c) && fs.statSync(c).isFile())) {
+			warn(
+				`${file} imports "${spec}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`,
+			);
+		}
 	}
 }
+
+// ---- Checks 8 and 9: icons the theme names, and icon classes apps emit -------
+auditSpriteReferences(appRoot, frappeRoot, warn);
+// A pre-16.50 frappe is already reported once above; per-class findings would
+// only repeat that cause, for classes its own desk still styled.
+if (predatesMirror.length === 0) auditLegacyEmitters(frappeRoot, warn);
 
 if (failures) {
 	console.log(`[audit] ${failures} finding(s)${strict ? "" : " (warn-only)"}`);
