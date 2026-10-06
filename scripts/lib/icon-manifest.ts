@@ -56,6 +56,18 @@ export const SHELL_GLYPHS: readonly GlyphSpec[] = [
 		role: "the AI assistant action (HeaderGlobalAction)",
 	},
 	{
+		exportName: "search20",
+		icon: "search",
+		size: 20,
+		role: "the search action (HeaderGlobalAction); the click is frappe's awesome bar",
+	},
+	{
+		exportName: "notification20",
+		icon: "notification",
+		size: 20,
+		role: "the notifications action (HeaderGlobalAction); the click opens frappe's notifications panel",
+	},
+	{
 		exportName: "errorFilled20",
 		icon: "error--filled",
 		size: 20,

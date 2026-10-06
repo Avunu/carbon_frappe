@@ -437,8 +437,9 @@ const LIB = String.raw`(() => {
 	A.thumbState = (f) => { const b = A.thumbs(f).buttons; const d = f ? f.querySelector('cds-aichat-feedback') : null; return b ? { up: b.isPositiveSelected, down: b.isNegativeSelected, upOff: b.isPositiveDisabled, downOff: b.isNegativeDisabled, open: !!(d && d.isOpen) } : null; };
 	A.firstRowKey = () => { const r = A.rows()[0]; return r ? r.getAttribute('data-message-id') : null; };
 	A.rowByKey = (k) => document.querySelector('#cf-ai-panel .cf-ai-message[data-message-id="' + k + '"]');
-	A.alerts = () => [...document.querySelectorAll('#alert-container .desk-alert')].map((a) => norm(a.textContent || ''));
-	A.clearAlerts = () => { for (const a of document.querySelectorAll('#alert-container .desk-alert')) a.remove(); return true; };
+	// frappe 16.50's alerts are toasts: frappe.show_alert builds an .es-toast in .es-toast-container (messages.js:430, toast.js)
+	A.alerts = () => [...document.querySelectorAll('.es-toast-container .es-toast')].map((a) => norm((a.querySelector('.es-toast__message') || a).textContent || ''));
+	A.clearAlerts = () => { for (const a of document.querySelectorAll('.es-toast-container .es-toast')) a.remove(); return true; };
 	// The naive server datetime read in the zone the server stores in, and the display forms of an instant.
 	A.naiveToEpoch = (naive, tz) => {
 		const m = /^(\d{4})-(\d\d)-(\d\d)[ T](\d\d):(\d\d):(\d\d)(?:\.(\d+))?/.exec(naive);
@@ -838,11 +839,11 @@ const coveredInert = `(() => {
 /** Show a frappe toast and report whether it overlaps the prompt line. */
 async function toastOverlapsPrompt(page: Page): Promise<{ toast: boolean; overlaps: boolean }> {
 	await page.eval(`(frappe.show_alert({ message: 'CF AI Test toast', indicator: 'green' }, 20), true)`);
-	await page.waitFor(`!!document.querySelector('#alert-container .desk-alert')`, { timeout: 5000 });
+	await page.waitFor(`!!document.querySelector('.es-toast-container .es-toast')`, { timeout: 5000 });
 	// the toast fades in; a rect read mid-fade is still its final box, but give the layout a frame to settle
 	await sleep(500);
 	const result = await page.eval<{ toast: boolean; overlaps: boolean }>(`(() => {
-		const toast = document.querySelector('#alert-container .desk-alert');
+		const toast = document.querySelector('.es-toast-container .es-toast');
 		const prompt = document.querySelector('#cf-ai-panel cds-aichat-prompt-line-shell');
 		if (!toast || !prompt) return { toast: false, overlaps: false };
 		const a = toast.getBoundingClientRect(); const b = prompt.getBoundingClientRect();
@@ -1811,12 +1812,13 @@ async function runSuite(loadMark: number): Promise<void> {
 			`inGlobal, beforeSwitcher, label "AI assistant", controls "cf-ai-panel", expanded "false"`,
 		);
 		const placed = `(() => { const t = ${trigger}; const s = document.getElementById('cf-switcher-button'); return !!t && !!s && t.nextElementSibling === s; })()`;
+		// frappe writes the shell into the URL (`/desk/<shell>/user`, router.js:868-910), so the end of the path
 		await page.eval(`frappe.set_route('/desk/user')`);
-		await page.waitFor(`location.pathname === '/desk/user'`, { timeout: 30000 });
+		await page.waitFor(`location.pathname.endsWith('/user')`, { timeout: 30000 });
 		await sleep(600);
 		ok("AI-01", "trigger stays before the switcher after a route change", await flag(page, placed));
 		await page.eval(`history.back()`);
-		await page.waitFor(`location.pathname === '/desk/todo'`, { timeout: 30000 });
+		await page.waitFor(`location.pathname.endsWith('/todo')`, { timeout: 30000 });
 		await sleep(600);
 		ok("AI-01", "trigger stays before the switcher after coming back", await flag(page, placed));
 	});
@@ -2189,7 +2191,7 @@ async function runSuite(loadMark: number): Promise<void> {
 			page.eval(`({
 				ai: ${A}.isOpen(),
 				switcher: document.getElementById('cf-switcher-panel').classList.contains('cds--header-panel--expanded'),
-				bell: (() => { const b = document.querySelector('.cds--header__global .dropdown-notifications'); return b ? b.classList.contains('hidden') : null; })(),
+				bell: !!(frappe.ui.sidebar_panels.get('notifications') || {}).is_open,
 			})`);
 		await openPanel(page);
 		await click(page, `document.getElementById('cf-switcher-button')`, false);
@@ -2202,19 +2204,18 @@ async function runSuite(loadMark: number): Promise<void> {
 			switched,
 			"switcher open, assistant closed",
 		);
-		await page.eval(
-			`(() => { const b = document.querySelector('.cds--header__global .dropdown-notifications'); if (b) b.classList.remove('hidden'); })()`,
-		);
+		// the notifications are frappe's sidebar panel, shown through its registry as the bell does
+		await page.eval(`frappe.ui.sidebar_panels.show('notifications')`);
 		await click(page, trigger, false);
 		await page.waitFor(`${A}.isOpen()`, { timeout: 10000 });
 		await sleep(400);
 		const back = await state();
 		ok(
 			"AI-08",
-			"opening the assistant closes the switcher and hides the notifications panel",
-			back.ai && !back.switcher && back.bell === true,
+			"opening the assistant closes the switcher and the notifications panel",
+			back.ai && !back.switcher && back.bell === false,
 			back,
-			"assistant open, switcher closed, .dropdown-notifications hidden",
+			"assistant open, switcher closed, notifications panel closed",
 		);
 		await closePanelWithTrigger(page);
 	});

@@ -2,14 +2,16 @@
 /**
  * Browser tests for the Carbon UI Shell header (js/anatomy/ui_shell.ts).
  *
- * The header is a projection of frappe's Workspace Sidebar into Carbon's UI
+ * The header is a projection of frappe's module sidebar into Carbon's UI
  * Shell markup, and everything that can go wrong with it is DOM behaviour:
- * whether the name follows the workspace, whether the links mirror the
+ * whether the name follows the module, whether the links mirror the
  * sidebar's rows, whether a sub-menu opens off `aria-expanded`, whether the
- * measured overflow keeps the bar off the utilities, whether the moved bell
- * still paints its badge, and whether the g100 zone actually resolves on the
- * header in both themes. Same driver as the table suites — headless Chromium
- * over the DevTools Protocol, no dependencies beyond Node 22+.
+ * measured overflow keeps the bar off the utilities, whether search, the bell
+ * and the account menu reach frappe's own handlers, whether the header sits
+ * beside the dock and sidebar without covering them, and whether the g100
+ * zone actually resolves on the header in both themes. Same driver as the
+ * table suites — headless Chromium over the DevTools Protocol, no
+ * dependencies beyond Node 22+.
  *
  *   node scripts/test-shell.ts
  *   CF_SITE_URL=http://localhost:8000 node scripts/test-shell.ts
@@ -17,9 +19,11 @@
  *
  * The `assistant` suite (AI chat; scripts/shell/assistant.ts) additionally needs flow
  * installed and `yarn build:chat` run, and skips itself when flow is absent.
+ * The `pagehead` suite (scripts/shell/pagehead.ts) drives the page head on existing
+ * documents every site has (a Role, a Language) and never saves.
  *
- * Requires: a running bench with carbon_frappe, erpnext and hrms installed and
- * built (the fixtures are the Projects and Recruitment sidebars), and
+ * Requires: a running bench with carbon_frappe and erpnext installed and
+ * built (the fixtures are the Projects and Stock sidebars), and
  * `chromium` on PATH. Screenshots land in .dev-dist/screenshots/.
  */
 import { spawn } from "node:child_process";
@@ -36,6 +40,10 @@ const SUITES: readonly Suite[] = [
 	[
 		"assistant",
 		"AI assistant: header action, flow takeover, lazy bundle, streaming, approvals, history, feedback, attachments, timestamps, scroll, keyboard, themes",
+	],
+	[
+		"pagehead",
+		"page head: breadcrumb trail and heading, status tag, editable title, page actions, menu, dialog, one hamburger",
 	],
 ];
 

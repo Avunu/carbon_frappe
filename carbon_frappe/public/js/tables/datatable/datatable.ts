@@ -24,10 +24,12 @@
 // which exists because two of this file's methods are called with FABRICATED
 // arguments — see {@link CarbonDataTable.getTotalRow}.
 import CarbonTable from "../engine/table.ts";
+import { MAX_WIDTH, estimateWidth } from "../widths.ts";
 import { nearestRowSize } from "../engine/classes.ts";
 import { datatableProfile, nextScopeClass } from "./classes.ts";
 import CellEditing from "./editing.ts";
 import CellNavigation from "./navigation.ts";
+import { closeHeaderMenu, syncHeaderMenus } from "./header_menu.ts";
 import {
 	BASE_CELL,
 	BodyRendererShim,
@@ -78,7 +80,7 @@ function __(str: string): string {
  * A column's text, as the engine wants it.
  *
  * `content` is a {@link DataTableCellValue} — every caller in the bench passes a
- * string (`report_view.js:1285` `content: title`), but the type allows a number
+ * string (`report_view.js:1267` `content: title`), but the type allows a number
  * or a boolean — while the engine's `label` is a `string` and its render result
  * has no `boolean` arm. `String()` here is character-for-character what
  * `CarbonTable#columnLabel` (`String(spec.label)`) and `#applyContent`
@@ -195,6 +197,11 @@ export interface CarbonDataTableResolvedOptions extends CarbonDataTableOptions {
 	data: DataTableData;
 	/** `null`, not a chevron: carbon_frappe renders column menus through Carbon. */
 	dropdownButton: string | null;
+	/**
+	 * The caller's EXTRA header-menu items. frappe-datatable concatenates them
+	 * after its six built-ins; here the built-ins live in ./header_menu.ts and
+	 * this is only what a caller added (Report View's "Add Column").
+	 */
 	headerDropdown: DataTableHeaderDropdownItem[];
 	events: Partial<DataTableEvents>;
 	hooks: DataTableHooks;
@@ -351,6 +358,16 @@ function defaults(): CarbonDataTableResolvedOptions {
 		sortingKey: null,
 	};
 }
+
+/** How many rows {@link CarbonDataTable.naturalWidth} reads. */
+const NATURAL_SAMPLE = 25;
+
+/**
+ * What a sortable header needs beside its label on top of the cell padding: the
+ * sort glyph and its gap. (The header menu's toggle overlays the end of the
+ * header while it shows, so nothing is reserved for it.)
+ */
+const HEADER_CHROME = 40;
 
 let INSTANCES = 0;
 
@@ -545,7 +562,9 @@ export default class CarbonDataTable {
 		const user = (columns || []).map((col): DataTableColumn => {
 			const base: Partial<DataTableColumn> =
 				typeof col === "string" ? { content: col } : Object.assign({}, col);
-			const merged: Partial<DataTableColumn> = Object.assign({}, BASE_CELL, base);
+			// `sortOrder: "none"` is stock's own default (`prepareCell`,
+			// datamanager.js:114-119); an input column may override it.
+			const merged: Partial<DataTableColumn> = Object.assign({ sortOrder: "none" }, BASE_CELL, base);
 			// The JS finished with `if (!merged.format) merged.format = undefined;`.
 			// It is dropped, not translated: `format` is a function or absent, so
 			// "falsy" and "undefined" are the same state, and the assignment only
@@ -621,6 +640,37 @@ export default class CarbonDataTable {
 		this.data = data || [];
 		this.rows = this.prepareRows(this.data);
 		this.prepareTree();
+		// A rebuild makes new column objects, and the engine's sort state
+		// outlives them: `refresh()` re-sorts nothing, so the new columns have to
+		// be told what is already sorted. Only while something IS sorted: an
+		// unsorted engine must not erase a `sortOrder` the caller put on a column.
+		if (this.engine && (this.engine.state.sorting || []).length) this.syncSortOrder();
+	}
+
+	/**
+	 * Mirror the engine's sort state onto `columns[].sortOrder`.
+	 *
+	 * frappe-datatable keeps the sort on the COLUMNS (`datamanager.sortRows`
+	 * resets every column to `"none"` and sets the target one,
+	 * datamanager.js:256-270) and `currentSort` is derived from them. Here the
+	 * state is TanStack's, which no column knows about — but frappe reads it
+	 * back off the columns: "Export all rows" turns the first sorted column of
+	 * `datamanager.getColumns()` into an `order_by` (report_view.js:1795-1818),
+	 * so without this the export silently loses the sort the user chose.
+	 * `rowViewOrder` needs no such mirror; it is read off the row model.
+	 */
+	syncSortOrder(): void {
+		// `prepare()` runs once before the engine exists.
+		if (!this.engine) return;
+		const first = (this.engine.state.sorting || [])[0];
+		const order: DataTableSortOrder = first && first.desc ? "desc" : "asc";
+		// Matched on the whole engine id, not on the index parsed out of it: after
+		// a column is removed or moved the old `c5:name` may name a position that
+		// now holds a different column, and the engine has dropped it as unknown.
+		for (const col of this.columns) {
+			const sorted = !!first && this.engineIdFor(col, col.colIndex ?? -1) === first.id;
+			col.sortOrder = sorted ? order : "none";
+		}
 	}
 
 	/**
@@ -749,9 +799,10 @@ export default class CarbonDataTable {
 				// scrolls, and a recycled node comes back with the markup
 				// `getCheckboxHTML` returns — an UNCHECKED box — however the
 				// map reads. See {@link CarbonDataTable.syncCheckboxes}.
-				onRender: () => this.syncCheckboxes(),
+				onRender: () => this.afterRender(),
 				onSortColumn: (column) => {
 					const col = this.columns[this.colIndexOfEngineColumn(engineColumnRef(column))];
+					this.syncSortOrder();
 					this.fireEvent("onSortColumn", col);
 					if (this.options.saveSorting) this.persistSorting();
 				},
@@ -760,6 +811,17 @@ export default class CarbonDataTable {
 		// The engine's constructor already rendered once, with `this.engine`
 		// still unassigned — see the guard in {@link CarbonDataTable.syncCheckboxes}.
 		this.syncCheckboxes();
+	}
+
+	/**
+	 * Everything that has to be repainted onto the engine's DOM after each render:
+	 * the checkbox state ({@link CarbonDataTable.syncCheckboxes}) and the header
+	 * menu toggles (./header_menu.ts). The engine renders once from inside its own
+	 * constructor, before `this.engine` is assigned; both halves need it.
+	 */
+	afterRender(): void {
+		this.syncCheckboxes();
+		if (this.engine) syncHeaderMenus(this);
 	}
 
 	colIndexOfEngineColumn(column: EngineColumnRef): DataTableColIndex {
@@ -798,7 +860,7 @@ export default class CarbonDataTable {
 			id: this.engineIdFor(col, i),
 			label: columnText(col.name || col.content || ""),
 			header: () => columnText(col.content || col.name || ""),
-			size: col.width || (isStandard ? 60 : 120),
+			size: col.width || (isStandard ? 60 : this.naturalWidth(col, i)),
 			minSize: col.minWidth || this.options.minimumColumnWidth,
 			align: col.align || "left",
 			sortable: col.sortable !== false && !isStandard,
@@ -812,6 +874,30 @@ export default class CarbonDataTable {
 			meta,
 			cell: (ctx) => this.cellHTML(ctx.row.original[i], false, ctx.row),
 		};
+	}
+
+	/**
+	 * A column's width when its caller gave none: from its header and the first
+	 * rows, as frappe-datatable's `setupNaturalColumnWidth` measured them
+	 * (style.js:174-200) rather than a flat 120px, which clipped "Administrator"
+	 * and left no room for a header's sort glyph beside its label.
+	 * The `table-layout: fixed` table then stretches the columns over the
+	 * viewport, which is what `distributeRemainingWidth` did.
+	 */
+	naturalWidth(col: DataTableColumn, colIndex: DataTableColIndex): number {
+		const cells: string[] = [];
+		let indent = 0;
+		for (const row of this.rows.slice(0, NATURAL_SAMPLE)) {
+			const cell = row[colIndex];
+			if (!cell) continue;
+			cells.push(this.cellHTML(cell, false));
+			indent = Math.max(indent, cell.indent || 0);
+		}
+		const label = this.plainText(columnText(col.content || col.name || ""));
+		const width = estimateWidth({ label, headerExtra: HEADER_CHROME }, cells);
+		// a tree column also carries its indent (20px a level) and the toggle
+		const tree = this.options.treeView && colIndex === this.treeColumnIndex() ? indent * 20 + 24 : 0;
+		return Math.min(width + tree, MAX_WIDTH);
 	}
 
 	plainText(html: unknown): string {
@@ -905,7 +991,7 @@ export default class CarbonDataTable {
 		// apart. `content` is `null` at hook time on stock too: it is seeded
 		// `null` at :98 and only replaced by the hook's own return value
 		// afterwards (:115-129). `frappe.utils.report_column_total` happens to
-		// read only `column` (utils.js:970-975), but a hook is entitled to the
+		// read only `column` (utils.js:1004-1020), but a hook is entitled to the
 		// whole shape, and passing less was a real divergence.
 		const cell: DataTableTotalCell = {
 			content: null,
@@ -1221,6 +1307,7 @@ export default class CarbonDataTable {
 
 	destroy(): void {
 		this.fireEvent("onDestroy");
+		closeHeaderMenu();
 		// report_view.js rebuilds into the same wrapper; listeners left on it
 		// would keep steering this instance's stale selection
 		if (this.navigation) this.navigation.unbind();
@@ -1261,6 +1348,7 @@ export default class CarbonDataTable {
 		if (!id) return;
 		if (sortOrder === "none") this.engine.table.setSorting([]);
 		else this.engine.table.setSorting([{ id, desc: sortOrder === "desc" }]);
+		this.syncSortOrder();
 		this.fireEvent("onSortColumn", this.columns[colIndex]);
 	}
 

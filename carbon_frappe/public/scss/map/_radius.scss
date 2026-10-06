@@ -1,42 +1,26 @@
 // Carbon v11 is square: every frappe / frappe-ui radius token collapses to 0.
 //
-// Two token families are squared here:
-//   1. `--border-radius-*` — frappe **v16** desk/website names (declared in
-//      frappe/public/scss/espresso/_borders.scss).
-//   2. `--radius-*` — frappe-ui's Tailwind radius tokens, consumed by the SPA
-//      apps (CRM/Helpdesk/Builder) via carbon_frappe_ui.bundle. Declared at the
-//      bottom of this block.
+// Three token families are squared here:
+//   1. `--radius` and its scale (`--radius-sm|md|lg|xl|2xl`, `--radius-0..9`) —
+//      Espresso v2's names (css/espresso/radius.css). One override point squares
+//      the desk and website: frappe wires Bootstrap's `$border-radius`,
+//      `$border-radius-sm|lg` and `$input-border-radius` to `var(--radius)` /
+//      `var(--radius-lg)` (scss/desk/variables.scss), the `.es-*` components read
+//      the numbered steps, and ~180 rules read bare `var(--radius)`. The same names
+//      are frappe-ui's Tailwind radius tokens, which the SPA apps
+//      (CRM/Helpdesk/Builder) consume via carbon_frappe_ui.bundle.
+//   2. `--border-radius*` — the pre-v16.50 names frappe still reads, kept as a shim
+//      (see below).
+//   3. Derived component radii, pinned so they cannot inherit a non-zero base.
 //
-// One override point squares the whole desk/website: frappe wires Bootstrap's own
-// `$border-radius` / `$border-radius-sm|lg` / `$input-border-radius` to
-// `var(--border-radius*)` in desk|website/variables.scss, and frappe's component
-// SCSS reads `var(--border-radius*)` directly — so zeroing these custom properties
-// re-radiuses Bootstrap controls (inputs, badges, alerts, pagination, …) AND every
-// frappe surface at once. The map layer is imported after frappe's espresso tokens,
-// so these `:root` declarations win the cascade.
+// The map layer is imported after frappe's espresso tokens, so these `:root`
+// declarations win the cascade.
 //
-// The pill family (`--border-radius-full`) stays round on purpose: Carbon's tags,
-// indicator pills and round avatars are its one deliberately-curved shape. Flip it
-// to 0 if you'd rather square those too.
+// The pill family (`--radius-9`, `--radius-full`) stays round on purpose:
+// Carbon's tags, indicator pills and round avatars are its one deliberately
+// curved shape. Flip them to 0 if you'd rather square those too.
 :root {
-	--border-radius-tiny: 0;
-	--border-radius-sm: 0;
-	--border-radius: 0;
-	--border-radius-md: 0;
-	--border-radius-lg: 0;
-	--border-radius-xl: 0;
-	--border-radius-2xl: 0;
-	--border-radius-full: 999px; // pill — Carbon's one rounded shape
-
-	// Derived / component tokens, pinned explicitly so they can't inherit a
-	// non-zero base if frappe reorders its declarations:
-	--card-border-radius: 0; // also forced via `$card-border-radius: 0` injection
-	--dt-border-radius: 0; // datatable; frappe defaults it to var(--border-radius)
-
-	// Legacy #desktop page ships its own desktop.css (loaded *after* this bundle)
-	// that re-declares this at :root, so squaring that one modal needs a
-	// consumer-level override there — see _misc.scss. We still state intent here.
-	--desktop-modal-radius: 0;
+	--radius: 0; // bare: Bootstrap's `$border-radius`, 178 frappe rules, frappe-ui `rounded`
 
 	// frappe-ui (v1) radius tokens. frappe-ui's Tailwind plugin rewires EVERY
 	// `borderRadius` key to `var(--radius-<key>)` (tailwind/plugin.js
@@ -44,18 +28,18 @@
 	// occurrences) resolves to `var(--radius-4)`. Declaring the whole set here
 	// squares ~1,600 rounding occurrences across CRM/Helpdesk/Builder at once —
 	// far more than the per-class `.rounded-*` overrides in _frappe-ui-utilities
-	// ever reached — and lets those class hacks be retired for v1. Emitted in the
-	// desk bundle too (harmless: v16 desk reads --border-radius-*, not --radius-*),
-	// and carried into carbon_frappe_ui.bundle for the SPA apps.
+	// ever reached. Frappe's own desk reads the same names (the es-* components,
+	// `.rounded-*` utilities), so one declaration serves both.
 	//
-	// Keys/values mirror frappe-ui/tailwind/generated/radius.json. --radius-9
-	// (999px) and --radius-full (9999px) stay round: Carbon's one curved shape.
+	// Keys/values mirror frappe-ui/tailwind/generated/radius.json and frappe's
+	// css/espresso/radius.css. --radius-9 (999px) and --radius-full (9999px) stay
+	// round: Carbon's one curved shape.
 	--radius-0: 0;
 	--radius-none: 0;
 	--radius-1: 0;
 	--radius-2: 0;
 	--radius-3: 0;
-	--radius-4: 0; // `rounded` (DEFAULT) resolves here
+	--radius-4: 0; // frappe-ui `rounded` (DEFAULT) resolves here
 	--radius-5: 0;
 	--radius-6: 0;
 	--radius-7: 0;
@@ -67,4 +51,22 @@
 	--radius-2xl: 0;
 	--radius-9: 999px; // pill
 	--radius-full: 9999px; // pill / round avatar
+
+	// Shim: frappe v16.50 still READS `--border-radius`, `-sm`, `-md` and `-lg`
+	// (frappe's controls, card, search widget and form sidebar; erpnext, hrms and
+	// print_designer ~70 more sites) but no longer DECLARES them, and its legacy
+	// aliases do not map them onto the Espresso scale. Undeclared, `border-radius:
+	// var(--border-radius)` is invalid at computed-value time and falls back to
+	// square, which is what Carbon wants; a `var(--border-radius, 4px)` fallback or
+	// a frappe that declares the names again would not be. (`-tiny`, `-xl`, `-2xl`
+	// and `-full` have no readers left, so they are not carried.)
+	--border-radius: 0;
+	--border-radius-sm: 0;
+	--border-radius-md: 0;
+	--border-radius-lg: 0;
+
+	// Derived / component tokens, pinned explicitly so they can't inherit a
+	// non-zero base if frappe reorders its declarations:
+	--card-border-radius: 0; // also forced via `$card-border-radius: 0` injection
+	--dt-border-radius: 0; // datatable; frappe defaults it to var(--border-radius)
 }

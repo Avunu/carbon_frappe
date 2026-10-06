@@ -14,7 +14,7 @@
 // EVERYTHING HERE MOVES NODES; NOTHING IS REBUILT. `Grid.make()` caches element
 // handles (`remove_rows_button`, `edit_rows_button`, `grid_buttons`, …) and
 // `frappe.utils.bind_actions_with_object` wires `data-action="delete_rows"` and
-// friends onto the elements themselves (grid.js:129-154). Relocating a node
+// friends onto the elements themselves (grid.js:178). Relocating a node
 // therefore preserves its handler, its cached handle, and every `.hidden` /
 // `.d-none` toggle `setup_toolbar()` and `refresh_remove_rows_button()` apply
 // through `this.wrapper.find(...)` — `this.wrapper` is `.grid-field`, which
@@ -79,16 +79,31 @@ function el<K extends keyof HTMLElementTagNameMap>(
 /**
  * Re-present a frappe text button as a Carbon icon-only toolbar action.
  *
- * The BUTTON ELEMENT is kept — only its contents change — so its click handler
- * and its cached `grid.*_button` handle survive. The old label becomes the
- * accessible name rather than being dropped.
+ * The BUTTON ELEMENT is kept — and so is what is inside it — so its click
+ * handler, its cached `grid.*_button` handle and frappe's own label mechanism
+ * survive. frappe 16.50's buttons are espresso buttons
+ * (`frappe.ui.button.html`: a spinner, a loading label and an
+ * `.es-button__label` span), and the label is rewritten in place through
+ * `Grid#set_button_label` (grid.js:459-463, which does
+ * `$btn.find(".es-button__label").text(label)`) or rebuilt by
+ * `frappe.ui.button.dress`. Replacing the button's `innerHTML` would delete that
+ * span and turn both into silent no-ops, so the glyph goes in beside the label
+ * and the label itself becomes the accessible name (visually hidden). Only a
+ * button with no such span (an older frappe, an app's own) has its contents
+ * replaced.
  */
 function toToolbarAction(node: HTMLElement, glyph: string, fallbackLabel: string): HTMLElement {
 	if (!node || node.__cf_toolbar_action) return node;
 	node.__cf_toolbar_action = true;
-	const label = (node.textContent || "").trim() || fallbackLabel;
+	const labelNode = node.querySelector<HTMLElement>(".es-button__label");
+	const label = ((labelNode ? labelNode.textContent : node.textContent) || "").trim() || fallbackLabel;
 	node.classList.add(CARBON.toolbarAction, "cds--btn", "cds--btn--ghost", "cds--btn--icon-only");
-	node.innerHTML = `${glyph}<span class="cds--visually-hidden">${esc(label)}</span>`;
+	if (labelNode) {
+		labelNode.classList.add("cds--visually-hidden");
+		labelNode.insertAdjacentHTML("beforebegin", glyph);
+	} else {
+		node.innerHTML = `${glyph}<span class="cds--visually-hidden">${esc(label)}</span>`;
+	}
 	node.setAttribute("title", label);
 	node.setAttribute("aria-label", label);
 	return node;
@@ -223,7 +238,7 @@ export default class GridToolbar {
 
 	/**
 	 * `.grid-custom-buttons` and `.grid-buttons` move as WHOLE NODES, because
-	 * `Grid.add_custom_button()` (grid.js:1588) appends into them by class and
+	 * `Grid.add_custom_button()` (grid.js:1714) appends into them by class and
 	 * would otherwise drop buttons into a container nobody can see.
 	 * `.grid-buttons` still holds Add row / Add multiple at this point — the
 	 * selection-scoped buttons were lifted out of it above.
@@ -297,7 +312,7 @@ export default class GridToolbar {
  *
  * The `.grid-pagination` element itself has to survive: `GridPagination`
  * re-`.html()`s its contents on every page change and only renders at all when
- * `data.length > grid_page_length` (grid_pagination.js:16).
+ * `data.length > grid_page_length` (grid_pagination.js:14-17).
  */
 export function mountFooter(grid: CarbonGridToolbarHost, node: HTMLElement): void {
 	const pagination = grid.wrapper.find(".grid-pagination").get(0);

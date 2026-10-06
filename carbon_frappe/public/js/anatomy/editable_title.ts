@@ -3,43 +3,62 @@
 //
 // Carbon's page header turns frappe's last breadcrumb into a 28px heading (see
 // desk/_page-head.scss). frappe already marks a renameable document by putting
-// `editable-title` on .title-area — but in v16 nothing binds a click to the
-// title itself; the affordance is a pencil in the form sidebar, reached in two
-// steps. At breadcrumb size that mismatch was invisible. At heading size a
-// title that looks editable and does nothing is a worse lie, so the binding is
-// made real.
+// `editable-title` on .title-area (form/toolbar.js:76-79) — but nothing binds a
+// click to the title itself; the affordance is a pencil in the form sidebar,
+// reached in two steps. At breadcrumb size that mismatch was invisible. At
+// heading size a title that looks editable and does nothing is a worse lie, so
+// the binding is made real.
 //
 // This uses frappe's OWN method rather than reimplementing rename:
-// toolbar.setup_editable_title_click_event() is what the sidebar pencil calls,
-// and it does `element.off("click").on("click", ...)`, so re-running it is
-// safe. The sidebar pencil keeps working exactly as before — this adds a second
-// route to the same dialog, it does not replace one.
+// toolbar.setup_editable_title_click_event() (toolbar.js:226) is what the
+// sidebar pencil calls, and it does `element.off("click").on("click", ...)`, so
+// re-running it is safe. The sidebar pencil keeps working exactly as before —
+// this adds a second route to the same dialog, it does not replace one.
+//
+// WHEN it runs is the part that changed in frappe 16.50. The title used to be a
+// node frappe wrote text into; it is now the last crumb of the trail, and
+// `Page.render_breadcrumbs` (page.js:1019) EMPTIES the <ol> and builds every
+// crumb again on each paint — so a glyph and a click handler placed on the crumb
+// last until the next paint and no longer. The previous approach (poll for a few
+// seconds after a route change) cannot know about a paint that comes later, so
+// this wraps the one function that makes the crumbs and dresses the title as
+// the last step of every paint.
+//
+// The paint that matters is the LAST one of a refresh, and it is the one that
+// sees the right `editable-title` state: `Form.refresh_header` runs
+// `toolbar.refresh()` first (whose `set_title` paints, THEN toggles the class,
+// toolbar.js:70-79) and `page.set_breadcrumbs(...)` after it (form.js:810),
+// which paints again with the class already settled. A paint that sees a stale
+// class draws a title that the next paint replaces.
+import type { Page } from "frappe-types";
 import { edit16 } from "../generated/icons.ts";
-import { record } from "./patch.ts";
+import { safePatch } from "./patch.ts";
 
-function bind(): boolean {
+/**
+ * The heading: the item of the trail's last <li>. It is a `span` — the current
+ * page carries no link or handler (page.js:1053-1054 drops both) — which is why
+ * it needs a role and a tab stop below to be an actual control.
+ */
+const TITLE = ".es-breadcrumbs > ol > li:last-child > .es-breadcrumbs__item";
+
+function dress(page: Page): void {
+	// the form on screen owns the page it was handed (formview.js:37), and the
+	// toolbar is what holds frappe's rename dialog
 	const frm = window.cur_frm;
-	const toolbar = frm && frm.toolbar;
-	if (!toolbar || typeof toolbar.setup_editable_title_click_event !== "function") return false;
+	if (!frm || frm.page !== page) return;
+	const toolbar = frm.toolbar;
+	if (!toolbar || typeof toolbar.setup_editable_title_click_event !== "function") return;
 
-	const $container = $(".page-container:visible").first();
-	const $area = $container.find(".title-area").first();
-	if (!$area.length) return false;
+	// frappe decides renameability; only follow it
+	if (!page.$title_area.hasClass("editable-title")) return;
 
-	// frappe decides renameability; only follow it. NOT a success condition:
-	// the class is added by frm.refresh() -> toolbar.refresh(), which can land
-	// after the container becomes visible, so reporting "done" here stopped the
-	// retry loop before the document was marked — and every list -> form
-	// navigation arrived with the heading unbound. Keep polling instead; a
-	// genuinely non-renameable document simply exhausts the tries in silence.
-	if (!$area.hasClass("editable-title")) return false;
+	const $title = page.$title_area.find(TITLE).first();
+	if (!$title.length) return;
 
-	const $title = $area.find(".navbar-breadcrumbs > li:last-child > a").first();
-	if (!$title.length) return false;
-
-	// the last crumb is a link to the current page; clicking it should rename,
-	// not navigate
-	$title.attr("href", null);
+	// A span that opens a dialog is a button that happens to be drawn as a
+	// heading. The glyph only shows on hover and focus, so without a tab stop
+	// the keyboard has no way to the rename at all.
+	$title.attr({ role: "button", tabindex: "0", "aria-haspopup": "dialog" });
 
 	// Carbon's Editable text reveals an edit glyph on the text it edits, and
 	// that glyph is the whole affordance now that desk/_page-head.scss has
@@ -48,38 +67,36 @@ function bind(): boolean {
 	// frappe's "square-pen" sprite icon: the sprite is frappe's to rename or
 	// drop, and it paints by stroke, which the theme had to override.
 	//
-	// Idempotent: breadcrumbs.js rewrites the crumb's innerHTML on every route
-	// change, which drops the glyph and re-runs this; within a route it must not
-	// stack a second one.
+	// Guarded rather than assumed fresh: a caller may repaint through a path that
+	// keeps the node (and this runs once per paint, not once per node).
 	if (!$title.children(".cf-title-edit").length) {
 		$title.append(`<span class="cf-title-edit" aria-hidden="true">${edit16}</span>`);
 	}
 
 	toolbar.setup_editable_title_click_event($title);
-	return true;
+
+	// `off()` first: the node is new on every paint, but a repaint that reuses
+	// it must not stack a second handler. Enter and Space are a button's keys.
+	$title.off("keydown.cfTitle").on("keydown.cfTitle", (event) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		$title.trigger("click");
+	});
 }
 
-// `ReturnType<typeof setInterval>` rather than `number`: this file is only ever
-// loaded in a browser, but the timer id's type is the one lib-dependent value
-// here and pinning it to the platform's own is free.
-let timer: ReturnType<typeof setInterval> | null = null;
-function bindSoon(): void {
-	if (timer) clearInterval(timer);
-	let tries = 0;
-	timer = setInterval(() => {
-		if (bind() || ++tries > 25) {
-			// Guarded only because a captured `let` keeps its declared type
-			// inside the closure; `timer` is this very interval's id whenever
-			// this branch runs, and `clearInterval(null)` was a no-op anyway.
-			if (timer) clearInterval(timer);
-			timer = null;
-		}
-	}, 120);
-}
-
-const ok = !!(window.frappe && frappe.router && typeof frappe.router.on === "function");
-if (ok) {
-	frappe.router.on("change", bindSoon);
-	$(document).ready(bindSoon);
-}
-record("editable page title (frappe's own rename binding)", ok);
+safePatch(
+	() => window.frappe && frappe.ui && frappe.ui.Page && frappe.ui.Page.prototype,
+	"render_breadcrumbs",
+	(orig) =>
+		function (this: Page): void {
+			orig.call(this);
+			// the title is cosmetic: whatever goes wrong here must not break the
+			// paint frappe asked for
+			try {
+				dress(this);
+			} catch (error) {
+				console.error("carbon_frappe: editable title not applied", error);
+			}
+		},
+	"Page.render_breadcrumbs (editable page title: frappe's own rename binding)",
+);

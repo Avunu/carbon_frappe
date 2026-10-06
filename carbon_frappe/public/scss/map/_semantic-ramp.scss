@@ -1,0 +1,224 @@
+// The espresso semantic layer (--surface-*, --ink-*, --outline-*) rebuilt as
+// var() aliases onto the raw ramps (--<hue>-50..950). Emits nothing by itself;
+// it is two mixins for the two places that need the layer re-stated.
+//
+// Frappe's desk gets this layer from css/espresso/colors.css, where every name
+// is already a var() alias onto the ramp, so the ramp remap in
+// _colors-palette.scss reaches all of it with no help. Two consumers do not:
+//
+//   - frappe-ui SPAs. v1 emits the layer as RESOLVED LITERALS
+//     (frappe-ui/tailwind/tokens.js, plugin.js), so a ramp remap cannot reach
+//     it. Re-declaring the names as aliases onto the (remapped) ramp is what
+//     lets the one remap in _colors-palette.scss serve both. See
+//     _colors-semantic-spa.scss.
+//   - the `.cf-zone-g100` island (the UI Shell header and its panels), which
+//     must read the dark layer while the page is light. Aliases frappe declares
+//     on :root resolve once, on <html>, and an island cannot re-resolve them, so
+//     the dark layer is re-declared inside the zone. See _colors-semantic-zone.scss.
+//
+// The step arithmetic below is colors.css, transcribed (v16.50.0, :183-327 for
+// light and :739-1132 for dark). `yarn audit:drift` compiles these mixins and
+// compares every name they declare with colors.css (check 4c), so a frappe that
+// re-indexes the layer fails there instead of leaving this quietly wrong.
+@use "sass:map";
+
+// Quoted: Sass reads a bare `red` or `blue` as a colour and warns when it is interpolated.
+$semantic-hues: (
+	"red",
+	"blue",
+	"green",
+	"amber",
+	"violet",
+	"yellow",
+	"orange",
+	"teal",
+	"cyan",
+	"purple",
+	"pink"
+);
+
+// Dark ladders are not arithmetic on the gray ramp (they skip 450 in one place
+// and repeat 400 in another), so they are tables.
+$dark-surface-gray: (
+	1: 900,
+	2: 700,
+	3: 600,
+	4: 500,
+	5: 450,
+	6: 400,
+	7: 300,
+	8: 200,
+	9: 100,
+	10: 50,
+);
+$dark-ink-gray: (
+	1: 800,
+	2: 600,
+	3: 500,
+	4: 400,
+	5: 400,
+	6: 300,
+	7: 200,
+	8: 100,
+	9: 50,
+);
+$dark-outline-gray: (
+	1: 800,
+	2: 600,
+	3: 500,
+	4: 450,
+	5: 400,
+	6: 300,
+	7: 200,
+	8: 100,
+	9: 50,
+);
+
+@function ramp-ref($hue, $step) {
+	@return var(--#{$hue}-#{$step});
+}
+
+// The surface scale climbs the ramp from 50, then in whole hundreds.
+@function surface-step-light($n) {
+	@if $n == 1 {
+		@return 50;
+	}
+
+	@return ($n - 1) * 100;
+}
+
+@function surface-step-dark($n) {
+	@if $n == 1 {
+		@return 950;
+	}
+
+	@return (11 - $n) * 100;
+}
+
+// Outlines run one step darker than surfaces and end on 950 (light) or 50 (dark).
+@function outline-step-light($n) {
+	@if $n == 10 {
+		@return 950;
+	}
+
+	@return $n * 100;
+}
+
+@function outline-step-dark($n) {
+	@if $n == 10 {
+		@return 50;
+	}
+
+	@return (10 - $n) * 100;
+}
+
+// Gray ink and outline (nine steps) climb from 200 and end on 950.
+@function gray-step-light($n) {
+	@if $n == 9 {
+		@return 950;
+	}
+
+	@return ($n + 1) * 100;
+}
+
+// Chromatic ink scale. frappe v16.50 starts it at white (`ink-<hue>-1`), then
+// climbs the ramp from 100. frappe-ui >= 1.0.0-rc.1 shifted every chromatic ink
+// down one level (migrate-tokens-v2.js, `--ink-shift`): `-1` is the 100 tint and
+// `-9` the 900. `$ui-ink` picks which one is being declared. `null` is the "white"
+// step, which `ink-ref` answers with Carbon's on-color text: white in every theme,
+// as a chromatic solid fill is what the step sits on.
+@function ink-step-light($n, $ui-ink) {
+	@if $ui-ink {
+		@return $n * 100;
+	}
+
+	@if $n == 1 {
+		@return null;
+	}
+
+	@return ($n - 1) * 100;
+}
+
+@function ink-step-dark($n, $ui-ink) {
+	@if $ui-ink {
+		@if $n == 9 {
+			@return 50;
+		}
+
+		@return (9 - $n) * 100;
+	}
+
+	@if $n == 1 {
+		@return null;
+	}
+
+	@if $n == 10 {
+		@return 50;
+	}
+
+	@return (10 - $n) * 100;
+}
+
+@function ink-ref($hue, $step) {
+	@if not $step {
+		@return var(--cds-text-on-color);
+	}
+
+	@return ramp-ref($hue, $step);
+}
+
+// frappe-ui's ink scale has nine steps, frappe v16.50's ten.
+@function ink-steps($ui-ink) {
+	@if $ui-ink {
+		@return 9;
+	}
+
+	@return 10;
+}
+
+@mixin semantic-light($ui-ink: false) {
+	@for $n from 1 through 10 {
+		--surface-gray-#{$n}: #{ramp-ref("gray", surface-step-light($n))};
+	}
+
+	@for $n from 1 through 9 {
+		--ink-gray-#{$n}: #{ramp-ref("gray", gray-step-light($n))};
+		--outline-gray-#{$n}: #{ramp-ref("gray", gray-step-light($n))};
+	}
+
+	@each $hue in $semantic-hues {
+		@for $n from 1 through 10 {
+			--surface-#{$hue}-#{$n}: #{ramp-ref($hue, surface-step-light($n))};
+			--outline-#{$hue}-#{$n}: #{ramp-ref($hue, outline-step-light($n))};
+		}
+
+		@for $n from 1 through ink-steps($ui-ink) {
+			--ink-#{$hue}-#{$n}: #{ink-ref($hue, ink-step-light($n, $ui-ink))};
+		}
+	}
+}
+
+// Dark reads the ramps backwards: the theme's dark ramps keep running light ->
+// dark (see _colors-palette.scss), so `-1` is the deepest step and `-10` the
+// lightest.
+@mixin semantic-dark($ui-ink: false) {
+	@for $n from 1 through 10 {
+		--surface-gray-#{$n}: #{ramp-ref("gray", map.get($dark-surface-gray, $n))};
+	}
+
+	@for $n from 1 through 9 {
+		--ink-gray-#{$n}: #{ramp-ref("gray", map.get($dark-ink-gray, $n))};
+		--outline-gray-#{$n}: #{ramp-ref("gray", map.get($dark-outline-gray, $n))};
+	}
+
+	@each $hue in $semantic-hues {
+		@for $n from 1 through 10 {
+			--surface-#{$hue}-#{$n}: #{ramp-ref($hue, surface-step-dark($n))};
+			--outline-#{$hue}-#{$n}: #{ramp-ref($hue, outline-step-dark($n))};
+		}
+
+		@for $n from 1 through ink-steps($ui-ink) {
+			--ink-#{$hue}-#{$n}: #{ink-ref($hue, ink-step-dark($n, $ui-ink))};
+		}
+	}
+}

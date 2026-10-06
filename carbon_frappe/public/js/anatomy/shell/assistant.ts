@@ -67,9 +67,10 @@ const SHORTCUT = "ctrl+i";
 const CSS_TIMEOUT_MS = 15000;
 // the breakpoint where desk/_ai-chat.scss makes the panel full width
 const NARROW_QUERY = "(width <= 42rem)";
-// what a full-width panel covers: frappe's sidebar (rebuilt on a sidebar render, hence
-// the observer in mountAssistant) and the page column; the header stays reachable
-const COVERED_PAGE = "body > .body-sidebar-container, .main-section > #body";
+// what a full-width panel covers: the dock (a pinned column beside the sidebar, or the
+// floating tray), frappe's sidebar (rebuilt on a sidebar render, hence the observer in
+// mountAssistant) and the page column; the header stays reachable
+const COVERED_PAGE = "body > .dock, body > .body-sidebar-container, .main-section > #body";
 
 // -- storage ------------------------------------------------------------------
 
@@ -306,10 +307,23 @@ export function mountAssistant(global: HTMLElement): ShellAssistant {
 		writeStorage(PANEL_STATE_KEY, serialisePanelState({ open: opened, expanded }));
 	}
 
+	// The elements this panel made inert. The dock keeps its own `inert` (a closed floating
+	// tray is inert while it is off screen, dock.js:199-204), so uncovering must give back
+	// only what was taken, never clear the attribute outright.
+	const madeInert = new WeakSet<HTMLElement>();
+
 	function syncInert(): void {
 		const covered = opened && (expanded || narrow.matches);
 		for (const el of document.querySelectorAll<HTMLElement>(COVERED_PAGE)) {
-			if (el.inert !== covered) el.inert = covered;
+			if (covered) {
+				if (!el.inert) {
+					el.inert = true;
+					madeInert.add(el);
+				}
+			} else if (madeInert.has(el)) {
+				el.inert = false;
+				madeInert.delete(el);
+			}
 		}
 	}
 

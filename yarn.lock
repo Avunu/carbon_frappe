@@ -2361,10 +2361,10 @@ flatted@^3.4.2:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.4.4.tgz#aeeca2a506303f0cee61c59e6c9f2a88d2f29fc6"
   integrity sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==
 
-frappe-types@^16.3.1:
-  version "16.3.1"
-  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.3.1.tgz#ccdb85451e0b2a434549a562a684902bd18b62b2"
-  integrity sha512-aS9YVGAT3JPYr+AzgVtQXuRHHd+colvLkROw4pOi6DlOfS5AbEUFapN4fn3/hMY9qlNPACHOSDmvWPzBsLFIrw==
+frappe-types@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/frappe-types/-/frappe-types-16.4.0.tgz#5fd3e4aaa20c33e821b35139bc5ae5f0befc8688"
+  integrity sha512-u/kvklqYRuQj6JRUVlPeHz+2VF+DjKFiOBU+zdgcAyAKJc7wwuwtNx2RdcMsaCFIKDpGmDf2xcyu36AGTJGdVQ==
   dependencies:
     "@types/jquery" "^3.5"
 

@@ -43,7 +43,7 @@ export function isHTMLElement(node: Node | EventTarget | null | undefined): node
 }
 
 /** Trimmed `textContent` of an element, or `""` for none. */
-export function text(el: Element | null | undefined): string {
+export function text(el: { readonly textContent: string | null } | null | undefined): string {
 	return (el && el.textContent ? el.textContent : "").trim();
 }
 

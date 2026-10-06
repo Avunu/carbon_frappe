@@ -116,18 +116,19 @@ body.cf-ai-chat #flow-root {
 }
 
 // -- toasts --------------------------------------------------------------------
-// Frappe's #alert-container (bottom right, 2000) would sit on the prompt line and its
-// send or stop button. Beside the strip it moves left of it; over a full-width panel
-// it goes to the top, under the header, at the start edge so it clears the chat
-// header's actions. Frappe positions it with physical `right`, hence :dir(ltr).
+// Frappe's toasts (`.es-toast-container`: bottom 12px, inline-end 20px, 2000;
+// espresso toast.css) would sit on the prompt line and its send or stop button.
+// Beside the strip the stack moves inline-start of it; over a full-width panel it goes
+// to the top, under the header, at the start edge so it clears the chat header's
+// actions. The container is positioned with logical properties, so RTL needs no case.
 @media (width > #{$ai-narrow}) {
-	body.cf-ai-open:not(.cf-ai-expanded):dir(ltr) #alert-container {
-		right: calc(#{$ai-width} + 20px);
+	body.cf-ai-open:not(.cf-ai-expanded) .es-toast-container {
+		inset-inline-end: calc(#{$ai-width} + 20px);
 	}
 }
 
 @mixin toasts-over-full-width-panel {
-	#alert-container {
+	.es-toast-container {
 		inset-block: 3.5rem auto;
 		inset-inline: 20px auto;
 	}

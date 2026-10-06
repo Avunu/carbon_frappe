@@ -246,6 +246,8 @@ export interface TableRendererHost<THost> {
 	columnAlign(column: RenderColumn): RenderColumnAlign;
 	columnLabel(column: RenderColumn): string;
 	columnFilterable(column: RenderColumn): boolean;
+	/** Whether this column absorbs the table's spare width (`spec.fill`). */
+	columnFills(column: RenderColumn): boolean;
 
 	renderHeaderContent(
 		entry: HeaderCellEntry,
@@ -461,7 +463,20 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 		// the header row from the body, because they redistribute differently).
 		// So the table gets an explicit px width — the same thing
 		// tanstack-carbon's resizing example does with `getCenterTotalSize()`.
-		setStyles(this.table, { width: `${this.host.table.getTotalSize()}px` });
+		//
+		// A table that is NARROWER than its container is the other case the
+		// browser redistributes: `min-inline-size: 100%` stretches it, and a fixed
+		// layout hands the surplus to every column in proportion. Each column
+		// then renders wider than its width says, and a drag on one handle moves
+		// that column's edge by more than the pointer moved. A column that
+		// declares `fill` is where the surplus goes instead (frappe's
+		// `.grid-data-last`, common/grid.scss:849-851): its <col> carries no width at
+		// all, so the fixed layout gives it whatever the table has left, and the
+		// table is `max(100%, <sum of widths>)` — as wide as the container or
+		// the columns need, whichever is more. Every other column is exact.
+		const fill = leaf.find((column) => this.host.columnFills(column));
+		const total = this.host.table.getTotalSize();
+		setStyles(this.table, { width: fill ? `max(100%, ${total}px)` : `${total}px` });
 
 		const desired: HTMLTableColElement[] = [];
 		for (const column of leaf) {
@@ -471,7 +486,7 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 				col[OWNED] = true;
 				this.cols.set(column.id, col);
 			}
-			setStyles(col, { width: `${column.getSize()}px` });
+			setStyles(col, { width: column === fill ? null : `${column.getSize()}px` });
 			desired.push(col);
 		}
 		this.prune(this.cols, desired, (c) => c);

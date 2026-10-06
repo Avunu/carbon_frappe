@@ -9,8 +9,10 @@
  *
  * Four checks:
  *  1. Selectors — every class we style is still emitted by the frappe file
- *     that emits it today.
- *  2. Patch targets — every runtime shape js/anatomy/* wraps still exists.
+ *     that emits it today, as a whole class token (see `hasClass`).
+ *  2. Patch targets — every runtime shape the theme wraps, calls or reads still
+ *     exists: frappe's methods and DOM, but also the boot keys the server
+ *     writes (frappe/boot.py) and the stylesheet rules we out-rank.
  *  3. Mirrored literals — the frappe declarations we deliberately override
  *     still exist, proving the mechanism (not just the value) is unchanged.
  *  4. Asset shadow — sites/assets/assets.json still points the shadowed
@@ -49,6 +51,40 @@ const warn = (msg: string): void => {
 	failures++;
 };
 
+/**
+ * The tail of every assets.json finding: which file was read, and how to read a
+ * different one. Check 4 reads a BENCH, not the frappe checkout, and the two are
+ * chosen by different variables. A shell (or direnv) that exports FRAPPE_PATH for
+ * one bench and leaves FRAPPE_BENCH_ROOT pointing at another audits a bench nobody
+ * is serving, and the finding then reads as a real regression. Naming the file lets
+ * the reader see that at a glance.
+ */
+const assetsHint = (file: string): string =>
+	` (read ${file}; FRAPPE_BENCH_ROOT=${benchRoot}${process.env.FRAPPE_BENCH_ROOT ? "" : ", the default two levels above this app"}. ` +
+	`If that is not the bench you serve, set FRAPPE_BENCH_ROOT to the directory that contains its sites/, ` +
+	`e.g. \`FRAPPE_BENCH_ROOT=/path/to/bench node scripts/audit-markup.ts\`.)`;
+
+/**
+ * Whether `text` carries `cls` as a class of its own.
+ *
+ * A bare `includes` also passes when only a LONGER class is left (the search row
+ * that became `navbar-modal-search-mobile`, `dt-row` inside `dt-row-header`), which
+ * is exactly the shape a rename takes. So the name must not touch a word character
+ * or a hyphen on either side. `_` is a word character on purpose: `es-breadcrumbs`
+ * is not satisfied by `es-breadcrumbs__item`.
+ */
+const hasClass = (text: string, cls: string): boolean =>
+	new RegExp(`(?<![\\w-])${cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(text);
+
+/**
+ * Whether `text` still declares `literal`. A literal that is only a class or a
+ * custom property (`.sidebar-panel`, `--sidebar-width`) gets the whole-token test
+ * above, so `.sidebar-panel-body` cannot stand in for `.sidebar-panel`; anything
+ * with punctuation in it (`z-index: 1020`) is a plain substring.
+ */
+const hasLiteral = (text: string, literal: string): boolean =>
+	/^\.?-{0,2}\w[\w-]*$/.test(literal) ? hasClass(text, literal.replace(/^\./, "")) : text.includes(literal);
+
 /** The frappe source at `rel`, or null when frappe no longer ships that file. */
 const read = (rel: string): string | null => {
 	const abs = path.join(frappeRoot, rel);
@@ -78,11 +114,14 @@ if (fs.existsSync(assetsPath)) {
 			assets = parsed;
 		} else {
 			warn(
-				`assets.json is ${parsed === null ? "null" : typeof parsed}, not an object — the asset shadow cannot be verified`,
+				`assets.json is ${parsed === null ? "null" : typeof parsed}, not an object — the asset shadow cannot be verified` +
+					assetsHint(assetsPath),
 			);
 		}
 	} catch (e) {
-		warn(`assets.json is unreadable (${e instanceof Error ? e.message : String(e)})`);
+		warn(
+			`assets.json is unreadable (${e instanceof Error ? e.message : String(e)})` + assetsHint(assetsPath),
+		);
 	}
 	const stolen = SHADOWED_BUNDLES.filter((name) => {
 		const v = assets[`${name}.bundle.css`];
@@ -102,7 +141,8 @@ if (fs.existsSync(assetsPath)) {
 			`asset shadow lost for ${stolen.join(", ")} — assets.json points at frappe's bundles, ` +
 				`so the desk is being served STOCK frappe CSS. ` +
 				`Re-run \`node scripts/patch-assets.ts\`. ` +
-				`Usual causes: \`bench build --apps frappe\`, or \`bench watch\` rebuilding frappe mid-session.`,
+				`Usual causes: \`bench build --apps frappe\`, or \`bench watch\` rebuilding frappe mid-session.` +
+				assetsHint(assetsPath),
 		);
 	}
 
@@ -129,7 +169,8 @@ if (fs.existsSync(assetsPath)) {
 			`assets.json points ${dangling.map((n) => `${n}.bundle.js`).join(", ")} at a file that no longer exists — ` +
 				`the desk is loading a missing or stale bundle. ` +
 				`Re-run \`node scripts/patch-assets.ts\`. ` +
-				`Usual cause: a build that did not run this app's build command, i.e. \`bench watch\`.`,
+				`Usual cause: a build that did not run this app's build command, i.e. \`bench watch\`.` +
+				assetsHint(assetsPath),
 		);
 	}
 }
@@ -207,6 +248,14 @@ if (!fs.existsSync(path.join(frappeRoot, "frappe", "public"))) {
 	process.exit(strict ? (failures ? 1 : 0) : 0);
 }
 
+// Which frappe this run judged. FRAPPE_PATH is independent of the bench assets.json
+// came from, and a pinned checkout (the one direnv exports) predates the release the
+// manifest is written against, so a wall of findings is otherwise indistinguishable
+// from a real regression.
+const frappeVersion =
+	/__version__ = "([^"]+)"/.exec(read("frappe/__init__.py") ?? "")?.[1] ?? "of unknown version";
+console.log(`[audit-markup] checking against frappe ${frappeVersion} at ${frappeRoot}`);
+
 // ---- Check 1: selectors still emitted --------------------------------------
 for (const [cls, file] of SELECTORS) {
 	const text = read(file);
@@ -214,7 +263,7 @@ for (const [cls, file] of SELECTORS) {
 		warn(`missing source ${file} (frappe restructured?) — cannot verify .${cls}`);
 		continue;
 	}
-	if (!text.includes(cls)) {
+	if (!hasClass(text, cls)) {
 		warn(`.${cls} no longer appears in ${file} — the rules styling it are now dead`);
 	}
 }
@@ -238,7 +287,7 @@ for (const [literal, file] of MIRRORED_LITERALS) {
 		warn(`missing source ${file} — cannot verify ${literal}`);
 		continue;
 	}
-	if (!text.includes(literal)) {
+	if (!hasLiteral(text, literal)) {
 		warn(`${literal} is gone from ${file} — the override that compensates for it may now be wrong`);
 	}
 }

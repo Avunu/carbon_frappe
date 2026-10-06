@@ -379,6 +379,39 @@
 		border: 0;
 	}
 
+	// THE <colgroup> OWNS A COLUMN'S WIDTH, NOT THE CELL.
+	//
+	// frappe 16.50 sizes each cell it builds INLINE, as `flex: 1 0 Npx; width: Npx`
+	// (grid_row.js:910, 970) — N being the width the column had when the row was
+	// made. An inline style beats the rule above, so once the engine resized a
+	// column (a header drag, Configure Columns) the <td> would widen and the
+	// cell inside would stay N wide: a cell that no longer fills its own click
+	// target, with the header and body content drifting apart. Only !important
+	// outranks an inline style, and `.grid-data-last { flex-grow: 1 !important }`
+	// (common/grid.scss:849) is the same shape, so this restates the cell's
+	// sizing in the one form that holds: it is as wide as its <td>, always.
+	.grid-static-col {
+		flex: none !important;
+		inline-size: 100% !important;
+	}
+
+	// frappe pins a sticky column with `position: sticky; left: Npx`, N from
+	// `Grid#get_sticky_offset` (grid_row.js:913, 973). Pinning is the engine's
+	// (the <td>/<th> carries it, `df.sticky` is `pinned: "start"`), and a sticky
+	// box nested inside a cell that is exactly its size has nowhere to travel.
+	.sticky-grid-col {
+		position: static !important;
+		inset-inline-start: auto !important;
+	}
+
+	// The drag handle frappe puts in each header cell (`setup_column_resize`).
+	// Its handler is not wired here — the engine's own handle on the <th> does
+	// the work and reports the width — so this one would be a grab zone that
+	// moves nothing.
+	.grid-col-resize-handle {
+		display: none;
+	}
+
 	// CELL INTERIORS ARE TRANSPARENT; THE ROW AND THE HEADER CELL CARRY THE PAINT.
 	//
 	// This is the rule the whole table's state model rests on. Carbon puts
@@ -621,7 +654,7 @@
 		gap: var(--cds-spacing-02, 0.25rem);
 		float: none;
 
-		.btn {
+		.es-button {
 			float: none;
 		}
 	}
@@ -757,7 +790,12 @@
 		transform: translate(-50%, 0);
 		inline-size: 80%;
 		max-inline-size: var(--page-max-width);
-		z-index: 1021;
+		// Above the backdrop frappe raises for it: 16.50 puts `#freeze.grid-form`
+		// at 1038 and the form at 1039 (common/grid.scss:571, 602; they were
+		// 1020 and 1021), under a Dialog's own backdrop (1040) so a dialog opened
+		// from the row still covers it. At the old 1021 the form sat BEHIND its own
+		// dimmed backdrop.
+		z-index: 1039;
 		padding: var(--cds-spacing-05, 1rem);
 		background-color: var(--cds-layer-01);
 		box-shadow: 0 2px 6px var(--cds-shadow, rgb(0 0 0 / 30%));
@@ -897,26 +935,13 @@
 		}
 	}
 
-	// Panel action buttons read as Carbon ghost buttons, not Bootstrap pills.
-	.grid-form-heading .btn,
-	.grid-footer-toolbar .btn {
-		block-size: var(--cds-spacing-07, 2rem);
-		min-block-size: 0;
-		padding-inline: var(--cds-spacing-04, 0.75rem);
-		color: var(--cds-link-primary);
-		background-color: transparent;
-		border: 0;
-		border-radius: 0;
-		box-shadow: none;
-
-		&:hover {
-			background-color: var(--cds-field-hover-01);
-		}
-	}
-
-	.grid-form-heading .btn.grid-delete-row {
-		color: var(--cds-text-error);
-	}
+	// The panel's action buttons (Move, Duplicate, Insert Above/Below, Delete,
+	// collapse) are espresso buttons in 16.50 (grid_row_form.js:46-76), and the
+	// desk's `.es-button` theme (desk/_buttons.scss) already draws them as Carbon
+	// ghost buttons: sm / 32px, $text-primary at rest, and the Delete one
+	// (`data-theme="red"`) as Carbon's danger ghost. Nothing is restated here —
+	// the panel is just another place a ghost button sits, and a second ghost
+	// look of its own would make it the one place that differs.
 
 	// --- batch actions ------------------------------------------------------
 
@@ -931,12 +956,26 @@
 		margin: 0;
 	}
 
+	// The selection-scoped buttons are frappe's own es-buttons (Delete, Edit,
+	// Delete all, Duplicate rows) and Carbon's Cancel, moved into the bar. The
+	// es-button theme's red variant (the two Delete buttons) would otherwise draw
+	// a danger-red label and fill on the brand-coloured bar, so every button here
+	// is restated as a transparent button with the on-brand label — at (0,3,0),
+	// which clears the theme's `:not([data-variant]):hover` rules.
 	.cds--action-list {
-		.btn,
+		.es-button,
 		.cds--batch-summary__cancel {
+			// Carbon's own `cds--btn` anchors its label at the top (it expects a
+			// 48px button with a 14px block padding); every button here is a plain
+			// 48px-tall label, vertically centred. `position: relative` is what
+			// Carbon's Cancel divider (`::before`, absolutely positioned) hangs from.
+			position: relative;
+			display: inline-flex;
+			align-items: center;
 			block-size: var(--cds-spacing-09, 3rem);
 			min-block-size: 0;
 			margin: 0;
+			padding-block: 0;
 			padding-inline: var(--cds-spacing-05, 1rem);
 			color: var(--carbon-text-on-brand, var(--cds-text-on-color));
 			background-color: transparent;
@@ -952,7 +991,7 @@
 
 		// `.hidden` is how frappe shows and hides these; it must keep winning
 		// over the flex display above.
-		.btn.hidden {
+		.es-button.hidden {
 			display: none !important;
 		}
 	}
@@ -983,12 +1022,6 @@
 		padding-inline: var(--cds-spacing-05, 1rem);
 		background-color: var(--cds-layer-01);
 		color: var(--cds-text-secondary);
-
-		.btn {
-			color: var(--cds-link-primary);
-			background-color: transparent;
-			border: 0;
-		}
 	}
 }
 
@@ -1023,7 +1056,48 @@
 // .list-row` — a DESCENDANT match, because frappe nests those two elements. The
 // engine puts both classes on one <tr>, so the same intent needs a self match.
 // ---------------------------------------------------------------------------
+
+// Where the list scrolls: INSIDE the engine, and nowhere else.
+//
+// frappe makes `.result-container` the scroller (base_list.js:440-470
+// `set_result_height` pins it to the space above the paging bar) and `.result`
+// a shrink-to-fit `display: table` that grows to its widest row
+// (desk/list.scss:1-8, 758-766). That is right for a stack of flex rows and
+// wrong for a <table> that scrolls itself: `.result` grew to the table's own
+// width, so the engine's scroller never overflowed, `.result-container` took the
+// horizontal scroll, and everything that is `position: sticky` inside the
+// engine — the header, the pinned Subject and meta columns — had a scrollport
+// that never scrolled and so never stuck. It also left the engine with no
+// bounded viewport to window rows in.
+//
+// So `.result` becomes a bounded flex column (`height` carries !important
+// because `set_result_height` writes an inline pixel height, and `max(content,
+// container)` of it is the very thing that must not size this box) and the
+// engine's scroller takes the rest. Two selectors because frappe has two
+// `.result` rules, one for `:not(.disable-scrolling)` (0,5,0) and one without
+// (0,4,0); the doubled class outranks both. On a phone `set_result_height`
+// leaves the container unsized so the page scrolls (base_list.js:446-453), and
+// `height: 100%` of an unsized box is just `auto`.
+.layout-main-section-wrapper .frappe-list .result-container .result.result:has(> .list-carbon-mount) {
+	display: flex;
+	flex-direction: column;
+	inline-size: 100%;
+	min-inline-size: 0;
+	height: 100% !important;
+	overflow: hidden;
+}
+
 .cf-table {
+	// frappe's `.list-row-container:first-child` is a sticky, z-index 2 row so
+	// that ITS header row (the first child of `.result`) stays put
+	// (desk/list.scss:142-147). The engine's first body row is a first child too,
+	// and inside a scroller that actually scrolls it would stick under the header
+	// and sit there while every other row scrolled past it.
+	tr.list-row-container:first-child {
+		position: static;
+		z-index: auto;
+	}
+
 	tr.list-row-container.list-row:has(.list-row-checkbox:checked) {
 		background-color: var(--cds-layer-selected-01);
 		color: var(--cds-text-primary);
@@ -1105,6 +1179,7 @@
 .list-carbon-mount {
 	display: flex;
 	flex-direction: column;
+	flex: 1 1 auto;
 	min-block-size: 0;
 }
 
@@ -1378,6 +1453,91 @@
 	.cf-table__scroll:focus,
 	.cf-table__scroll:focus-visible {
 		outline: none;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// The column header menu (tables/datatable/header_menu.ts).
+//
+// frappe-datatable's `dt-dropdown` — Sort / Remove / Freeze, plus Report View's
+// "Add Column" — as a Carbon overflow menu. The toggle is a 24px icon button at
+// the header cell's trailing edge, left of the resize handle, revealed on
+// hover and focus the way Carbon reveals a row's overflow menu; it carries a
+// chevron (the generated `chevron--right` glyph, turned a quarter) because the
+// stock toggle was one. A header is already crowded — label, sort glyph, resize
+// handle, and Report View's columns are 120px wide — so the toggle OVERLAYS the
+// end of the header while it is showing, over the sort glyph, which is what the
+// stock chevron did; the glyph is still reachable through the label's own
+// button, and nothing is reserved for a control that is hidden most of the time.
+// ---------------------------------------------------------------------------
+.cf-table .cf-dt-menu__toggle {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-end: var(--cds-spacing-03, 0.5rem);
+	margin-block: auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	block-size: var(--cds-spacing-06, 1.5rem);
+	inline-size: var(--cds-spacing-06, 1.5rem);
+	padding: 0;
+	border: 0;
+	background-color: var(--cds-layer-accent-01);
+	color: var(--cds-icon-primary);
+	cursor: pointer;
+	opacity: 0;
+	z-index: 1;
+
+	svg {
+		// the glyph points right; a column menu opens downwards
+		transform: rotate(90deg);
+	}
+
+	&:hover {
+		background-color: var(--cds-layer-accent-hover-01);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+	}
+}
+
+.cf-table th:hover .cf-dt-menu__toggle,
+.cf-table th:focus-within .cf-dt-menu__toggle,
+.cf-table .cf-dt-menu__toggle[aria-expanded="true"],
+.cf-table .cf-dt-menu__toggle:focus-visible {
+	opacity: 1;
+}
+
+// The menu is portaled to <body>, so it cannot sit under `.cf-table`. Carbon's
+// `cds--overflow-menu-options__btn` is `display: inline-flex` with no
+// `inline-size` (react stretches it from the <li>), and a bare <ul> in the
+// light DOM carries the UA's list indent, so both are restated — the same two
+// fixes the Grid's row menu makes (`.cf-grid__row-menu`), under a name of its own.
+.cf-dt-menu {
+	position: fixed;
+	z-index: 1060;
+	inline-size: max-content;
+	min-inline-size: 10rem;
+	max-inline-size: 20rem;
+	background-color: var(--cds-layer-02);
+
+	.cds--overflow-menu-options__content {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.cds--overflow-menu-options__option {
+		block-size: var(--cds-spacing-08, 2.5rem);
+		inline-size: 100%;
+	}
+
+	.cds--overflow-menu-options__btn {
+		inline-size: 100%;
+		justify-content: flex-start;
+		text-align: start;
 	}
 }
 

@@ -24,6 +24,12 @@ $dropdown-border-radius: 0;
 @import "~frappe-charts/dist/frappe-charts.min";
 @import "~plyr/dist/plyr";
 @import "frappe/public/scss/desk/index";
+@import "frappe/public/scss/desk/full_height_page";
+// Espresso's `.es-*` components (breadcrumbs, buttons, badges, menus, tooltips,
+// popovers, tabs, …). frappe v16.50 renders its page head, form toolbar, menus
+// and notification tabs with them, so without this import those parts have no
+// styles at all (breadcrumbs fall back to a numbered <ol>).
+@import "frappe/public/scss/espresso_components";
 @import "frappe/public/node_modules/highlight.js/styles/tomorrow.css";
 
 // -- Legacy icon-font classes, as Carbon glyphs -----------------------------
@@ -35,7 +41,22 @@ $dropdown-border-radius: 0;
 @import "./generated/legacy-icons";
 
 // -- Carbon layers -----------------------------------------------------------
-@import "./carbon/themes"; // --cds-* emission (White + g100)
+@import "./carbon/themes"; // --cds-* emission (g10 + g100)
+@import "./map/colors-semantic-zone"; // the dark semantic layer inside the UI Shell zone; BEFORE ./map so its pins win
 @import "./map"; // frappe/frappe-ui var remap -> var(--cds-*)
 @import "./desk"; // Carbon component anatomy (WP3–WP10)
+
+// -- frappe's utility classes, last-but-one ----------------------------------
+// frappe imports `common/utilities` as the LAST thing in its bundle so that a
+// utility (`.hidden`, `.flex`, `.p-2`, …) beats any component rule that sets the
+// same property at the same specificity. The Carbon layers above are component
+// rules in exactly that sense — they replace frappe's — so the utilities have to
+// follow them rather than sit where frappe's own import list puts them. Placed
+// before them, a one-class Carbon rule such as `display: flex` on a header or
+// toolbar would out-rank `.hidden` and an element frappe hides by class would
+// never hide. The utilities read only tokens (`--outline-gray-2`, `--radius-md`,
+// `--elevation-sm`, …) that the map layer has already remapped, so they need no
+// restyling of their own. The frappe-ui overrides stay after them: they are the
+// theme's own utility layer and keep their documented "loaded last".
+@import "frappe/public/scss/common/utilities";
 @import "./map/frappe-ui-utilities"; // hardcoded Tailwind utility overrides
