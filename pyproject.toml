@@ -5,6 +5,8 @@ description = "Carbon Design System theme for Frappe"
 # frappe v16 is `>=3.14,<3.15`; ty derives its target from this line
 requires-python = ">=3.14"
 readme = "README.md"
+license = { file = "license.txt" }
+classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version"]
 dependencies = []
 

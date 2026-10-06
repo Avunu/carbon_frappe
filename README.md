@@ -1,6 +1,6 @@
 # Carbon Frappe
 
-A comprehensive [Carbon Design System](https://carbondesignsystem.com) (v11) theme for [Frappe](https://frappeframework.com) sites. Every surface — desk, website/portal, login, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
+The [IBM Carbon](https://carbondesignsystem.com) (v11) design-language theme for [Frappe](https://frappeframework.com) and ERPNext. Every surface — desk, website/portal, login, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
 
 ## How it works
 
@@ -139,7 +139,7 @@ Compatibility is the point. Nothing here alters a public frappe API:
 ## Install
 
 ```sh
-bench get-app https://github.com/Avunu/carbon-frappe
+bench get-app https://github.com/Avunu/carbon_frappe
 bench --site <site> install-app carbon_frappe
 bench build
 ```
