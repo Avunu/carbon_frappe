@@ -163,6 +163,15 @@ jobs:
           nix fmt -- --check flake.nix
           nix run nixpkgs#statix -- check .
           nix run nixpkgs#deadnix -- --fail .
+      # The committed locks are what the documented tool produces: relock
+      # rewrites and stages nix/uv.lock and nix/node-locks/, so anything it
+      # changes is a lock someone forgot to regenerate (or a nested frontend
+      # that needs one, or an exclusion in flake.nix).
+      - name: nix/ locks are current
+        run: |
+          nix run .#relock --no-pure-eval
+          git status --porcelain -- nix/ flake.lock | tee /tmp/relock-drift
+          test ! -s /tmp/relock-drift || { echo "::error::nix run .#relock changed nix/ — run it and commit the result"; exit 1; }
       # Not `nix flake check`: devenv's flake module publishes container
       # outputs whose evaluation demands an input this flake does not (and
       # should not) carry. The two outputs that matter are built/entered below.
