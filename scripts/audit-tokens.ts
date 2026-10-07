@@ -315,7 +315,9 @@ if (hasEspressoV2) {
 		// frappe's own scss re-declares only the 10 it overrides in dark mode, so
 		// reading it alone would flag every other --charts-* var as nonexistent.
 		// The dist CSS is the real authority and is what desk.bundle.scss imports.
-		path.join(frappePublic, "node_modules", "frappe-charts", "dist", "frappe-charts.min.css"),
+		// Read it from frappe's own node_modules: public/node_modules is only a
+		// symlink to it that `bench build` creates, so a bare checkout (CI) lacks it.
+		path.join(frappeRoot, "node_modules", "frappe-charts", "dist", "frappe-charts.min.css"),
 	];
 	for (const f of declaring) {
 		if (!fs.existsSync(f)) {
