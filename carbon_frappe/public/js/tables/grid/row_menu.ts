@@ -10,7 +10,7 @@
 //
 // The menu is portaled to <body>. Table cells clip their overflow (the engine
 // sizes them from <colgroup>), which is the same reason frappe re-parents
-// awesomplete dropdowns out of grid cells in grid_row.js:1082-1108.
+// awesomplete dropdowns out of grid cells in grid_row.js:1003-1035.
 import { CARBON } from "../engine/classes.ts";
 import type { CarbonGridRow } from "./expand.ts";
 import type { GridDocField } from "frappe-types";

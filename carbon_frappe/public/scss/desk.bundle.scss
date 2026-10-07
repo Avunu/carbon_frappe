@@ -15,24 +15,48 @@ $dropdown-border-radius: 0;
 @import "./carbon/fonts";
 
 // -- frappe's desk styles, recompiled ---------------------------------------
-// Faithful mirror of frappe/public/scss/desk.bundle.scss (frappe v16). Because
+// Faithful mirror of frappe/public/scss/desk.bundle.scss (frappe v16.50). Because
 // this bundle SHADOWS frappe's compiled desk.bundle.css wholesale, it must pull
-// in everything frappe's does — including the fontawesome/octicons/leaflet CSS
-// that lives outside desk/index — or those styles vanish desk-wide. Inter is the
-// only intentional omission (replaced by the IBM Plex import above).
-@import "frappe/public/css/fonts/fontawesome/font-awesome.min.css";
-@import "frappe/public/css/octicons/octicons.css";
+// in everything frappe's does, or those styles vanish desk-wide. Inter is the
+// only intentional omission (replaced by the IBM Plex import above). Frappe
+// dropped octicons (#39836), lazy-loads leaflet via leaflet.bundle.css (#39421)
+// and dropped fontawesome (#40571) — importing any of them here fails the build.
 @import "~frappe-charts/dist/frappe-charts.min";
 @import "~plyr/dist/plyr";
 @import "frappe/public/scss/desk/index";
-@import "frappe/public/js/lib/leaflet/leaflet.css";
-@import "frappe/public/js/lib/leaflet_easy_button/easy-button.css";
-@import "frappe/public/js/lib/leaflet_control_locate/L.Control.Locate.css";
-@import "frappe/public/js/lib/leaflet_draw/leaflet.draw.css";
+@import "frappe/public/scss/desk/full_height_page";
+// Espresso's `.es-*` components (breadcrumbs, buttons, badges, menus, tooltips,
+// popovers, tabs, …). frappe v16.50 renders its page head, form toolbar, menus
+// and notification tabs with them, so without this import those parts have no
+// styles at all (breadcrumbs fall back to a numbered <ol>).
+@import "frappe/public/scss/espresso_components";
 @import "frappe/public/node_modules/highlight.js/styles/tomorrow.css";
 
+// -- Legacy icon-font classes, as Carbon glyphs -----------------------------
+// Frappe's own code and installed apps still emit `fa fa-lock`, `fa-spinner
+// fa-spin`, `octicon-file-directory`, … after the stylesheets that drew them
+// went away. This draws them with @carbon/icons instead of re-importing icon
+// fonts frappe is dropping. Generated: scripts/generate-icons.ts, from
+// scripts/lib/icon-manifest.ts.
+@import "./generated/legacy-icons";
+
 // -- Carbon layers -----------------------------------------------------------
-@import "./carbon/themes"; // --cds-* emission (White + g100)
+@import "./carbon/themes"; // --cds-* emission (g10 + g100)
+@import "./map/colors-semantic-zone"; // the dark semantic layer inside the UI Shell zone; BEFORE ./map so its pins win
 @import "./map"; // frappe/frappe-ui var remap -> var(--cds-*)
 @import "./desk"; // Carbon component anatomy (WP3–WP10)
+
+// -- frappe's utility classes, last-but-one ----------------------------------
+// frappe imports `common/utilities` as the LAST thing in its bundle so that a
+// utility (`.hidden`, `.flex`, `.p-2`, …) beats any component rule that sets the
+// same property at the same specificity. The Carbon layers above are component
+// rules in exactly that sense — they replace frappe's — so the utilities have to
+// follow them rather than sit where frappe's own import list puts them. Placed
+// before them, a one-class Carbon rule such as `display: flex` on a header or
+// toolbar would out-rank `.hidden` and an element frappe hides by class would
+// never hide. The utilities read only tokens (`--outline-gray-2`, `--radius-md`,
+// `--elevation-sm`, …) that the map layer has already remapped, so they need no
+// restyling of their own. The frappe-ui overrides stay after them: they are the
+// theme's own utility layer and keep their documented "loaded last".
+@import "frappe/public/scss/common/utilities";
 @import "./map/frappe-ui-utilities"; // hardcoded Tailwind utility overrides

@@ -1,6 +1,7 @@
-// Legacy alias pins. Most of frappe's legacy vars (espresso/legacy.css) alias
+// Legacy alias pins. Most of frappe's legacy vars (css/espresso/legacy.css) alias
 // the semantic layer and follow the ramp remap automatically; these are the
-// slots with Carbon-specific meanings that need exact values.
+// slots with Carbon-specific meanings that need exact values, plus the three
+// names frappe still reads but no longer declares (see the shim block below).
 @use "@carbon/colors" as c;
 
 // Carbon's border-subtle index is CONTEXTUAL: -00 is the border for content on
@@ -88,7 +89,6 @@
 	// ladder alternates (layer-02 == $background == #f4f4f4), so pinning these to
 	// layer-02 would paint a gray modal on a gray canvas.
 	--modal-bg: var(--cds-layer-01); // raised: #ffffff / #262626
-	--toast-bg: var(--cds-layer-01);
 	--popover-bg: var(--cds-layer-01);
 	--subtle-fg: var(--cds-layer-accent-01); // subtle fill: #e0e0e0 / #393939
 
@@ -102,7 +102,32 @@
 	--border-color: var(--carbon-border-subtle); // #e0e0e0 / #393939
 	--table-border-color: var(--carbon-border-subtle);
 	--btn-group-border-color: var(--carbon-border-subtle);
+	// the STRONG border role (#8d8d8d / #6f6f6f), index-stable across themes
+	--dark-border-color: var(--cds-border-strong-01);
 
 	// frappe's dark --shadow-base is a blue-tinted glow; Carbon is one flat drop.
 	--shadow-base: 0 2px 6px var(--cds-shadow);
+}
+
+// -- Shims: names frappe v16.50 still READS but no longer DECLARES ----------
+// Each is consumed by frappe's own stylesheets (the first also by print_designer),
+// so dropping the pin would not drop the consumer: it would leave a `var()` that
+// resolves to nothing. They are theme-owned on purpose, each set to the Carbon
+// equivalent of what the name meant when frappe last declared it. The audit lists
+// them (`themeOwned` in scripts/audit-tokens.ts) and says so when frappe starts
+// declaring one again.
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark,
+.cf-zone-g100 {
+	// UI Shell zone — see desk/_ui-shell.scss
+	// Renamed --neutral-invert upstream (legacy.css), but still read by buttons,
+	// icons, the desktop page and the form (9 sites). It was the ink colour that
+	// contrasts with the page: black on light, white on dark.
+	--invert-neutral: var(--cds-text-primary);
+	// css/espresso/components/button.css `.es-button.btn-danger`: text on a red fill
+	--ink-white: var(--cds-text-on-color);
+	// scss/desk/card.scss `.frappe-card`
+	--surface-modal: var(--cds-layer-01);
 }

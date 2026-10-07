@@ -118,18 +118,146 @@ $button-danger-active: c.$red-80;
 	}
 }
 
-// Espresso .es-button — repoint the solid variant's local vars at Carbon
-// button-primary (its gray default resolves to background-inverse otherwise)
+// -- Espresso .es-button -> Carbon button -----------------------------------
+// frappe 16.50 draws its page actions, form toolbar, dialog footers and most of
+// the desk's own buttons with `frappe.ui.button` (`.es-button`,
+// css/espresso/components/button.css) instead of Bootstrap's `.btn`. The `.btn`
+// rules above still serve the markup that kept it (`add_action_icon`'s icon
+// buttons, the list's filter and sort toolbar, and every installed app's own
+// buttons).
+//
+// An es-button is configured entirely through local custom properties — the
+// "unrolled @each" at the top of button.css: the variant rules read only
+// `--bt-*`, the size rules only `--es-bt-*` — so this re-points those at
+// Carbon's ramp instead of restating each variant. Variants:
+//   solid   -> Carbon primary (blue-60 or the brand colour), danger when red
+//   subtle  -> Carbon ghost: the DEFAULT, and what `.btn-default` was above
+//   ghost   -> the same ghost
+//   outline -> a ghost with a frame
+// Carbon sizes are sm 32 / md 40 / lg 48 with a 16px label inset, which are
+// frappe's sm / md / lg shifted one step; xs stays 24px (Carbon has none).
 .es-button {
+	// solid = Carbon primary
 	--bt-solid-bg: #{$button-primary};
 	--bt-solid-bg-hover: #{$button-primary-hover};
 	--bt-solid-bg-active: #{$button-primary-active};
 	--bt-solid-fg: #{$on-brand};
+
+	// subtle (the default) and ghost = Carbon ghost: no fill at rest, the layer
+	// ladder on hover and press, $text-primary for the label
+	--bt-fill-bg: transparent;
+	--bt-fill-bg-hover: var(--cds-layer-hover-01);
+	--bt-fill-bg-active: var(--cds-layer-active-01);
+	--bt-fg: var(--cds-text-primary);
+
+	// outline: Carbon's frame colour, and the same ladder
+	--bt-border: var(--cds-border-inverse);
+	--bt-border-hover: var(--cds-border-inverse);
+	--bt-outline-bg-active: var(--cds-layer-active-01);
+
+	// a disabled ghost keeps no fill and drops its label to $text-disabled
+	--bt-disabled-bg: transparent;
+	--bt-disabled-fg: var(--cds-text-disabled);
+	--bt-disabled-border: var(--cds-border-disabled);
+
+	// Carbon's focus: the 2px $focus ring, inset (the box-shadow below adds the
+	// 1px inner line of Carbon's two-tone indicator)
+	--bt-focus: 2px solid var(--cds-focus);
+
+	--es-bt-h: 32px;
+	--es-bt-icon: 16px;
+	padding-inline: 16px;
+	border-radius: 0;
+	font-weight: var(--font-weight-regular);
+	line-height: 18px;
+	letter-spacing: 0.16px;
+	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard);
+
+	&:focus-visible {
+		outline-offset: -2px;
+		box-shadow:
+			inset 0 0 0 1px var(--cds-focus),
+			inset 0 0 0 2px var(--cds-focus-inset);
+	}
+
+	// An open menu keeps its trigger lit. espresso uses its pressed fill; Carbon's
+	// toolbars use the selected-ghost tone, so the ladder is stepped one rung up.
+	// (Written to tie espresso's own (0,4,0) selector and win on order.)
+	&[aria-haspopup][aria-expanded="true"]:not([data-variant="solid"]) {
+		background: var(--cds-layer-selected-01);
+	}
+
+	// outline paints $surface-base behind its frame, which is a white plate on a
+	// tinted head; Carbon's frame is drawn on whatever is there
+	&[data-variant="outline"] {
+		background: transparent;
+	}
+
+	@media (hover: hover) {
+		&[data-variant="outline"]:hover {
+			background: var(--cds-layer-hover-01);
+		}
+	}
+
+	// A solid button that is disabled is Carbon's filled-disabled: a grey plate
+	// with the dimmed on-colour label, not the ghost's transparent one. `.disabled`
+	// is the compat class installed apps poke onto a held button reference
+	// (button.css:270-279), so it gets the same.
+	&[data-variant="solid"]:disabled,
+	&[data-variant="solid"].disabled {
+		background: var(--cds-border-disabled);
+		color: var(--cds-text-on-color-disabled);
+	}
 }
 
+.es-button[data-size="xs"] {
+	padding-inline: 8px;
+}
+
+.es-button[data-size="md"] {
+	--es-bt-h: 40px;
+	padding-inline: 16px;
+	font-weight: var(--font-weight-regular);
+}
+
+.es-button[data-size="lg"] {
+	--es-bt-h: 48px;
+	padding-inline: 16px;
+	font-size: var(--text-base);
+	font-weight: var(--font-weight-regular);
+	border-radius: 0;
+}
+
+// after the sizes, which would otherwise hand an icon-only button its 16px
+// label inset: the button is a square, and its glyph is centred in it
+.es-button[data-icon-button="true"] {
+	padding-inline: 0;
+}
+
+// red = Carbon danger. The solid fill reads white; the quiet variants are
+// Carbon's danger ghost: $text-error at rest, the danger fill on hover with the
+// label going white.
 .es-button[data-theme="red"] {
 	--bt-solid-bg: #{$button-danger};
 	--bt-solid-bg-hover: #{$button-danger-hover};
 	--bt-solid-bg-active: #{$button-danger-active};
 	--bt-solid-fg: var(--cds-text-on-color);
+	--bt-fill-bg: transparent;
+	--bt-fill-bg-hover: #{$button-danger-hover};
+	--bt-fill-bg-active: #{$button-danger-active};
+	--bt-fg: var(--cds-text-error);
+	--bt-border: var(--cds-text-error);
+	--bt-border-hover: var(--cds-text-error);
+	--bt-outline-bg-active: #{$button-danger-active};
+	--bt-focus: 2px solid var(--cds-focus);
+}
+
+@media (hover: hover) {
+	.es-button[data-theme="red"]:not([data-variant="solid"]):hover {
+		color: var(--cds-text-on-color);
+	}
+}
+
+.es-button[data-theme="red"]:not([data-variant="solid"]):active {
+	color: var(--cds-text-on-color);
 }

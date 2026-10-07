@@ -263,6 +263,13 @@ export default class CellEditing {
 
 	focus(td: HTMLElement | null): void {
 		if (!td) return;
+		// The checkbox and serial-number cells hold controls, not values, and are
+		// not focusable (`navigation.focus` refuses them for the same reason). A
+		// click on a row's checkbox used to ring its cell regardless, and since
+		// this ring is not the navigation's own it was never cleared by it: the
+		// next arrow key left two rings on the grid.
+		const column = this.host.columns[Number(td.getAttribute("data-col-index"))];
+		if (!column || column.focusable === false) return;
 		const prev = this.host.container.querySelector(".dt-cell--focus");
 		if (prev) prev.classList.remove("dt-cell--focus");
 		td.classList.add("dt-cell--focus");

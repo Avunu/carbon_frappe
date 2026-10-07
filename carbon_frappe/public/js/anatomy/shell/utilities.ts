@@ -1,245 +1,178 @@
-// The header's global bar: frappe's own search, notifications and account
-// controls, MOVED into `.cds--header__global` and presented as Carbon
-// `cds--header__action` cells.
+// The header's global bar: search, notifications and the account menu, as
+// Carbon `cds--header__action` cells.
 //
 // Carbon (components/UI-shell-header): "Header utilities: these utilities are
 // reserved for universal, system-level functions such as profile, search,
-// notifications". frappe v16 builds exactly those three — as the first two
-// rows of the Workspace Sidebar (`add_standard_items`, ui/sidebar/sidebar.js:503-543)
-// plus the account button at its foot (sidebar.html:50-68) — or, on the
-// landing page, as its own `.desktop-navbar` (desk/page/desktop/desktop.html).
+// notifications". frappe v16.50 builds exactly those three, in three different
+// places: search and notifications are the first two rows of the sidebar's
+// "standard items" band (`add_standard_items`, ui/sidebar/sidebar.js:640-668), the
+// account button is the user chip at the foot of the sidebar (sidebar.html:16-40)
+// and again as the dock's avatar (dock.js:33-37), and the desktop page draws a
+// fourth set in its own `.desktop-navbar` (desk/page/desktop/desktop.html).
 //
-// Everything is MOVED, never cloned: frappe binds handlers to those exact
-// nodes (the awesomebar to `#navbar-modal-search`, sidebar.js:544-546; the
-// bell's `onClick` to its wrapper, sidebar_item.js:420-425), so relocating
-// keeps them live and avoids a second copy of each affordance.
+// 16.33 MOVED those nodes into the header and kept frappe's handlers on them.
+// That stopped working: the rows are built by a `Sidebar` that is re-rendered, the
+// desktop page rebuilds its navbar on every visit and finds its pieces with GLOBAL
+// selectors (`$(".desktop-avatar")`, `$(".desktop-notifications")`,
+// desktop.js:232-239, 286), so a moved node and a fresh one both answer the same
+// lookup and every control is bound twice. So the cells here are the theme's, built
+// once, and each one calls the frappe API the node it replaces called:
 //
-// Three frappe facts this has to work around, each guarded in
-// scripts/markup-manifest.ts:
+//   search   `.navbar-modal-search-mobile` — the class `AwesomeBar.setup` delegates
+//            its click to on `document` (awesome_bar.js:74-80, 84-89, page.js:74-91), so
+//            frappe's own handler opens the search modal, closes it on a second
+//            click, and survives a rename of anything but that one class
+//   bell     `frappe.ui.sidebar_panels.toggle("notifications")`, what the band row's
+//            `onClick` calls (sidebar.js:659). The cell keeps the row's class,
+//            `.sidebar-notification`, because that is the panel's
+//            `trigger_selector` (notifications.js:39): frappe mirrors the panel's
+//            state into `aria-expanded` on every match and does not count a click
+//            on one as "outside" (sidebar_panel.js:132-145)
+//   account  `sidebar.create_user_menu(...)` — the one menu the sidebar chip and the
+//            dock avatar share (sidebar.js:416-511)
 //
-// 1. `TypeButton` REPLACES its container's class list with `item.class`
-//    (sidebar_item.js:414), so the search and bell rows are
-//    `#navbar-modal-search.navbar-search-bar` and `.sidebar-notification`, not
-//    `.sidebar-item-container` — the presence test below looks for the inner
-//    `.standard-sidebar-item`, which survives.
-// 2. `NotificationsView` resolves its unread badge and bell indicator via
-//    `this.parent.closest(".body-sidebar")` (notifications.js:229-234, 414-420).
-//    Once the bell leaves the sidebar that lookup is empty and the count
-//    freezes at its boot value. `bindNotifications` re-homes both on the
-//    instance — the one place this theme re-states frappe logic.
-// 3. Every sidebar row carries `data-toggle="tooltip" data-placement="right"`
-//    (sidebar_item.html:6-7) and `expand_sidebar()` initialises Bootstrap
-//    tooltips globally when the rail collapses (sidebar.js:600-604). Stripped
-//    on harvest; the cell's `title` is its tooltip.
-import type { FrappeNotificationsView } from "frappe-types";
-import { safePatch } from "../patch.ts";
-import { isHTMLElement } from "./dom.ts";
+// The unread count needs nothing: `update_count_badge()` writes into EVERY
+// `.notification-count` in the document, re-queried on each call
+// (notifications.js:423-439), so the cell's badge is kept by frappe.
+//
+// The notifications panel is frappe's `frappe.ui.SidebarPanel`, mounted inside
+// `.body-sidebar-container` (sidebar_panel.js:7, 54-82), which is `display: none`
+// on every page that hides the sidebar — the launcher above all — and the panel is
+// built once, by the Sidebar. So the panel's element is re-hosted on <body> and
+// restyled as a right header panel by desk/_ui-shell.scss; frappe still owns its
+// content, its open state and every way of closing it.
+import { notification20, search20 } from "../../generated/shell-icons.ts";
 
-const BADGE = "cds--badge-indicator cds--badge-indicator--count";
-
-/**
- * Present one harvested control as a Carbon header action.
- *
- * Idempotent: class adds and attribute removals. The class goes on the
- * INTERACTIVE element (frappe's `<a>`/`<button>`), so Carbon's own
- * hover / active / focus ramp applies to the thing that receives the events.
- */
-function markAction(el: Element | null, label: string | null): void {
-	if (!isHTMLElement(el)) return;
-	el.classList.add("cds--header__action");
-	if (el instanceof HTMLAnchorElement && !el.hasAttribute("href")) {
-		// an href-less <a> is neither focusable nor keyboard-activatable
-		if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
-		if (!el.hasAttribute("role")) el.setAttribute("role", "button");
-		if (!el.dataset.cfKeys) {
-			el.dataset.cfKeys = "1";
-			el.addEventListener("keydown", (e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					el.click();
-				}
-			});
-		}
-	}
-	if (label && !el.hasAttribute("aria-label")) el.setAttribute("aria-label", label);
-	if (label && !el.hasAttribute("title")) el.setAttribute("title", label);
+export interface ShellUtilities {
+	/** The cells in Carbon's order (search, notifications, account) for the orchestrator to place. */
+	readonly cells: readonly HTMLElement[];
+	/** Re-read what frappe decides after the header mounts: the notifications exist once the first `setup()` ran. */
+	sync(): void;
+	/** Close the notifications panel, for the other right-side surfaces to call when they open. */
+	closeNotifications(): void;
 }
 
-/** Strip the sidebar's tooltip wiring and class the badge, for every row in the slot. */
-function dressSidebarRows(slot: Element): void {
-	for (const row of slot.querySelectorAll<HTMLElement>("[data-toggle='tooltip']")) {
-		row.removeAttribute("data-toggle");
-		row.removeAttribute("data-placement");
-	}
-	const search = slot.querySelector("#navbar-modal-search");
-	markAction(
-		search && search.querySelector(".standard-sidebar-item > .item-anchor"),
-		search && search.getAttribute("title"),
-	);
-	const bell = slot.querySelector(".sidebar-notification");
-	markAction(
-		bell && bell.querySelector(".standard-sidebar-item > .item-anchor"),
-		bell && bell.getAttribute("title"),
-	);
-	const count = slot.querySelector(".sidebar-notification-count");
-	if (count) for (const cls of BADGE.split(" ")) count.classList.add(cls);
-	markAction(slot.querySelector(".dropdown-navbar-user .sidebar-user-button"), null);
+const NOTIFICATIONS = "notifications";
+const BADGE = "notification-count cds--badge-indicator cds--badge-indicator--count";
+// The panel's own class (sidebar_panel.js:67) plus the zone the header's panels run in
+const ZONE = "cf-zone-g100";
+
+function translate(s: string): string {
+	return typeof __ === "function" ? __(s) : s;
 }
 
-function dressLandingNodes(slot: Element): void {
-	markAction(slot.querySelector("#desktop-navbar-modal-search"), null);
-	markAction(slot.querySelector(".desktop-notification-icon"), null);
-	markAction(slot.querySelector(".desktop-avatar"), null);
+/** The notifications panel's element, once the Sidebar has built it. */
+function panelElement(): HTMLElement | null {
+	const panel =
+		window.frappe && frappe.ui && frappe.ui.sidebar_panels && frappe.ui.sidebar_panels.get(NOTIFICATIONS);
+	const el = panel ? panel.$panel.get(0) : undefined;
+	return el || null;
 }
 
 /**
- * Move the system-level utilities into the header's right rail.
+ * Take the panel out of the sidebar's container.
  *
- * Two sources, because the desk has two shapes: workspace pages keep search and
- * notifications as the first entries of the side nav, while the landing page
- * has its own .desktop-navbar carrying the same three affordances. Taking
- * whichever exists is also what removes the duplicate header the landing page
- * would otherwise show.
- *
- * Runs again on every route change, so it must be idempotent. The decision has
- * to be driven by what the slot ALREADY HOLDS, not by where the sidebar's node
- * currently lives: after the first harvest that node sits in the slot, so the
- * `.body-sidebar .standard-items-sections` lookup goes permanently null. Keying
- * off that lookup alone hands every later call to the .desktop-navbar branch,
- * and the landing page re-renders a fresh navbar on each visit — which is how a
- * second search / bell / avatar used to stack up beside the first.
- *
- * On a fresh `/desk` load the sidebar's section can exist EMPTY: search and
- * bell are only built by `prepare()`, which the launcher route may never run.
- * An empty section is not a source — the landing navbar is.
+ * Idempotent, and cheap enough to run on every projection: `register()` replaces a
+ * panel that is built again under the same name and appends the new element to the
+ * container (sidebar_panel.js:175-181), so this has to look every time rather
+ * than once.
  */
-export function harvestUtilities(slot: Element, onBellOpen?: () => void): void {
-	// Move `node` in, evicting whatever it replaces. Re-appending a node the
-	// slot already owns just moves it to the end, which is how ordering stays
-	// stable across re-harvests.
-	const adopt = (node: Element | null, sel: string): void => {
-		const stale = slot.querySelector(sel);
-		if (node && stale && stale !== node) stale.remove();
-		const live = node || stale;
-		if (live) slot.appendChild(live);
-	};
-
-	// EXACTLY ONE source, or the header shows two search icons and two bells.
-	// The side nav's copy is preferred because it exists on every route.
-	const inSidebar = document.querySelector(".body-sidebar .standard-items-sections");
-	const sidebarUtilities = inSidebar && inSidebar.querySelector(".standard-sidebar-item") ? inSidebar : null;
-	const held = slot.querySelector(".standard-items-sections");
-	const alreadyHeld = held && held.querySelector(".standard-sidebar-item") ? held : null;
-
-	if (sidebarUtilities || alreadyHeld) {
-		// the sidebar's copy wins; any landing-page nodes a previous visit left
-		// behind would be a second search / bell beside it
-		for (const sel of [".desktop-search-wrapper", ".desktop-notifications", ".desktop-avatar"]) {
-			const dup = slot.querySelector(sel);
-			if (dup) dup.remove();
-		}
-		adopt(sidebarUtilities, ".standard-items-sections");
-		dressSidebarRows(slot);
-	} else {
-		const desktopNav = document.querySelector(".desktop-navbar");
-		for (const sel of [".desktop-search-wrapper", ".desktop-notifications", ".desktop-avatar"]) {
-			const el = desktopNav && desktopNav.querySelector(sel);
-			if (el) slot.appendChild(el);
-		}
-		dressLandingNodes(slot);
-	}
-
-	// Once we own the header, the landing page's navbar is redundant chrome —
-	// whether we just emptied it or the side nav had already supplied the
-	// utilities. Dropping it unconditionally is also what stops it stacking a
-	// second header under ours.
-	dropDesktopNavbar();
-
-	// account menu — adopted last so it sits furthest right of frappe's three,
-	// per Carbon's ordering (search leftmost, account second from the right;
-	// the switcher, which the orchestrator re-appends, is last)
-	adopt(document.querySelector(".body-sidebar .dropdown-navbar-user"), ".dropdown-navbar-user");
-	markAction(slot.querySelector(".dropdown-navbar-user .sidebar-user-button"), null);
-
-	bindNotifications(slot, onBellOpen);
+function hostPanel(): void {
+	const el = panelElement();
+	if (!el || el.parentElement === document.body) return;
+	el.classList.add(ZONE);
+	document.body.appendChild(el);
 }
 
-/**
- * Re-arm the notification bell after the move.
- *
- * frappe wires the bell to `this.wrapper.find(".dropdown-notifications")`
- * (ui/sidebar/sidebar.js:527-530), and that wrapper is the SIDEBAR container.
- * Harvesting the utilities moves the panel into <header>, so the lookup
- * returns an empty set from then on and the click toggles nothing — adopting
- * the bell is what kills it. Redo the toggle against where the panel actually
- * lives now.
- *
- * frappe's own handler still runs and still no-ops on its empty set, so this
- * adds the missing toggle rather than racing a working one.
- */
-function bindNotifications(slot: Element, onOpen: (() => void) | undefined): void {
-	// `querySelector<HTMLElement>` for the bell only: `dataset` is on
-	// HTMLElement, and the bell is frappe's own row (sidebar.js builds it as a
-	// standard item of `type: "Button"`). The panel is only ever read for
-	// its classList, which every Element has.
-	const bell = slot.querySelector<HTMLElement>(".sidebar-notification");
-	const panel = slot.querySelector(".dropdown-notifications");
-	// harvest re-runs on every route change; the listener must not stack up
-	if (!bell || !panel || bell.dataset.cfBell) return;
-	bell.dataset.cfBell = "1";
+function makeSearch(): HTMLButtonElement | null {
+	// the condition of the row it replaces (sidebar.js:650)
+	if (!frappe.boot.desk_settings.search_bar) return null;
+	const label = translate("Search");
+	const cell = document.createElement("button");
+	cell.type = "button";
+	cell.className = "cds--header__action cf-header__search navbar-modal-search-mobile";
+	cell.setAttribute("aria-label", label);
+	cell.setAttribute("aria-haspopup", "dialog");
+	cell.title = label;
+	cell.innerHTML = search20;
+	return cell;
+}
 
-	bell.addEventListener("click", () => {
-		panel.classList.toggle("hidden");
-		const opened = !panel.classList.contains("hidden");
-		// what frappe fires on open, so the panel refreshes its counts
-		if (opened && window.jQuery) jQuery(panel).trigger("show.bs.dropdown");
-		if (opened && onOpen) onOpen();
+function makeBell(onOpen: () => void): HTMLButtonElement {
+	const label = translate("Notifications");
+	const cell = document.createElement("button");
+	cell.type = "button";
+	cell.className = "cds--header__action cf-header__bell sidebar-notification";
+	cell.setAttribute("aria-label", label);
+	cell.setAttribute("aria-haspopup", "dialog");
+	cell.setAttribute("aria-expanded", "false");
+	cell.title = label;
+	// hidden until the Sidebar has built the notifications (`sync()`), as frappe's own
+	// row is (`sidebar-notification hidden`, shown by Notifications.make(), :17)
+	cell.hidden = true;
+	cell.innerHTML = `${notification20}<span class="${BADGE} hidden" aria-live="polite"></span>`;
+	cell.addEventListener("click", () => {
+		hostPanel();
+		const panels = frappe.ui.sidebar_panels;
+		const panel = panels.get(NOTIFICATIONS);
+		if (!panel) return;
+		// the other right-side surfaces yield to the one being opened; the reverse
+		// (any of them closing this one) is the registry's outside-click rule
+		if (!panel.is_open) onOpen();
+		panels.toggle(NOTIFICATIONS);
 	});
+	return cell;
+}
 
-	rehomeBadge(slot);
+function makeAccount(): HTMLButtonElement | null {
+	const sidebar = frappe.app && frappe.app.sidebar;
+	if (!sidebar || typeof sidebar.create_user_menu !== "function") return null;
+	const user = frappe.session.user;
+	const name = frappe.session.user_fullname || user || "";
+	const cell = document.createElement("button");
+	cell.type = "button";
+	cell.className = "cds--header__action cf-header__account";
+	cell.setAttribute("aria-label", translate("User Menu"));
+	cell.title = name;
+	cell.innerHTML = `<span class="cf-header__avatar">${frappe.avatar(user, "avatar-medium", name)}</span>`;
+	// The Dropdown binds to the element it is given (components/dropdown.js:50-100), and
+	// the cell is built once, so exactly one menu is ever attached to it. `button` only
+	// takes `user-menu-active` while the menu is open (sidebar.js:508-509).
+	const $cell = $(cell);
+	sidebar.create_user_menu({ parent: $cell, button: $cell, side: "bottom", align: "end" });
+	return cell;
 }
 
 /**
- * Point the unread badge and bell indicator at the header's copy of the bell.
- *
- * `NotificationsView` is module-private (notifications.js:222); only its
- * instance is reachable, so this is an instance patch: the original runs (it
- * still stores `unread_count`), then the same eight lines
- * (notifications.js:421-428) run against the header's badge whenever frappe's
- * own `.body-sidebar`-relative lookup came up empty.
+ * Build the utilities. `onBellOpen` is called when the bell is about to open the
+ * panel, so the switcher, the assistant and the nav's sub-menus can yield to it.
  */
-function rehomeBadge(slot: Element): void {
-	const sidebar = window.frappe && frappe.app && frappe.app.sidebar;
-	const view = sidebar && sidebar.notifications && sidebar.notifications.tabs.notifications;
-	if (!view) return;
+export function mountUtilities(onBellOpen: () => void): ShellUtilities {
+	const search = makeSearch();
+	const bell = makeBell(onBellOpen);
+	let account: HTMLButtonElement | null = null;
+	try {
+		account = makeAccount();
+	} catch (e) {
+		// the menu is frappe's; its absence must not take the rest of the bar down
+		console.error(e);
+	}
+	const cells = [search, bell, account].filter((c): c is HTMLButtonElement => c !== null);
 
-	const icon = slot.querySelector<HTMLElement>(".sidebar-notification .sidebar-item-icon");
-	if (icon) view.bell_indicator = $(icon);
+	function sync(): void {
+		const sidebar = window.frappe && frappe.app && frappe.app.sidebar;
+		// `Sidebar.setup_notifications` builds it only when the desk setting is on and the
+		// user is not Guest (sidebar.js:669-673)
+		bell.hidden = !(sidebar && sidebar.notifications);
+		hostPanel();
+	}
 
-	safePatch(
-		() => view,
-		"update_count_badge",
-		(orig) =>
-			function (this: FrappeNotificationsView, count: number): void {
-				orig.call(this, count);
-				if (this.parent.closest(".body-sidebar").length) return;
-				const $suffix = $(slot).find(".sidebar-notification .sidebar-notification-count");
-				if (!$suffix.length) return;
-				if (count > 0) {
-					$suffix
-						.text(count > 99 ? "99+" : String(count))
-						.attr("aria-label", __("{0} unread notifications", [count]))
-						.removeClass("hidden");
-				} else {
-					$suffix.removeAttr("aria-label").addClass("hidden");
-				}
-			},
-		"Carbon UI Shell header (notification badge re-home)",
-	);
-	view.update_count_badge(view.unread_count);
-}
-
-export function dropDesktopNavbar(): void {
-	const nav = document.querySelector(".desktop-navbar");
-	if (nav) nav.remove();
+	return {
+		cells,
+		sync,
+		closeNotifications: () => {
+			const panels = window.frappe && frappe.ui && frappe.ui.sidebar_panels;
+			if (panels) panels.hide(NOTIFICATIONS);
+		},
+	};
 }

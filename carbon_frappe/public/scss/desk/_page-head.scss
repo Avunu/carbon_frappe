@@ -8,14 +8,24 @@
 //
 // This used to insert a .cf-page-header with a copied title, which was a
 // mistake: it duplicated the title on screen, and it could not carry the
-// behaviour attached to the real one. frappe's last crumb is `.title-text-form`
-// on a form (`.title-text` on a list), page.set_title() writes into it, and
-// form/toolbar.js toggles `editable-title` on the enclosing `.title-area` to
-// mark a document as renameable. A copy gets none of that.
+// behaviour attached to the real one. frappe's last crumb IS the page title
+// (v16.50: `Page.set_title` writes the title into the trail's last item,
+// page.js:1037-1059; before it, a `.title-text` link), and form/toolbar.js
+// toggles `editable-title` on the enclosing `.title-area` to mark a document as
+// renameable. A copy gets none of that.
 //
-// So the trail is re-laid-out instead: it wraps, the parent crumbs stay a 14px
-// eyebrow row, and the last crumb — the page's own subject — drops to its own
-// line as the heading. Same element, same classes, same handlers.
+// So the trail is re-laid-out instead: the parent crumbs stay a 14px eyebrow
+// row, and the last crumb — the page's own subject — drops to its own line as
+// the heading. Same elements, same classes, same handlers.
+//
+// The markup this lays out (page.html:17 and :24, filled by `Page.render_breadcrumbs`,
+// which empties and refills the <ol> on every paint):
+//
+//   .title-area
+//     nav.es-breadcrumbs.navbar-breadcrumbs > ol > li (+ a|button|span.es-breadcrumbs__item)
+//     button.more-button.hide
+//     span.es-badge.page-indicator-pill        ← the status, a SIBLING of the nav
+//
 .page-head {
 	height: auto;
 
@@ -28,7 +38,7 @@
 		min-height: 48px;
 		align-items: flex-end;
 		// The bottom inset is the title row's, and matches the gap the title
-		// li leaves above it (see `> li:last-child` below), so the row sits
+		// li leaves above it (see `li:last-child` below), so the row sits
 		// centred between the rule and the head's bottom border.
 		padding-block: 12px 8px;
 
@@ -37,17 +47,13 @@
 		// told otherwise), full width — under .page-actions too, not just the
 		// title column beside it. It used to be a border on the title's own
 		// li (still visible in git blame), which can only ever be as wide as
-		// that li's own box: `.navbar-breadcrumbs` is a WRAPPING flex
-		// container, and a wrapping flex container's intrinsic size is
-		// computed as though nothing wrapped, not as the widest of its
-		// actual wrapped rows — the same sizing quirk documented on
-		// `.navbar-breadcrumbs` below, and the same reason the pill needed
-		// moving rather than positioning in place.
+		// that li's own box: the trail's width is the width of its widest line,
+		// not of the head.
 		//
 		// A pseudo-element sidesteps it entirely: full width of
 		// `.page-head-content` needs no measurement, only `top` does — the
-		// title li's own top edge, wherever the trail's wrapped line(s)
-		// happen to end. js/anatomy/page_head_metrics.ts measures that
+		// title li's own top edge, wherever the trail's parent crumbs happen
+		// to end. js/anatomy/page_head_metrics.ts measures that
 		// (ResizeObserver on .page-head, so a title that wraps to a second
 		// line or a badge that appears moves the rule without a route
 		// change) and writes it to `--cf-trail-rule-top`.
@@ -59,11 +65,31 @@
 			top: var(--cf-trail-rule-top, 44px);
 			border-top: 1px solid var(--carbon-border-subtle);
 		}
+
+		// A trail of one crumb — every list, report and workspace, whose only
+		// item is the page itself — has no eyebrow, and a rule drawn under
+		// nothing is a stray line against the UI Shell's own bottom edge. Carbon
+		// draws the breadcrumb bar's border with the bar, and there is no bar.
+		&:has(.es-breadcrumbs li:only-child)::before {
+			content: none;
+		}
 	}
 }
 
 .page-title {
 	flex: 1;
+
+	// The UI Shell header carries the hamburger wherever it is mounted (768px
+	// and up; js/anatomy/ui_shell.ts). frappe draws a second one at the start of
+	// the page head, and hides it only from 992px (page.scss:20-24), so between
+	// 768 and 991px the page showed two controls for one sidebar. The header's
+	// is the one that stays: it is Carbon's, it is on every route, and it
+	// carries the aria-expanded state. Below 768px the shell does not mount and
+	// frappe's own header stands, so this one is the only control and is left
+	// alone.
+	body.cf-has-shell & .sidebar-toggle-btn {
+		display: none;
+	}
 
 	.title-area {
 		display: flex;
@@ -72,41 +98,64 @@
 		overflow: visible;
 		white-space: normal;
 		flex: 1;
+		min-width: 0;
+
+		// frappe spaces the pill from the trail with its own margin-left
+		// (page.scss:48-50); the 8px gap above is what separates them here.
+		// `align-self` and the bottom margin centre the 24px tag on the 40px
+		// heading row (the trail's last li is `align-items: center` on that
+		// same row, but the pill is a sibling of the trail, not inside it, so
+		// it cannot share the row's centring and is placed by hand).
+		//
+		// It is a sibling because that is where frappe keeps it: page.js:163
+		// finds it as `.title-area .page-indicator-pill` and
+		// set_indicator/clear_indicator (page.js:253-300) restyle it in place.
+		// The trail's <ol> is emptied and refilled on every paint
+		// (page.js:1032-1034), so a pill moved INTO it would be thrown out with
+		// the crumbs. Beside the trail it needs the trail to be exactly as wide as
+		// its widest line — see the block layout below.
+		.page-indicator-pill {
+			align-self: flex-end;
+			margin: 0 0 8px;
+		}
 	}
 
-	// frappe truncates the whole trail to one line; the heading needs to wrap.
-	// `0 1 auto` + min-width:0 keeps the trail only as wide as it needs, while
-	// still letting a long title shrink and wrap rather than overflow the row.
+	// The trail. Two layouts are in play, and the second is why this is not a
+	// flex container.
 	//
-	// NOT what sizes the pill's position, despite `.navbar-breadcrumbs` being a
-	// flex CONTAINER whose own `width`/`fit-content` looks like it should: a
-	// wrapping flex container's intrinsic size is computed as though nothing
-	// wrapped (every crumb plus the heading, summed on one hypothetical line),
-	// not as the widest of its actual wrapped rows — confirmed live, `width:
-	// fit-content` still measured ~495px against a ~340px rendered heading. No
-	// CSS sizing keyword asks for "as wide as my widest wrapped line", so the
-	// pill cannot be positioned as this container's flex sibling and read as
-	// adjacent to the heading; see js/anatomy/title_indicator.ts, which moves
-	// it inside the heading's own li instead, where a single-line flex row has
-	// none of this ambiguity.
-	.navbar-breadcrumbs {
+	// The parent crumbs are one wrapping line (the eyebrow) and the last crumb is
+	// the heading on a line of its own. A WRAPPING FLEX container's intrinsic
+	// width is computed as though nothing wrapped — every crumb plus the heading
+	// summed on one hypothetical line — not as the widest of its actual rows. The
+	// pill, which sits beside the trail and is placed by that width, ended up
+	// stranded far right of the heading it belongs to (measured live on 16.36:
+	// `width: fit-content` still came back ~495px against a ~340px heading).
+	//
+	// Block layout has the semantics that was wanted: the last li is a block-level
+	// box, so it breaks the line by being one, and the container's max-content
+	// width is the WIDEST LINE. The parent crumbs flow inline inside it.
+	.es-breadcrumbs {
 		flex: 0 1 auto;
 		min-width: 0;
-		flex-wrap: wrap;
-		align-items: baseline;
 
-		// The heading's OWN row: Carbon puts a status tag beside a page title,
-		// and title_indicator.ts relocates frappe's `.indicator-pill` here
-		// (from `.title-area`, where the sizing quirk above stranded it) so
-		// `align-items: center` is what actually keeps trail, heading and
-		// pill on one row now, not `.title-area`'s.
+		> ol {
+			display: block;
+			white-space: normal;
+		}
+
+		li {
+			display: inline-flex;
+			vertical-align: baseline;
+		}
+
+		// The heading's OWN row: Carbon puts a status tag beside a page title.
 		//
-		// The rule itself no longer lives on this li (see
-		// `.page-head-content::before`'s own comment for why), but the
-		// spacing either side of it still does: `margin-top` is the gap
-		// between the trail and the rule (page_head_metrics.ts positions the
-		// rule at this li's own top edge, i.e. right where the margin ends),
-		// `padding-top` the gap between the rule and the title row.
+		// The rule itself does not live on this li (see
+		// `.page-head-content::before`), but the spacing either side of it
+		// still does: `margin-top` is the gap between the trail and the rule
+		// (page_head_metrics.ts positions the rule at this li's own top edge,
+		// i.e. right where the margin ends), `padding-top` the gap between the
+		// rule and the title row.
 		//
 		// The row itself is 40px, IBM Products PageHeader's own title
 		// `min-block-size` ($spacing-08) and the height of the md buttons in
@@ -118,38 +167,83 @@
 		// (here) plus 8px below (.page-head-content's padding-block-end) makes
 		// the band symmetric. content-box so `min-height` is the row alone,
 		// not the row plus the gap above it.
-		> li:last-child {
+		li:last-child {
 			display: flex;
 			align-items: center;
 			gap: 8px;
-			flex: 0 0 100%;
 			box-sizing: content-box;
 			min-height: var(--btn-height);
 			margin-top: var(--margin-sm);
 			padding-top: 8px;
 
 			// the "/" divider is for a trail, not for the heading below it
-			> a::before {
+			&::before {
 				content: none;
+			}
+
+			// no eyebrow above it, so no gap to the rule that is not drawn either
+			&:only-child {
+				margin-top: 0;
+				padding-top: 0;
 			}
 		}
 	}
 }
 
+// frappe hides every crumb but the last below 992px (mobile.scss:73-75: only the
+// page title fits), with `display: none` at (0,2,1). The inline-flex above is
+// one notch stronger and would bring the trail back, so the rule is restated.
+// With no eyebrow left to separate from, the heading takes the single-crumb
+// layout: no gap above it and no rule (`:only-child` cannot see a hidden li).
+@media (width <= 991px) {
+	.page-title .es-breadcrumbs li:not(:last-child) {
+		display: none;
+	}
+
+	.page-title .es-breadcrumbs li:last-child {
+		margin-top: 0;
+		padding-top: 0;
+	}
+
+	.page-head .page-head-content::before {
+		content: none;
+	}
+}
+
+// frappe also caps the trail at 200px there (mobile.scss:67-70), which was sized
+// for a 16px crumb. The shell and the full page head are in play from 768px, and
+// a 28px heading in a 200px column wraps to a word a line. Left alone below it.
+@media (width >= 768px) {
+	.page-title .es-breadcrumbs {
+		width: auto;
+		max-width: none;
+	}
+}
+
 // Heading-04. Beats _breadcrumbs.scss, which deliberately forces every crumb —
-// including these two — down to link size to keep the trail uniform; the LAST
+// including this one — down to link size to keep the trail uniform; the LAST
 // crumb is the exception now that it is the page title.
-.page-title .navbar-breadcrumbs > li:last-child > a,
-.page-title .navbar-breadcrumbs > li:last-child > a.title-text,
-.page-title .navbar-breadcrumbs > li:last-child > a.title-text-form {
-	font-size: var(--text-4xl); // 28px
+//
+// The label's overflow policy belongs here too. Espresso lets the current page
+// truncate with an ellipsis (breadcrumbs.css:106-110); Carbon bans truncation on
+// page headers ("Truncation should not be used on page headers, titles, labels,
+// error messages, or validation messages"), so it wraps instead, which the
+// trail's block layout and `white-space: normal` above allow.
+.page-title .es-breadcrumbs li:last-child .es-breadcrumbs__item {
+	font-size: var(--text-6xl); // 28px
 	line-height: 36px;
 	font-weight: var(--font-weight-regular);
-	color: var(--cds-text-primary) !important;
+	color: var(--cds-text-primary);
+}
+
+.page-title .es-breadcrumbs li:last-child .es-breadcrumbs__label {
+	overflow: visible;
+	text-overflow: clip;
+	white-space: normal;
 }
 
 // A renameable document keeps its affordance: frappe puts `editable-title` on
-// .title-area when the doc can be renamed, and js/anatomy/editable_title.js
+// .title-area when the doc can be renamed, and js/anatomy/editable_title.ts
 // binds frappe's own rename dialog to the heading.
 //
 // The affordance is Carbon's Editable text (InlineEdit): undecorated at rest, a
@@ -159,31 +253,24 @@
 // navigates nowhere; a text cursor promises a caret in the heading, and the
 // click opens a dialog. The glyph is what actually names the action, so it
 // replaces the underline rather than joining it. It is appended by
-// editable_title.js from frappe's icon sprite (CSS cannot reach a sprite, and
-// this repo takes its Carbon assets from the @carbon packages or not at all).
+// editable_title.ts as Carbon's own Edit glyph (generated from @carbon/icons,
+// scripts/generate-icons.ts) — CSS cannot reach a sprite, and this repo takes
+// its Carbon assets from the @carbon packages or not at all.
 //
-// pointer-events is the load-bearing line. frappe marks the last crumb
-// `.disabled` on a form (it is the current page, so not a link) and kills
-// pointer events on it — which silently swallowed every click on the heading,
-// handler bound or not. Restored ONLY where frappe says the document is
-// renameable, so a non-renameable title stays inert as intended.
-.page-title .title-area.editable-title .navbar-breadcrumbs > li:last-child > a,
-.page-title .title-area.editable-title .navbar-breadcrumbs li.disabled > a {
-	pointer-events: auto;
+// The heading is a `span` now (the current page has no href; page.js:1053-1054),
+// so there is no `.disabled` anchor with `pointer-events: none` to undo — the
+// older version of this rule had to, and that is gone with the anchor.
+.page-title .title-area.editable-title .es-breadcrumbs li:last-child .es-breadcrumbs__item {
 	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
 	gap: 8px;
 	// the wash needs to clear the glyphs without shifting the heading off the
 	// eyebrow's left edge, so the inset is paid back as a negative start margin
-	padding-inline: 8px;
+	padding: 2px 8px;
 	margin-inline-start: -8px;
-	text-decoration: none;
 	transition: background-color var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 
 	&:hover {
 		background-color: var(--cds-field-hover-01);
-		text-decoration: none;
 	}
 
 	&:focus-visible {
@@ -196,7 +283,6 @@
 		align-items: center;
 		flex: none;
 		color: var(--cds-icon-primary);
-		--icon-stroke: var(--cds-icon-primary);
 		opacity: 0;
 		transition: opacity var(--carbon-duration-fast-01) var(--carbon-easing-standard);
 	}
@@ -232,31 +318,53 @@
 // (The cell's own vertical placement — level with the heading rather than the
 // breadcrumb eyebrow — comes from .page-head-content's `align-items: flex-end`
 // above.)
+//
+// The buttons are of two kinds in 16.50 and both are in the cell: es-buttons
+// (the Menu, secondary, Actions and primary of page.html:40-61, and the view
+// switcher and custom buttons the views add: all `frappe.ui.button`) and the `btn btn-default icon-btn` that
+// `Page.add_action_icon` still draws (the reload and previous/next-document
+// icons, page.js:267-285). Their look is desk/_buttons.scss; this is their
+// layout in the head.
 .page-head .page-actions {
 	// Carbon: "buttons in a set are placed adjacent to one another with no space
 	// between them", with the primary at the outside of the set — which is where
 	// frappe's DOM order already puts .primary-action. frappe spaces its toolbar
-	// buttons 8px apart and insets labels by 8px; restated here at equal
-	// specificity (this bundle @imports frappe's first, so it wins on order).
+	// buttons 8px apart (page.scss:67-70 for `.btn`, :99-101 for `.es-button`) and
+	// insets labels by 8px; restated here one notch stronger (this bundle
+	// @imports frappe's first, but `.page-actions .es-button` is also (0,2,0)).
 	//
 	// No $button-separator hairlines between them: that is a solid-fill ButtonSet
 	// affordance, and these are ghost buttons on the head's own background, where
 	// Carbon's own toolbars (data table toolbar, Products page-header action bar)
 	// run flush and let the hover fill do the separating.
-	.btn {
+	.btn,
+	.es-button {
 		margin-left: 0;
+	}
+
+	.btn {
 		// $spacing-05 label inset, so adjacent labels read 32px apart
 		padding: 0 16px;
 	}
 
+	// The head's buttons are Carbon md (40px): they sit on the heading's 40px row
+	// (see `li:last-child` above). frappe sizes an es-button from `--es-bt-h` and
+	// leaves the head's `.btn`s to `--btn-height`, so the one token is pointed at
+	// the other.
+	.es-button {
+		--es-bt-h: var(--btn-height);
+	}
+
 	// Icon-only actions (document navigation, the overflow menu) already come
-	// out square at --btn-height from frappe's own .icon-btn rule.
+	// out square at --btn-height from frappe's own .icon-btn rule (`.btn`) and
+	// from `data-icon-button` (`.es-button`).
 	.btn.icon-btn {
 		padding: 0;
 	}
 
 	// An open trigger takes Carbon's selected-ghost tone instead of bootstrap's
-	// gray, so it stays in the theme's language while its menu is up.
+	// gray, so it stays in the theme's language while its menu is up. (The
+	// es-button equivalent, `aria-expanded`, is desk/_buttons.scss.)
 	.dropdown.show > .btn,
 	.btn-group.show > .btn,
 	.show > .btn.dropdown-toggle {
@@ -265,4 +373,22 @@
 			color: var(--cds-text-primary);
 		}
 	}
+}
+
+// The phone's search button sits beside the actions (page.html:28-32;
+// `setup_correct_button`, awesome_bar.js:488-497, shows it on a phone, where
+// there is no header search). frappe draws its glyph on a `--control-bg` plate
+// (navbar.scss:92-98), the one filled square in a row of ghost buttons.
+// Carbon's icon-only button is a ghost as tall as its neighbours, so the plate
+// becomes that button's box and loses its fill.
+.page-head .search-bar .search-icon {
+	justify-content: center;
+	width: var(--btn-height);
+	height: var(--btn-height);
+	padding: 0;
+	background: transparent;
+}
+
+.page-head .search-bar:hover .search-icon {
+	background: var(--cds-layer-hover-01);
 }

@@ -6,6 +6,11 @@
  * an override into a silent no-op: the theme keeps loading and the component
  * just quietly reverts to stock frappe styling, which is exactly the failure
  * mode that is hardest to notice.
+ *
+ * Written against frappe v16.50.0. When a row's frappe-side shape changes the
+ * row is re-pointed or removed in the same commit as the theme code that read
+ * it; a row nothing reads any more is deleted, not left to pass, because a
+ * guard that outlives its reader teaches people to ignore the audit.
  */
 
 // ---------------------------------------------------------------------------
@@ -17,17 +22,32 @@
 // shapes here keeps the contract in the manifest, where the rows are written.
 // ---------------------------------------------------------------------------
 
-/** A class frappe must still emit, and the source file that emits it today. */
+/**
+ * A class frappe must still emit, and the source file that emits it today.
+ *
+ * Matched as a whole class token (not preceded or followed by a word character
+ * or a hyphen), so `navbar-modal-search` is NOT satisfied by a file that only
+ * carries `navbar-modal-search-mobile`: a rename that extends the name is the
+ * commonest rename there is, and a plain substring test passes straight over it.
+ */
 export type SelectorEntry = readonly [cls: string, file: string];
 
 /**
  * A runtime shape the theme monkey-patches: the id used in the failure
  * message, the frappe file it lives in, and the regex that proves it is still
  * there.
+ *
+ * Also the vehicle for any other shape a plain class name cannot say — the
+ * nesting of a rendered tree, a key the server writes into the boot payload, a
+ * rule frappe's own stylesheet declares — so the file need not be JavaScript.
  */
 export type PatchTarget = readonly [id: string, file: string, pattern: RegExp];
 
-/** A frappe-side declaration we override, and the file that declares it. */
+/**
+ * A frappe-side declaration we override, and the file that declares it. A literal
+ * that is only a class or a custom property is matched as a whole token (as for
+ * SELECTORS); one with punctuation in it, like `z-index: 1020`, as a substring.
+ */
 export type MirroredLiteral = readonly [literal: string, file: string];
 
 /** An assets.json bundle basename this app shadows. */
@@ -40,14 +60,22 @@ export const SELECTORS: readonly SelectorEntry[] = [
 	// merely redundant — but if frappe RENAMES one, third-party CSS and jQuery
 	// written against it break, and we would want to follow the rename.
 	["dt-row", "frappe/public/js/frappe/views/reports/report_view.js"],
-	["dt-cell__content", "frappe/public/js/frappe/views/reports/report_view.js"],
+	// report_view.js no longer names it (16.50); frappe's datatable stylesheet
+	// still styles it, and ERPNext's asset.js and the data-import preview write
+	// rules against it.
+	["dt-cell__content", "frappe/public/scss/desk/frappe_datatable.scss"],
 	["dt-filter", "frappe/public/js/frappe/views/reports/report_view.js"],
 	["grid-static-col", "frappe/public/js/frappe/form/grid_row.js"],
 	["grid-row-check", "frappe/public/js/frappe/form/grid.js"],
 	["static-area", "frappe/public/js/frappe/form/grid_row.js"],
 	["field-area", "frappe/public/js/frappe/form/grid_row.js"],
 	["sortable-handle", "frappe/public/js/frappe/form/grid_row.js"],
-	["column-limit-reached", "frappe/public/js/frappe/form/grid_row.js"],
+	// The last data column fills spare width (grid_row.js `grid-data-last`); the
+	// engine reproduces it as `fill` on the last column (tables/grid/grid.ts), and
+	// frappe's drag handle on the header is the one the engine's own replaces
+	// (desk/_carbon-table.scss).
+	["grid-data-last", "frappe/public/js/frappe/form/grid_row.js"],
+	["grid-col-resize-handle", "frappe/public/js/frappe/form/grid_row.js"],
 	// The child-table detail panel. The Carbon expandable row RE-HOMES frappe's
 	// `.form-in-grid` into a child <tr> and restyles its chrome; a rename here
 	// leaves the panel unstyled inside an otherwise correct expandable row.
@@ -73,58 +101,73 @@ export const SELECTORS: readonly SelectorEntry[] = [
 	["grid-download", "frappe/public/js/frappe/form/grid.js"],
 	["grid-upload", "frappe/public/js/frappe/form/grid.js"],
 	["grid-pagination", "frappe/public/js/frappe/form/grid.js"],
-	["list-row-col", "frappe/public/js/frappe/list/list_view.js"],
-	["list-header-subject", "frappe/public/js/frappe/list/list_view.js"],
-	["list-row-checkbox", "frappe/public/js/frappe/list/list_view.js"],
 
 	// list view / data table
+	["list-row-col", "frappe/public/js/frappe/list/list_view.js"],
+	["list-header-subject", "frappe/public/js/frappe/list/list_view.js"],
 	["list-row-head", "frappe/public/js/frappe/list/list_view.js"],
 	["list-row-container", "frappe/public/js/frappe/list/list_view.js"],
 	["list-row-checkbox", "frappe/public/js/frappe/list/list_view.js"],
 	["checkbox-actions", "frappe/public/js/frappe/list/list_view.js"],
 	["text-right", "frappe/public/js/frappe/list/list_view.js"],
-	// UI Shell header — the utilities js/anatomy/shell/utilities.ts MOVES into
-	// <header>. A rename here does not break the header, it silently leaves
-	// search / notifications / account behind in the side nav or the landing
-	// page navbar.
+	// the boxes desk/_carbon-table.scss turns into the list's bounded scroller
+	// (`.layout-main-section-wrapper .frappe-list .result-container .result`); the
+	// `.result` div and the rules it must outrank are PATCH_TARGETS below
+	["layout-main-section-wrapper", "frappe/public/js/frappe/ui/page.js"],
+	["frappe-list", "frappe/public/js/frappe/list/base_list.js"],
+	["result-container", "frappe/public/js/frappe/list/base_list.js"],
+	// the page-size switch and Load More row desk/_list.scss sizes
+	["list-paging-area", "frappe/public/js/frappe/list/base_list.js"],
+
+	// UI Shell header — what js/anatomy/shell/* reads, or hides because it
+	// replaces it. The header no longer MOVES frappe's search / bell / account
+	// nodes (it builds its own cells), so these are what it hides and what it
+	// anchors to, not what it harvests.
 	["body-sidebar", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	// the two columns the fixed header is indented past (desk/_ui-shell.scss);
 	// a rename here silently drops the header's reserved row on top of them
 	["body-sidebar-container", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	["main-section", "frappe/www/desk.html"],
-	["standard-items-sections", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	// the band of Search / Notification rows the header's global bar replaces;
+	// hidden, not removed, because frappe keeps `$standard_items_band`
+	["standard-items-band", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
+	// the user chip at the foot of the panel, hidden for the same reason
 	["dropdown-navbar-user", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["sidebar-user-button", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	// the account cell's name/email label. The rail must hide it: left visible it
-	// takes a grid row of its own and pushes the avatar off the vertical centre.
-	["avatar-name-email", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	// the notification flyout, re-anchored as the header's right panel, and the
-	// host the bell toggles `hidden` on
-	["dropdown-notifications", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["notifications-list", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["notification-list-header", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["notification-list-body", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	// the search / bell rows: TypeButton REPLACES the container class with these
-	// (sidebar_item.js:414), so they, not .sidebar-item-container, are the shell's
-	// handles; the count is the unread badge frappe writes into
-	["navbar-search-bar", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
-	["navbar-modal-search", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
-	["sidebar-notification", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
-	["sidebar-notification-count", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
 	["sidebar-items", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["collapse-sidebar-link", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	["sidebar-toggle-btn", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
-	// the landing page's own navbar, which the shell harvests and then removes.
-	// .desktop-wrapper is the template root, watched to catch the re-render.
+	// frappe's hamburger lives in the page head now, not in the sidebar template;
+	// the header hides it so there is one
+	["sidebar-toggle-btn", "frappe/public/js/frappe/ui/page.html"],
+	// the bell cell keeps this class because it is the notifications panel's
+	// `trigger_selector` (PATCH_TARGETS below)
+	["sidebar-notification", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
+	// the search cell keeps this class because AwesomeBar.setup delegates its
+	// click on `document` to exactly this selector (page.js:79)
+	["navbar-modal-search-mobile", "frappe/public/js/frappe/ui/page.js"],
+	// the one row frappe lights as current; the header's links follow it
+	["active-sidebar", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
+	// the user menu's open marker, which styles the header's account cell
+	["user-menu-active", "frappe/public/js/frappe/ui/sidebar/sidebar.js"],
+	// the unread badge frappe writes into (`update_count_badge`), anywhere in the document
+	["notification-count", "frappe/public/js/frappe/ui/notifications/notifications.js"],
+	// the landing page's own navbar, which the header hides. .desktop-wrapper is
+	// its template root.
 	["desktop-wrapper", "frappe/desk/page/desktop/desktop.html"],
 	["desktop-navbar", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-search-wrapper", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-navbar-modal-search", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-search-icon", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-keyboard-shortcut", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-notifications", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-notification-icon", "frappe/desk/page/desktop/desktop.html"],
-	["desktop-avatar", "frappe/desk/page/desktop/desktop.html"],
+	// the dock — the module switcher inside an app, which the header sits beside,
+	// and whose avatar duplicates the header's account cell
+	["dock", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	["dock-logo", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	["shell-header", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	["header-logo", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	["dock-item", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	["dock-user", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	// on <body> while the dock is a column rather than a floating tray
+	["dock-pinned", "frappe/public/js/frappe/ui/sidebar/dock.js"],
+	// the panel the bell opens, which the header re-hosts on <body>
+	["sidebar-panel", "frappe/public/js/frappe/ui/sidebar/sidebar_panel.js"],
+	["panel-header", "frappe/public/js/frappe/ui/components/panel_header.js"],
+	["panel-title", "frappe/public/js/frappe/ui/components/panel_header.js"],
+	["panel-header-actions", "frappe/public/js/frappe/ui/components/panel_header.js"],
 	// side nav — the rows js/anatomy/shell/model.ts projects into the header's
 	// links and sub-menus. A rename here empties the header nav silently.
 	["sidebar-item-container", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
@@ -137,31 +180,70 @@ export const SELECTORS: readonly SelectorEntry[] = [
 	["sidebar-item-icon", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
 	["sidebar-item-suffix", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
 	["sidebar-item-control", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
-	["keyboard-shortcut", "frappe/public/js/frappe/ui/sidebar/sidebar_item.js"],
-	// the sidebar editor's mode marker (the nav hides while editing)
-	["edit-mode", "frappe/public/js/frappe/ui/sidebar/sidebar.html"],
 	// inside the notifications panel, restyled on the g100 layer
-	["notifications-category", "frappe/public/js/frappe/ui/notifications/notifications.js"],
 	["recent-item", "frappe/public/js/frappe/ui/notifications/notifications.js"],
-	["list-footer", "frappe/public/js/frappe/ui/notifications/notifications.js"],
-	// frappe's unseen-notification dot, which becomes Carbon's
-	["indicator", "frappe/public/js/frappe/ui/notifications/notifications.js"],
 	// the avatar frappe.avatar() renders into the account cell
 	["avatar-frame", "frappe/public/js/frappe/utils/common.js"],
 	["standard-image", "frappe/public/js/frappe/utils/common.js"],
-	// frappe's sprite icons in the harvested rows: `frappe.utils.icon()` composes
-	// `icon-${size}` and the sidebar templates pass `current-color` as the svg
-	// class; both are restyled onto the cell's `color`
+	// `frappe.utils.icon()` composes `es-icon` onto every sprite icon it draws,
+	// and the website bundle ships the same helper, so the website navbar
+	// recolours it onto the bar's text colour (web/_navbar.scss)
 	["es-icon", "frappe/public/js/frappe/utils/utils.js"],
-	["current-color", "frappe/public/js/frappe/ui/sidebar/sidebar_item.html"],
+	// the like heart in the list's meta header is written by the theme with
+	// `icon icon-sm`, which frappe's sprite stylesheet is what sizes
 	["icon-sm", "frappe/public/scss/common/icons.scss"],
 	// the theme-switcher preview tiles — the one .navbar left in the desk
 	["theme-grid", "frappe/public/js/frappe/ui/theme_switcher.js"],
+
 	// page chrome
 	["page-actions", "frappe/public/js/frappe/ui/page.html"],
 	["page-head-content", "frappe/public/js/frappe/ui/page.html"],
 	["title-area", "frappe/public/js/frappe/ui/page.html"],
-	["title-text", "frappe/public/js/frappe/ui/page.js"],
+	// 16.50 draws the title as the last crumb of `nav.es-breadcrumbs.navbar-breadcrumbs`
+	// and the status as a SIBLING `span.es-badge.page-indicator-pill`
+	// (desk/_page-head.scss, js/anatomy/editable_title.ts, page_head_metrics.ts)
+	["es-breadcrumbs", "frappe/public/js/frappe/ui/page.html"],
+	["navbar-breadcrumbs", "frappe/public/js/frappe/ui/page.html"],
+	["page-indicator-pill", "frappe/public/js/frappe/ui/page.html"],
+	["es-breadcrumbs__item", "frappe/public/js/frappe/ui/components/breadcrumbs.js"],
+	["es-breadcrumbs__label", "frappe/public/js/frappe/ui/components/breadcrumbs.js"],
+	// frappe marks a renameable document with this on .title-area
+	["editable-title", "frappe/public/js/frappe/form/toolbar.js"],
+
+	// espresso components the theme restyles onto Carbon (desk/_buttons.scss,
+	// _modals.scss, _misc.scss, _widgets.scss, _ai-chat.scss) — frappe's own
+	// markup, so a rename is a silent revert to the espresso look
+	["es-button", "frappe/public/js/frappe/ui/components/button.js"],
+	["es-button__label", "frappe/public/js/frappe/ui/components/button.js"],
+	["es-badge", "frappe/public/js/frappe/ui/components/badge.js"],
+	["es-tab-buttons", "frappe/public/js/frappe/ui/components/tab_buttons.js"],
+	["es-pill", "frappe/public/js/frappe/ui/components/tab_buttons.js"],
+	["es-tabs", "frappe/public/js/frappe/ui/components/tabs.js"],
+	["es-tabs__tab", "frappe/public/js/frappe/ui/components/tabs.js"],
+	["es-tabs__indicator", "frappe/public/js/frappe/ui/components/tabs.js"],
+	["es-menu", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__item", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__group", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__group-label", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__shortcut", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__chevron", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-menu__description", "frappe/public/js/frappe/ui/components/menu.js"],
+	["es-tooltip", "frappe/public/js/frappe/ui/components/tooltip.js"],
+	["es-tooltip__arrow", "frappe/public/js/frappe/ui/components/tooltip.js"],
+	["es-tooltip__shortcut", "frappe/public/js/frappe/ui/components/tooltip.js"],
+	["es-popover", "frappe/public/js/frappe/ui/components/popover.js"],
+	["es-hover-card", "frappe/public/js/frappe/ui/components/hover_card.js"],
+	["es-avatar", "frappe/public/js/frappe/ui/components/avatar.js"],
+	["es-skeleton", "frappe/public/js/frappe/ui/components/skeleton.js"],
+	// toasts: `frappe.ui.toast` replaced show_alert's markup, and the AI panel
+	// moves the container aside while it is open (desk/_ai-chat.scss)
+	["es-toast", "frappe/public/js/frappe/ui/components/toast.js"],
+	["es-toast-container", "frappe/public/js/frappe/ui/components/toast.js"],
+	// the dialog footer's two standard buttons, each `.hide` until a dialog
+	// labels it; desk/_modals.scss lays the pair out edge to edge (dom.js)
+	["btn-modal-primary", "frappe/public/js/frappe/dom.js"],
+	["btn-modal-secondary", "frappe/public/js/frappe/dom.js"],
+
 	// form
 	["like-disabled-input", "frappe/public/js/frappe/form/controls/base_input.js"],
 	["form-message", "frappe/public/js/frappe/form/layout.js"],
@@ -177,7 +259,7 @@ export const SELECTORS: readonly SelectorEntry[] = [
 ];
 
 /**
- * Runtime shapes the theme monkey-patches. [id, file, regex]
+ * Runtime shapes the theme monkey-patches, calls, or reads. [id, file, regex]
  * If the regex stops matching, the patch silently stops applying.
  */
 export const PATCH_TARGETS: readonly PatchTarget[] = [
@@ -191,6 +273,64 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe/public/js/frappe/views/reports/report_view.js",
 		/setup_datatable\s*\(/,
 	],
+	// The replacement RESTATES the original's body (tables/datatable/install.ts), so
+	// everything the original does after `new DataTable(...)` must still be what it
+	// repeats: the two hooks it ends on, and the members it calls on the view.
+	[
+		"ReportView.setup_datatable still ends on the two hooks the restated copy repeats",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/setup_datatable\(values\)\s*\{[\s\S]{0,4000}?this\.setup_inline_filter_observer\(\);\s*this\.setup_link_side_panel\(\);\s*\}/,
+	],
+	[
+		"ReportView.setup_link_side_panel (the restated setup_datatable calls it)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/setup_link_side_panel\(\)\s*\{/,
+	],
+	[
+		"ReportView.setup_inline_filter_observer (the restated setup_datatable calls it)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/setup_inline_filter_observer\(\)\s*\{/,
+	],
+	[
+		"frappe.ui.handle_link_cell_click (the link-preview click both report surfaces route through)",
+		"frappe/public/js/frappe/views/reports/link_side_panel.js",
+		/frappe\.ui\.handle_link_cell_click = function \(e, datatable\)/,
+	],
+	[
+		"ReportView.get_columns_for_picker (the Add Column dialog's source list)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/get_columns_for_picker\(\)\s*\{/,
+	],
+	[
+		"ReportView.is_column_added (the Add Column dialog's filter)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/is_column_added\(df\)\s*\{/,
+	],
+	[
+		"ReportView.add_column_to_datatable (what the Add Column dialog calls)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/add_column_to_datatable\(fieldname, doctype, col_index\)\s*\{/,
+	],
+	[
+		"ReportView.remove_column_from_datatable (the restated setup_datatable's onRemoveColumn)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/remove_column_from_datatable\(column\)\s*\{/,
+	],
+	[
+		"ReportView.switch_column (the restated setup_datatable's onSwitchColumn)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/switch_column\(col1, col2\)\s*\{/,
+	],
+	[
+		"ReportView.get_editing_object (the restated setup_datatable's getEditor)",
+		"frappe/public/js/frappe/views/reports/report_view.js",
+		/get_editing_object\(colIndex, rowIndex, value, parent\)\s*\{/,
+	],
+	[
+		"ListView.debounced_toggle_workflow_actions (inherited by ReportView; the selection event calls it)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/debounced_toggle_workflow_actions\(\)\s*\{/,
+	],
 	[
 		"ControlTable.make (constructs the Grid we swap for CarbonGrid)",
 		"frappe/public/js/frappe/form/controls/table.js",
@@ -202,6 +342,11 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		/export default class Grid/,
 	],
 	[
+		"Grid exports its column bounds by name (tables/grid imports both; a rename is a build error)",
+		"frappe/public/js/frappe/form/grid.js",
+		/export const GRID_MIN_COLUMN_WIDTH = \d+;\s*export const GRID_MAX_COLUMN_WIDTH = \d+;/,
+	],
+	[
 		"GridRow is an ES module default export (subclassed by CarbonGridRow)",
 		"frappe/public/js/frappe/form/grid_row.js",
 		/export default class GridRow/,
@@ -209,7 +354,12 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 	[
 		"GridRow.make_column builds the .grid-static-col cell we reuse verbatim",
 		"frappe/public/js/frappe/form/grid_row.js",
-		/make_column\(df, colsize, txt, ci\)/,
+		/make_column\(df, width, txt, ci\)/,
+	],
+	[
+		"GridRow marks the last data column .grid-data-last (the engine's `fill` mirrors it)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/removeClass\("grid-data-last"\)\);\s*this\.columns_list\[this\.columns_list\.length - 1\]\?\.addClass\("grid-data-last"\)/,
 	],
 	[
 		"GridRowForm appends .form-in-grid to the ROW (we re-home it to the child row)",
@@ -224,7 +374,7 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 	[
 		"GridRow.show_form raises a modal backdrop (inline mode balances the count)",
 		"frappe/public/js/frappe/form/grid_row.js",
-		/frappe\.dom\.freeze\("", "dark grid-form"\)/,
+		/frappe\.dom\.freeze\("", "grid-form"\)/,
 	],
 	[
 		"GridRow.hide_form unfreezes unconditionally (the counterweight depends on it)",
@@ -246,6 +396,63 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe/public/js/frappe/form/grid.js",
 		/refresh_remove_rows_button\(\)\s*\{/,
 	],
+	// CarbonGrid and CarbonGridRow subclass these and override them (tables/grid), so
+	// each name is a seam: a rename leaves the override as a method nobody calls.
+	[
+		"Grid.make's scaffolding: .form-grid-container > .form-grid > (.grid-heading-row, .grid-body > (.rows, .grid-empty)) (the engine replaces it; inherited refresh() still finds those nodes)",
+		"frappe/public/js/frappe/form/grid.js",
+		/<div class="form-grid-container">\s*<div class="form-grid">\s*<div class="grid-heading-row"><\/div>\s*<div class="grid-body">\s*<div class="rows"><\/div>\s*<div class="grid-empty/,
+	],
+	[
+		"Grid.make_head bails on prevent_build (CarbonGrid.make_head mirrors the guard)",
+		"frappe/public/js/frappe/form/grid.js",
+		/make_head\(\)\s*\{\s*if \(this\.prevent_build\) return;/,
+	],
+	[
+		"Grid.render_result_rows (CarbonGrid draws the page of rows into the engine instead)",
+		"frappe/public/js/frappe/form/grid.js",
+		/render_result_rows\(\$rows\)\s*\{/,
+	],
+	[
+		"GridRow.make builds .grid-row > .data-row.row (CarbonGridRow moves both class sets onto one <tr>)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/this\.wrapper = \$\('<div class="grid-row"><\/div>'\);\s*this\.row = \$\('<div class="data-row row m-0"><\/div>'\)/,
+	],
+	[
+		"GridRow.set_row_index (CarbonGridRow extends it to fill the child row's heading)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/set_row_index\(\)\s*\{\s*if \(this\.doc\) \{/,
+	],
+	[
+		"GridRow.toggle_view(show, callback) (CarbonGridRow widens it with a `modal` option)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/toggle_view\(show, callback\)\s*\{/,
+	],
+	[
+		"GridRow.add_open_form_button nests .btn-open-row in a .col cell (the engine needs the cell, super hands back the inner node)",
+		"frappe/public/js/frappe/form/grid_row.js",
+		/this\.open_form_button = \$\('<div class="col"><\/div>'\)\.appendTo\(this\.row\);[\s\S]{0,600}?<div class="btn-open-row"/,
+	],
+	[
+		"Grid.get_column_width (inherited: frappe's pixel width seeds the engine) and clamp_column_width (the drag is held to it)",
+		"frappe/public/js/frappe/form/grid.js",
+		/clamp_column_width\(width\)\s*\{[\s\S]{0,200}?get_column_width\(df\)\s*\{/,
+	],
+	[
+		"Grid.save_column_width (a dragged width is handed back to it to persist)",
+		"frappe/public/js/frappe/form/grid.js",
+		/save_column_width\(fieldname, width\)\s*\{/,
+	],
+	[
+		"Grid.set_button_label writes into .es-button__label (the Carbon toolbar relabels the same node)",
+		"frappe/public/js/frappe/form/grid.js",
+		/set_button_label\(\$btn, label\)\s*\{[\s\S]{0,300}?\$btn\.find\("\.es-button__label"\)\.text\(label\)/,
+	],
+	[
+		"Grid._teardown_column_layout (CarbonGrid overrides it to reach the engine)",
+		"frappe/public/js/frappe/form/grid.js",
+		/_teardown_column_layout\(\)\s*\{/,
+	],
 	[
 		"GridRow.show_search_row removes the filter row below the threshold (we override it)",
 		"frappe/public/js/frappe/form/grid_row.js",
@@ -260,6 +467,11 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe.DataTable global (ui/datatable.js is the only assignment)",
 		"frappe/public/js/frappe/ui/datatable.js",
 		/frappe\.DataTable = DataTable/,
+	],
+	[
+		"ListView.render_header (patched down to the bulk-action overlay)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/render_header\(refresh_header = false\)\s*\{/,
 	],
 	[
 		"ListView.render_list (replaced by the Carbon table renderer)",
@@ -286,6 +498,82 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		"frappe/public/js/frappe/list/list_view.js",
 		/this\.\$list_head_subject =\s*\n?\s*this\.\$list_head_subject \|\|/,
 	],
+	// Selection moved off the DOM and into a Set in 16.50. The replacement
+	// render_list restates the contract frappe's own keeps (list_view.js
+	// 1031-1083): prune the Set against the new data, redraw, repaint the ticks.
+	[
+		"ListView.checked_docnames is a Set (selection lives there, a checkbox is its mirror)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/this\.checked_docnames = new Set\(\)/,
+	],
+	[
+		"ListView.prune_checked_docnames (render_list calls it first, on the NEW data)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/prune_checked_docnames\(\)\s*\{[\s\S]{0,300}?this\.checked_docnames\.delete\(name\)/,
+	],
+	[
+		"ListView.get_checkbox_docname (reads data-name; the repaint after a virtual scroll calls it)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/get_checkbox_docname\(\$checkbox\)\s*\{/,
+	],
+	[
+		"ListView.remove_list_items removes the row's .list-row-container and nothing else (the engine's data follows)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/remove_list_items\(names\)\s*\{[\s\S]{0,400}?\.closest\("\.list-row-container"\)\s*\.remove\(\)/,
+	],
+	[
+		"ListView.get_assignment_stats returns the pair render_list hands update_listview_classes",
+		"frappe/public/js/frappe/list/list_view.js",
+		/get_assignment_stats\(\)\s*\{[\s\S]{0,900}?return \{ has_assignto, assign_to_count \}/,
+	],
+	[
+		"ListView.update_listview_classes (render_list ends on it)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/update_listview_classes\(has_assignto, assign_to_count\)\s*\{/,
+	],
+	[
+		"ListView.virtualization_threshold (the engine virtualizes at frappe's own row count)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/this\.virtualization_threshold = \d+/,
+	],
+	[
+		"ListView.save_column_width (a dragged list column is persisted through it)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/save_column_width\(fieldname, width\)\s*\{/,
+	],
+	[
+		"ListView.column_max_widths (the drag writes the width here before persisting it)",
+		"frappe/public/js/frappe/list/list_view.js",
+		/this\.column_max_widths = \{\}/,
+	],
+	// The list's DOM, which desk/_carbon-table.scss outranks by selector. The
+	// bounded scroller needs `.result` to sit directly in `.result-container`
+	// (a List view only), and two frappe rules on it to be the two it out-scores.
+	[
+		"the List view builds .result-container, then .result inside it (the bounded-scroller selector)",
+		"frappe/public/js/frappe/list/base_list.js",
+		/setup_result_container_area\(\)\s*\{[\s\S]{0,200}?<div class="result-container">[\s\S]{0,300}?setup_result_area\(\)\s*\{\s*this\.\$result = \$\(`<div class="result">`\);[\s\S]{0,200}?find\("\.result-container"\)/,
+	],
+	[
+		"desk/list.scss: `.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result-container .result` (specificity 0,5,0 — the theme's doubled .result must beat it)",
+		"frappe/public/scss/desk/list.scss",
+		/\.layout-main-section-wrapper:not\(\.disable-scrolling\) \{\s*\.frappe-list \{\s*\.result-container \{\s*\.result \{/,
+	],
+	[
+		"desk/list.scss: `.list-view .frappe-list .result-container .result { display: table }` (the other .result rule)",
+		"frappe/public/scss/desk/list.scss",
+		/\.list-view \{\s*\.frappe-list \{\s*\.result-container \{[\s\S]{0,80}?\.result \{[\s\S]{0,80}?display: table;/,
+	],
+	[
+		"desk/list.scss: `.list-row-container:first-child` is sticky (the engine's first body row must un-stick it)",
+		"frappe/public/scss/desk/list.scss",
+		/\.list-row-container \{[\s\S]{0,200}?&:first-child \{\s*padding: 0;\s*position: sticky;/,
+	],
+	[
+		"the paging row holds a TabButtons page-size switch (desk/_list.scss sizes its pills)",
+		"frappe/public/js/frappe/list/base_list.js",
+		/this\.paging_button_group = new frappe\.ui\.TabButtons\(\{[\s\S]{0,900}?this\.\$paging_area\.find\("\.level-left"\)\.append\(this\.paging_button_group\.\$el\)/,
+	],
 	[
 		"toolbar.setup_editable_title_click_event (clickable page title)",
 		"frappe/public/js/frappe/form/toolbar.js",
@@ -294,17 +582,40 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 	[
 		"editable-title class on .title-area (marks a renameable doc)",
 		"frappe/public/js/frappe/form/toolbar.js",
-		/"editable-title"/,
+		/\$title_area\.toggleClass\(\s*"editable-title"/,
 	],
 	[
-		"Page.indicator resolves via .title-area .indicator-pill (title_indicator.ts relocates it)",
+		"Page.$title_area is the .title-area node (editable_title.ts reads the class off it)",
 		"frappe/public/js/frappe/ui/page.js",
-		/this\.indicator = this\.wrapper\.find\("\.title-area \.indicator-pill"\)/,
+		/this\.\$title_area = this\.wrapper\.find\("\.title-area"\)/,
+	],
+	[
+		"Page.indicator resolves via .title-area .page-indicator-pill (a sibling of the trail, not inside it)",
+		"frappe/public/js/frappe/ui/page.js",
+		/this\.indicator = this\.wrapper\.find\("\.title-area \.page-indicator-pill"\)/,
+	],
+	// editable_title.ts wraps render_breadcrumbs: the title is the LAST crumb and the
+	// trail is emptied and rebuilt on every paint, so only a hook on the painter
+	// survives to dress it.
+	[
+		"Page.render_breadcrumbs empties the trail and redraws every crumb on each paint (editable title wraps it)",
+		"frappe/public/js/frappe/ui/page.js",
+		/render_breadcrumbs\(\)\s*\{[\s\S]{0,900}?\.empty\(\)/,
+	],
+	[
+		"Form.refresh_header paints the trail once more AFTER toolbar.refresh (the paint with the settled editable-title class)",
+		"frappe/public/js/frappe/form/form.js",
+		/this\.toolbar\.refresh\(\);[\s\S]{0,300}?this\.page\.set_breadcrumbs\(/,
 	],
 	[
 		"frappe.router event emitter (editable title, UI Shell re-mount)",
 		"frappe/public/js/frappe/router.js",
 		/make_event_emitter\(frappe\.router\)/,
+	],
+	[
+		"the dialog footer is an empty .custom-actions plus a .standard-actions of two es-buttons (the flush Carbon footer keys off it)",
+		"frappe/public/js/frappe/dom.js",
+		/<div class="modal-footer hide">\s*<div class="custom-actions"><\/div>\s*<div class="standard-actions">[\s\S]{0,200}?btn-modal-secondary hide[\s\S]{0,200}?btn-modal-primary hide/,
 	],
 
 	// --- UI Shell header (js/anatomy/ui_shell.ts + shell/*) ----------------
@@ -336,29 +647,69 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		/make_sidebar\(\)\s*\{/,
 	],
 	[
-		"Sidebar.setup ends in make_sidebar (one hook covers workspace switches)",
+		"Sidebar.setup renders through make_sidebar (one hook covers shell switches and a saved Edit Sidebar)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/setup\(workspace_title\)\s*\{[\s\S]{0,900}?this\.make_sidebar\(\)/,
+		/setup\(current_module\)\s*\{[\s\S]{0,600}?this\.make_sidebar\(\)/,
 	],
 	[
-		"sidebar_setup fires BEFORE the state changes (why the header does not use it)",
+		"sidebar_setup fires BEFORE current_module changes (why the header does not use it)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/trigger\("sidebar_setup"[\s\S]{0,120}?this\.sidebar_title = workspace_title/,
+		/trigger\("sidebar_setup"[\s\S]{0,120}?this\.current_module = current_module/,
 	],
 	[
-		"choose_app_name's app predicate (re-applied for the name prefix and switcher)",
+		"Sidebar.sidebar_data is the shell's boot entry (the header name reads its .label)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/app\.workspaces\.includes\(this\.sidebar_title\)/,
+		/this\.sidebar_data = frappe\.boot\.module_sidebars\[this\.current_module\]/,
 	],
 	[
-		"frappe.current_app assigned only on a match (why it is not trusted)",
+		"Sidebar.get_sidebar_app resolves the shell's app through app_data and the rail host (the name prefix and the switcher's selected row)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/frappe\.current_app = app/,
+		/get_sidebar_app\(\)\s*\{[\s\S]{0,400}?app_data\.find\([\s\S]{0,80}?rail_host_for\(app_name\)/,
 	],
 	[
-		"is_route_in_sidebar's current-item rule (mirrored for aria-current)",
+		"Sidebar.highlight_active_item writes .active-sidebar (the header's current link follows it)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/clean_path\.startsWith\(clean_href \+ "\/"\)/,
+		/highlight_active_item\(\)\s*\{[\s\S]{0,200}?this\.active_item\.addClass\("active-sidebar"\)/,
+	],
+	[
+		"Sidebar.find_active_item scans every .item-anchor[href] and lights the anchor's PARENT (activeHref reads `.active-sidebar > a.item-anchor`)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/\$\("\.item-anchor\[href\]"\)\.each\(function \(\) \{[\s\S]{0,400}?best = \$\(this\)\.parent\(\)/,
+	],
+	[
+		"Sidebar.page_allows_sidebar reads the page's hide_sidebar (model.ts's launcher test)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/page_allows_sidebar\(\)\s*\{[\s\S]{0,200}?!page\.hide_sidebar/,
+	],
+	[
+		"Sidebar.page_allows_dock reads the page's hide_dock (model.ts's launcher test)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/page_allows_dock\(\)\s*\{[\s\S]{0,200}?!page\.hide_dock/,
+	],
+	[
+		"the Desktop page opts out of both shells (hide_sidebar + hide_dock are what make /desk the launcher)",
+		"frappe/desk/page/desktop/desktop.js",
+		/hide_sidebar: true,\s*hide_dock: true/,
+	],
+	[
+		"Sidebar.apply_page_visibility hides the wrapper with an inline display:none (model.ts reads the computed display)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/apply_page_visibility\(\)\s*\{[\s\S]{0,600}?this\.wrapper\.toggle\(allowed\)/,
+	],
+	[
+		"the sidebar wrapper is built hidden and prepended to <body> (the AI takeover and the shell's column math rely on it)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/\.hide\(\)\s*\.prependTo\("body"\)/,
+	],
+	[
+		"Sidebar.apply_expanded_state toggles .expanded on the wrapper (the rail/expanded rules in desk/_sidebar.scss ride on it)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/apply_expanded_state\(\)\s*\{[\s\S]{0,500}?this\.wrapper\.addClass\("expanded"\)[\s\S]{0,300}?this\.wrapper\.removeClass\("expanded"\)/,
+	],
+	[
+		"Sidebar.close/open set sidebar_expanded BEFORE the event (the hamburger's aria state is read from it)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/close\(\)\s*\{\s*this\.sidebar_expanded = false;[\s\S]{0,200}?open\(\)\s*\{\s*this\.sidebar_expanded = true;/,
 	],
 	[
 		"sidebar-expand event (hamburger aria state)",
@@ -371,34 +722,89 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		/toggle_width\(\)\s*\{/,
 	],
 	[
-		"sidebar toggle button (the hamburger's fallback)",
-		"frappe/public/js/frappe/ui/sidebar/sidebar.html",
-		/collapse-sidebar-link sidebar-toggle-btn/,
-	],
-	[
-		"add_standard_items runs once (the harvested search/bell keep identity)",
+		"Sidebar.module_landing_route (the header name's link, the dock tile and the icon grid all use it)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/if \(this\.standard_items_setup\) return/,
+		/module_landing_route\(module\)\s*\{\s*const sidebar = frappe\.boot\.module_sidebars\[module\]/,
 	],
 	[
-		"the bell's own toggle reads the SIDEBAR wrapper (why the header re-arms it)",
+		"Sidebar.app_landing_route (the switcher tile's destination: declared route, then rail, then first module)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/this\.wrapper\.find\("\.dropdown-notifications"\)/,
+		/app_landing_route\(app\)\s*\{[\s\S]{0,200}?app\.app_route/,
 	],
 	[
-		"Bootstrap tooltips initialised globally on collapse (why data-toggle is stripped)",
+		"Sidebar.create_user_menu (the header's account cell is a second host of the one menu)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/\$\('\[data-toggle="tooltip"\]'\)\.tooltip\(/,
+		/create_user_menu\(\{ parent, button, side = "top", align = "start" \}\)/,
 	],
 	[
-		"TypeButton writes item.class onto the container (replaces .sidebar-item-container)",
+		"create_user_menu binds the menu to `parent` and marks `button` while it is open",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/trigger: \$container,\s*side,\s*align,[\s\S]{0,3500}?on_open: \(\) => \$btn\.addClass\("user-menu-active"\)/,
+	],
+	[
+		"Sidebar.setup_notifications builds frappe.ui.Notifications only when the desk setting is on (the bell's visibility reads sidebar.notifications)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/setup_notifications\(\)\s*\{\s*if \(frappe\.boot\.desk_settings\.notifications && frappe\.session\.user !== "Guest"\) \{\s*this\.notifications = new frappe\.ui\.Notifications\(\)/,
+	],
+	[
+		"the Search row's condition: the header's search cell is built only when this setting is on",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/class: "navbar-modal-search-mobile",\s*condition: \(\) => !!frappe\.boot\.desk_settings\.search_bar/,
+	],
+	[
+		"the bell row's click is frappe.ui.sidebar_panels.toggle(\"notifications\") (the header's bell calls the same)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
+		/onClick: \(\) => frappe\.ui\.sidebar_panels\.toggle\("notifications"\)/,
+	],
+	[
+		"AwesomeBar.setup delegates the search click on `document` to the selector it is given",
+		"frappe/public/js/frappe/ui/toolbar/awesome_bar.js",
+		/\$\(document\)\.on\("click", element/,
+	],
+	[
+		"Page.setup_awesomebar hands AwesomeBar the .navbar-modal-search-mobile class (the header's search cell carries it)",
+		"frappe/public/js/frappe/ui/page.js",
+		/awesome_bar\.setup\("\.navbar-modal-search-mobile"\)/,
+	],
+	[
+		'the notifications panel is registered under "notifications" with .sidebar-notification as its trigger (the bell cell keeps that class)',
+		"frappe/public/js/frappe/ui/notifications/notifications.js",
+		/name: "notifications",[\s\S]{0,120}?trigger_selector: "\.sidebar-notification"/,
+	],
+	[
+		"update_count_badge writes into EVERY .notification-count in the document (the header's badge is kept by frappe)",
+		"frappe/public/js/frappe/ui/notifications/notifications.js",
+		/const \$count = \$\("\.notification-count"\)/,
+	],
+	[
+		"SidebarPanel mounts into .body-sidebar-container (the header re-hosts the element on <body>)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar_panel.js",
+		/MOUNT_SELECTOR = "\.body-sidebar-container"/,
+	],
+	[
+		"SidebarPanel's element carries .sidebar-panel and a per-name class (the notifications panel's `.sidebar-panel-notifications`)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar_panel.js",
+		/<div class="sidebar-panel hidden"><\/div>`\)\s*\.addClass\(`sidebar-panel-\$\{this\.name\}`\)/,
+	],
+	[
+		"the panel registry's get/toggle by name (the bell reads the panel, then toggles it)",
+		"frappe/public/js/frappe/ui/sidebar/sidebar_panel.js",
+		/get\(name\)\s*\{\s*return this\.panels\[name\];\s*\}[\s\S]{0,2500}?toggle\(name\)\s*\{\s*if \(this\.get\(name\)\?\.is_open\)/,
+	],
+	[
+		"a click on the panel's trigger_selector is not an outside click, and aria-expanded is mirrored onto every match",
+		"frappe/public/js/frappe/ui/sidebar/sidebar_panel.js",
+		/\$\(this\.opts\.trigger_selector\)\.attr\("aria-expanded", String\(this\.is_open\)\)[\s\S]{0,500}?\$target\.closest\(this\.opts\.trigger_selector\)/,
+	],
+	[
+		"Dock mounts as a direct child of <body>, beside the sidebar container (the assistant covers it as `body > .dock`)",
+		"frappe/public/js/frappe/ui/sidebar/dock.js",
+		/\$container = \$\("\.body-sidebar-container"\);\s*if \(\$container\.length\) \{\s*this\.\$dock\.insertBefore\(\$container\);\s*\} else \{\s*this\.\$dock\.prependTo\("body"\)/,
+	],
+	[
+		"a Section Break's click is bound on its .standard-sidebar-item (a delegated .click() on the anchor reaches it)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar_item.js",
-		/this\.wrapper\.attr\("class", this\.item\.class\)/,
-	],
-	[
-		"Sidebar Item Group click is bound on the wrapper (a delegated .click() reaches it)",
-		"frappe/public/js/frappe/ui/sidebar/sidebar_item.js",
-		/this\.wrapper\.on\("click"/,
+		/setup_event_listner\(\)\s*\{[\s\S]{0,80}?\$\(this\.wrapper\.find\("\.standard-sidebar-item"\)\[0\]\)\.on\("click"/,
 	],
 	[
 		"section-item container with its nested-container children",
@@ -406,40 +812,126 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		/section-item[\s\S]*?class="sidebar-child-item nested-container"/,
 	],
 	[
+		"an indented row's .standard-sidebar-item carries `indent`, which the `.indent + .nested-container` rule keys off",
+		"frappe/public/js/frappe/ui/sidebar/sidebar_item.html",
+		/class="standard-sidebar-item \{%= item\.indent \? 'indent' : '' %\}"/,
+	],
+	[
 		"item-anchor gets href only when frappe computed a path (no href = an action)",
 		"frappe/public/js/frappe/ui/sidebar/sidebar_item.html",
 		/\{% if \(path\) \{ %\}\s*href="\{\{ path \}\}"/,
 	],
 	[
-		"sidebar editor marks edit mode with data-mode (the nav hides on it)",
-		"frappe/public/js/frappe/ui/sidebar/sidebar_editor.js",
-		/attr\("data-mode", "edit"\)/,
-	],
-	[
 		"sidebar item labels are translated server-side (copied verbatim)",
-		"frappe/boot.py",
+		"frappe/desk/doctype/sidebar/sidebar.py",
 		/"label": _\(item\.label\)/,
 	],
-	["app_data entries carry app_route (the switcher's hrefs)", "frappe/boot.py", /app_route=/],
 	[
 		'body click router skips href="#" (sub-menu titles preventDefault themselves)',
 		"frappe/public/js/frappe/router.js",
 		/href === "#"/,
 	],
+
+	// --- Boot payload the shell reads (js/anatomy/shell/model.ts, desktop.ts,
+	// switcher.ts, utilities.ts). Server-side shapes: a JS test cannot see them,
+	// and a renamed key reads as `undefined` — an empty header, an empty switcher.
 	[
-		"NotificationsView resolves the badge via closest(.body-sidebar) (instance patch)",
-		"frappe/public/js/frappe/ui/notifications/notifications.js",
-		/\.closest\("\.body-sidebar"\)[\s\S]{0,80}?sidebar-notification-count/,
+		"boot.module_sidebars (the shell map: current_module indexes it, the switcher resolves icons through it)",
+		"frappe/boot.py",
+		/bootinfo\.module_sidebars = get_module_sidebars\(\)/,
 	],
 	[
-		"notification bell toggles `indicator blue` (becomes Carbon's dot)",
-		"frappe/public/js/frappe/ui/notifications/notifications.js",
-		/toggleClass\("indicator blue"/,
+		"a module_sidebars entry carries name, module, label and app (header name, switcher's shellFor, get_sidebar_app)",
+		"frappe/desk/doctype/sidebar/sidebar.py",
+		/def as_boot_entry\(self\)[\s\S]{0,400}?"name": self\.name,\s*"module": self\.module,\s*"label": self\.label,\s*"app": self\.app,/,
 	],
 	[
-		"Notifications finds its wrapper globally (survives the move)",
-		"frappe/public/js/frappe/ui/notifications/notifications.js",
-		/\$\("\.standard-items-sections"\)/,
+		"boot.app_data entries carry app_name and app_title (the header prefix, the switcher's rows)",
+		"frappe/boot.py",
+		/app_name=app_info\.get\("name"\) or app_name,\s*app_title=app_info\.get\("title"\)/,
+	],
+	[
+		"app_data entries carry app_route (the switcher's hrefs)",
+		"frappe/boot.py",
+		/app_route=app_info\.get\("route"\)/,
+	],
+	[
+		"app_data.on_apps_screen opts an app into the Apps screen (the switcher's filter)",
+		"frappe/boot.py",
+		/on_apps_screen=bool\(apps\) and app_name not in app_rail_host/,
+	],
+	[
+		"app_data.sequence_id orders the Apps screen (the switcher's sort)",
+		"frappe/boot.py",
+		/sequence_id=app_info\.get\("sequence_id"\) or DEFAULT_APP_SEQUENCE_ID/,
+	],
+	[
+		"boot.desktop_icons exists ONLY when Desktop Settings picks the icon grid (the switcher's mode switch)",
+		"frappe/boot.py",
+		/if is_desktop_icons_page\(\):\s*from frappe\.desk\.doctype\.desktop_icon\.desktop_icon import get_desktop_icons\s*\n\s*bootinfo\.desktop_icons = get_desktop_icons\(bootinfo=bootinfo\)/,
+	],
+	[
+		"desktop icons carry label, link, link_type, icon_type, parent_icon, idx and hidden (the switcher re-applies the grid's rules over them)",
+		"frappe/desk/doctype/desktop_icon/desktop_icon.py",
+		/fields = \[\s*"label",\s*"bg_color",\s*"link",\s*"link_type",\s*"app",\s*"icon_type",\s*"parent_icon",\s*"icon",\s*"link_to",\s*"idx",[\s\S]{0,80}?"hidden",/,
+	],
+	[
+		"desktop icons carry `module`, the shell key the switcher marks selected",
+		"frappe/desk/doctype/desktop_icon/desktop_icon.py",
+		/s\.module = icon_module/,
+	],
+	[
+		"boot.desk_settings carries search_bar and notifications (the header builds its cells from them)",
+		"frappe/core/doctype/user/user.py",
+		/desk_properties = \(\s*"search_bar",\s*"notifications",/,
+	],
+
+	// --- The desktop's two renderers, which the switcher mirrors --------------
+	// (js/anatomy/shell/desktop.ts: one list, whichever the site renders)
+	[
+		"Apps screen: only apps with on_apps_screen get a tile",
+		"frappe/desk/page/desktop/desktop.js",
+		/\.filter\(\(app\) => app\.on_apps_screen\)/,
+	],
+	[
+		"Apps screen: tiles sort by sequence_id (default 100), ties in installed-apps order",
+		"frappe/desk/page/desktop/desktop.js",
+		/\(a\.sequence_id \?\? 100\) - \(b\.sequence_id \?\? 100\)/,
+	],
+	[
+		"Apps screen: a tile leads to app_landing_route, then the app's route, then /desk",
+		"frappe/desk/page/desktop/desktop.js",
+		/app_landing_route\(app\) \|\| app\.app_route \|\| "\/desk"/,
+	],
+	[
+		"Desktop Icons grid: a hidden icon is dropped, and an icon whose parent is visible nests under it",
+		"frappe/public/js/desktop_icons.bundle.js",
+		/prepare\(\) \{\s*this\.apps_icons = \[\];[\s\S]{0,400}?icon\.hidden != 1[\s\S]{0,900}?icon\.parent_icon && icon_map\[icon\.parent_icon\]/,
+	],
+	[
+		"Desktop Icons grid: every grid sorts by idx, then by label (localeCompare, no locale argument)",
+		"frappe/public/js/desktop_icons.bundle.js",
+		/a\.idx === b\.idx\) \{\s*return a\.label\.localeCompare\(b\.label\);[\s\S]{0,120}?return a\.idx - b\.idx;/,
+	],
+	[
+		"Desktop Icons grid: a Folder with no visible children is not rendered",
+		"frappe/public/js/desktop_icons.bundle.js",
+		/validate_icon\(\)\s*\{\s*if \(this\.icon_type == "Folder"\) \{\s*if \(this\.icon_data\.child_icons\.length == 0\) return false;/,
+	],
+	[
+		"Desktop Icons grid: an App or Folder with children opens them instead of navigating",
+		"frappe/public/js/desktop_icons.bundle.js",
+		/this\.child_icons\?\.length && \(this\.icon_type == "App" \|\| this\.icon_type == "Folder"\)/,
+	],
+	[
+		"Desktop Icons grid: a Workspace Sidebar icon opens its shell's module_landing_route; an External link is absolute",
+		"frappe/public/js/desktop_icons.bundle.js",
+		/function get_route\(desktop_icon\)\s*\{[\s\S]{0,300}?link_type == "External"[\s\S]{0,300}?link_type == "Workspace Sidebar"[\s\S]{0,300}?module_landing_route\(sidebar\.name\)/,
+	],
+	[
+		"frappe.utils.sidebar_for_module: the shell is its module's own key, else the one whose `module` it is (the switcher's shellFor)",
+		"frappe/public/js/frappe/utils/utils.js",
+		/sidebar_for_module\(module\)\s*\{\s*if \(!module\) return undefined;\s*const all = frappe\.boot\.module_sidebars \|\| \{\};\s*return all\[module\] \|\| Object\.values\(all\)\.find\(\(entry\) => entry\.module === module\)/,
 	],
 
 	// --- AI assistant takeover (js/anatomy/shell/assistant.ts) --------------
@@ -468,11 +960,6 @@ export const PATCH_TARGETS: readonly PatchTarget[] = [
 		/this\.make_sidebar\(\);[\s\S]{0,1200}?trigger\("app_ready"\)/,
 	],
 	[
-		"the sidebar's DOM is prepended to <body> on every build (what a full-width panel makes inert)",
-		"frappe/public/js/frappe/ui/sidebar/sidebar.js",
-		/\)\.prependTo\("body"\)/,
-	],
-	[
 		"the window-level Escape handler blurs the active element (the failed-load panel stops the event first)",
 		"frappe/public/js/frappe/ui/keyboard.js",
 		/function handle_escape_key\(\) \{\s*close_grid_and_dialog\(\);\s*document\.activeElement\?\.blur\(\);/,
@@ -499,25 +986,29 @@ export const MIRRORED_LITERALS: readonly MirroredLiteral[] = [
 	// engine emits those same class names on a real <table>.
 	[".dt-row", "frappe/public/scss/desk/frappe_datatable.scss"],
 	["frappe-datatable/dist/frappe-datatable", "frappe/public/scss/report.bundle.scss"],
-	// the px map behind `col-xs-N` in `.column-limit-reached` mode — the
-	// overflow hack CarbonGrid replaces with real horizontal scroll, and the
-	// source of the Bootstrap-span -> pixel translation in tables/grid/grid.js
-	[".column-limit-reached", "frappe/public/scss/common/grid.scss"],
 	// the awesomebar rule pinned to `top: 40px` — an offset measured against
 	// frappe's 28px input, which crossed Carbon's 40px field. desk/_modals.scss
 	// hides it; if frappe reworks it, that suppression wants revisiting.
 	["modal-divider", "frappe/public/scss/desk/navbar.scss"],
-	// the notification flyout desk/_ui-shell.scss re-anchors as the header's
-	// right panel, and the unread badge it restyles
-	[".notifications-list", "frappe/public/scss/desk/notification.scss"],
-	[".sidebar-notification-count", "frappe/public/scss/desk/notification.scss"],
-	// a `perspective` on .navbar would make it the containing block of a
-	// fixed header; it is not an ancestor today, and this notices if it becomes one
-	["perspective: 3200px", "frappe/public/scss/desk/notification.scss"],
-	// the z-index contract the header's 1030 sits inside
+	// the notifications panel's frame (position, 360px, a 480px floor) which
+	// desk/_ui-shell.scss re-anchors as the header's right panel, and the unread
+	// badge it restyles; both are overridden by selector, so each must still be
+	// frappe's rule for the override to be the one that wins
+	[".sidebar-panel", "frappe/public/scss/desk/sidebar_panel.scss"],
+	["min-height: 480px", "frappe/public/scss/desk/sidebar_panel.scss"],
+	[".notification-count", "frappe/public/scss/desk/notification.scss"],
+	// the z-index contract the header's 1030 sits inside: above the sidebar (1020),
+	// its overlay (1021) and frappe's .sticky-top (1019); the dock's own 1030 is
+	// what the theme lowers to 1022 so the header does not cover its logo
 	["z-index: 1020", "frappe/public/scss/desk/sidebar.scss"],
+	["z-index: 1021", "frappe/public/scss/desk/sidebar.scss"],
 	["z-index: 1019", "frappe/public/scss/desk/main.scss"],
-	["z-index: 1030", "frappe/public/scss/desk/menu.scss"],
+	["z-index: 1030", "frappe/public/scss/desk/dock.scss"],
+	// ...and the espresso menus it must stay under: they sit at 1060, above the shell's
+	// 1030 and Bootstrap's modals (1050), so a menu opened from a header cell paints
+	// over the header. Bootstrap's own numbers live in node_modules, which this audit
+	// does not read, so the contract's upper half is guarded by this one literal.
+	["z-index: 1060", "frappe/public/css/espresso/components/menu.css"],
 ];
 
 /** assets.json keys this app shadows; all must point at carbon_frappe. */

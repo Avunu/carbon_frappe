@@ -19,14 +19,14 @@ import type { ListColumn } from "frappe-types";
 
 /**
  * A column as the engine identifies it to a profile hook — TanStack's `Column`,
- * of which `getSpec` (engine/table.js#getSpec) reads only the `id`.
+ * of which `getSpec` (engine/table.ts `getSpec`) reads only the `id`.
  */
 export interface ListClassColumn {
 	id: string;
 }
 
 /**
- * The two keys `list_view.js#buildColumns` hangs off a column spec's `meta`.
+ * The two keys `list_view.ts`'s `buildColumns` hangs off a column spec's `meta`.
  *
  * `meta` is the engine's pass-through slot: whatever an adapter puts on a
  * column spec comes back out of `host.getSpec()` untouched, so each adapter
@@ -47,7 +47,7 @@ export interface ListColumnSpec {
 /**
  * The slice of the engine's `CarbonTable` the hooks reach through `ctx.host`.
  * `getSpec` returns `null` for a column the table does not know
- * (engine/table.js#getSpec), which is why every read below is guarded.
+ * (engine/table.ts `getSpec`), which is why every read below is guarded.
  *
  * The `string` half of `columnOrId` is not used here, but it is part of the
  * engine's signature and leaving it out makes this interface unrelated to the
@@ -59,7 +59,7 @@ export interface ListClassHost {
 }
 
 /**
- * What the engine passes to the per-cell hooks (engine/render.js). The header
+ * What the engine passes to the per-cell hooks (engine/render.ts). The header
  * and body contexts carry more than this — `header`, `row`, `colIndex` — but
  * these three are all the list profile reads.
  */
@@ -76,7 +76,7 @@ export interface ListCellClassContext {
 
 /**
  * The hook bag `listProfile()` returns, in the shape `applyProfile`
- * (engine/classes.js) invokes: `(node, ctx)`, never throwing upward.
+ * (engine/classes.ts `applyProfile`) invokes: `(node, ctx)`, never throwing upward.
  */
 export interface ListClassProfile {
 	root(node: Element): void;
@@ -125,7 +125,7 @@ export function listProfile(): ListClassProfile {
 
 		/**
 		 * Reproduce frappe's per-column header classes exactly
-		 * (`get_header_html`, list_view.js:767-775). These are not decoration:
+		 * (`get_header_html`, list_view.js:1264-1287). These are not decoration:
 		 * `.list-subject.level` is the FLEX CONTAINER that puts the select-all
 		 * checkbox beside the column label. Without it the two stacked
 		 * vertically and the label lost its left alignment with the body cells

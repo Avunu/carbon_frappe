@@ -1,0 +1,20 @@
+// The dark semantic layer inside `.cf-zone-g100` — desk bundle only.
+//
+// The UI Shell header and its panels run Carbon g100 in BOTH desk themes. The
+// aliases frappe declares on :root (`--surface-red-2: var(--red-100)`, ...)
+// resolve once, on <html>, in the PAGE's theme; an island inside a light page
+// inherits that resolved light value, and re-declaring the raw ramp inside the
+// zone (_colors-palette.scss) cannot re-resolve it. So the dark layer is
+// re-declared here, inside the zone, as aliases onto the zone's own dark ramps.
+// Without it, a notification badge or status tint inside the header panel would
+// draw its light-theme colours on the g100 surface. The neutral roles are
+// handled by _colors-semantic.scss, whose selector list carries the zone; this
+// partial is imported BEFORE ./map so those pins land after it and win.
+//
+// Frappe's own desk markup is what renders inside the zone, so this declares
+// frappe v16.50's ink index (`$ui-ink: false`), not frappe-ui's.
+@import "./semantic-ramp";
+
+.cf-zone-g100 {
+	@include semantic-dark($ui-ink: false);
+}

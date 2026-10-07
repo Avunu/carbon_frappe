@@ -93,7 +93,7 @@ export interface CarbonEngineSort {
  * One entry of TanStack's `columnFilters` state slice.
  *
  * `value` is `unknown` because that is what TanStack stores. In this engine it
- * is only ever the inline filter `<input>`'s string (`engine/table.js:561`) or
+ * is only ever the inline filter `<input>`'s string (engine/table.ts `wireFilterInput`) or
  * a keyword forwarded from {@link DataTableAppliedFilters}, which is why
  * {@link ColumnManagerShim.getAppliedFilters} can promise strings back.
  */
@@ -102,7 +102,7 @@ export interface CarbonEngineColumnFilter {
 	value: unknown;
 }
 
-/** The TanStack state slices these shims read (`engine/table.js:238-240`). */
+/** The TanStack state slices these shims read (engine/table.ts `CarbonTable.state`). */
 export interface CarbonEngineState {
 	sorting?: CarbonEngineSort[];
 	columnFilters?: CarbonEngineColumnFilter[];
@@ -114,7 +114,7 @@ export interface CarbonEngineTable {
 	toggleAllRowsExpanded(expanded?: boolean): void;
 }
 
-/** The row window currently in the DOM (`engine/table.js:398-406`). */
+/** The row window currently in the DOM (engine/table.ts `getRenderRows`). */
 export interface CarbonEngineRenderRows {
 	rows: CarbonEngineRow[];
 	paddingTop: number;
@@ -131,7 +131,7 @@ export interface CarbonEngineRenderRows {
  * `getCellNode` / `getHeaderNode` take `string | null` because every call site
  * feeds them `host.engineColumnId(colIndex)`, which returns `null` for an
  * out-of-range column. The renderer `String()`s the id before looking it up
- * (`engine/render.js:555-565`), so a `null` is simply a miss.
+ * (engine/render.ts `getRowNode` / `getCellNode`), so a `null` is simply a miss.
  */
 export interface CarbonEngine {
 	renderer: { scroll: HTMLElement };
@@ -140,7 +140,7 @@ export interface CarbonEngine {
 	/** `rowHeight` is WRITTEN by {@link StyleShim.setCellHeight}. */
 	options: { rowHeight?: number };
 	render(): void;
-	/** raf-coalesced render (`engine/table.js:94`). */
+	/** raf-coalesced render (engine/table.ts `scheduleRender`). */
 	scheduleRender(): void;
 	getRowNode(rowId: string): HTMLElement | null;
 	getCellNode(rowId: string, colId: string | null): HTMLElement | null;
@@ -841,12 +841,25 @@ export class BodyRendererShim {
 	constructor(host: CarbonDataTableHost) {
 		this.host = host;
 	}
-	/** Rows currently in the DOM window — ERPNext reads `.includes(rowIndex)`. */
+	/**
+	 * Every row the table is showing, in view order — the rows stock hands its
+	 * `renderRows()` (body-renderer.js:17 `rows.map(row => row.meta.rowIndex)`),
+	 * which after an inline filter is the matching rows and after a tree collapse
+	 * the open ones. NOT the rows in the DOM window: stock's HyperList windows
+	 * inside that set, which this getter now does by reading the row model, not the window.
+	 *
+	 * Print and export read it as "what the user can see": Report View's Print
+	 * (report_view.js:1611-1614), Query Report's print and visible-row export
+	 * (query_report.js:1648, 1981-1985) intersect `rowViewOrder` with it, and ERPNext
+	 * calls `.includes(rowIndex)`. The window is ~30 rows once a table passes the
+	 * engine's virtualization threshold, so reading it truncated every long report
+	 * to one screenful.
+	 */
 	get visibleRowIndices(): DataTableRowIndex[] {
-		return this.host.engine.getRenderRows().rows.map(rowIndexOf);
+		return this.host.engine.table.getRowModel().rows.map(rowIndexOf);
 	}
 	get visibleRows(): Array<DataTableRow | undefined> {
-		return this.host.engine.getRenderRows().rows.map((r) => this.host.rows[rowIndexOf(r)]);
+		return this.host.engine.table.getRowModel().rows.map((r) => this.host.rows[rowIndexOf(r)]);
 	}
 	/**
 	 * `query_report.js` reads the computed totals row back out.

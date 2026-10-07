@@ -12,6 +12,11 @@
 
 @import "./carbon/fonts";
 @import "./carbon/themes";
+// frappe-ui emits its semantic colours as resolved literals, so they are
+// re-declared as aliases onto the ramp the map layer remaps. BEFORE ./map: its
+// exact-Carbon role pins have to land after, and win. Generation assumptions are
+// in the partial.
+@import "./map/colors-semantic-spa";
 @import "./map";
 @import "./map/frappe-ui-utilities";
 

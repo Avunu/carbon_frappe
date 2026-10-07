@@ -74,6 +74,36 @@ interface TreeSelectionProbe {
 	groupIndeterminate: boolean[];
 }
 
+/** Print and export read "every row the table shows"; this is that, against the DOM window. */
+interface VisibleProbe {
+	/** `datamanager.getFilteredRowIndices().length` */
+	all: number;
+	/** `bodyRenderer.visibleRowIndices.length` */
+	visible: number;
+	/** `<tr>`s actually in the DOM — the virtualization window */
+	dom: number;
+	printed: number | string;
+	data: number;
+}
+
+/** The Link-cell side panel: the wiring, and the engine contract its handler reads. */
+interface SidePanelProbe {
+	wired: boolean;
+	handled: boolean;
+	opened: string[] | null;
+	required: string | null;
+	column: string | null;
+}
+
+/** The header menu: its toggle, its items, and what sorting through it does to the columns. */
+interface HeaderMenuProbe {
+	toggles: number;
+	labels: string[];
+	sorted: Array<string | undefined>;
+	currentSort: string;
+	afterReset: Array<string | undefined>;
+}
+
 const BASE = process.env.CF_SITE_URL || "http://localhost:8794";
 const SHOT = process.env.CF_SHOT_DIR || new URL("../../.dev-dist/screenshots/", import.meta.url).pathname;
 const REPORT = "Database Storage Usage By Tables";
@@ -113,6 +143,181 @@ try {
 		"report data rendered as a Carbon table",
 		base.carbon && base.dtRows > 0,
 		`rows=${base.dtRows}/${base.rows}`,
+	);
+
+	// --- columns nobody gave a width are sized from their content --------------
+	// frappe-datatable measured a natural width per column (style.js
+	// `setupNaturalColumnWidth`); a flat 120px clipped values and left no room for
+	// the sort glyph beside a label. (Report View is different: frappe itself
+	// gives every column 120px, report_view.js:1170.)
+	const natural = await page.eval<number[]>(`(() => {
+    const dt = frappe.query_report.datatable;
+    return dt.columns.slice(dt.standardColumnCount).filter((c) => !c.width).map((c) => dt.engine.getColumnSize(dt.engineColumnId(c.colIndex)));
+  })()`);
+	ok(
+		"columns with no width are sized from their header and cells, not a flat 120px",
+		natural.length > 1 && natural.every((w) => w >= 96) && natural.some((w) => w !== 120),
+		JSON.stringify(natural),
+	);
+
+	// --- print and export read every row the table shows, not the DOM window ---
+	// `bodyRenderer.visibleRowIndices` is "the rows passed to renderRows"
+	// (frappe-datatable body-renderer.js:17): every row that survives the filters,
+	// however many the viewport shows. `get_data_for_print()` and
+	// `get_validated_visible_indexes()` (query_report.js:1648, 1981) intersect
+	// `rowViewOrder` with it. Reading the engine's render window instead made a
+	// 1000-row report print and export one screenful.
+	const visible = await page.eval<VisibleProbe>(`(() => {
+    const qr = frappe.query_report;
+    const dt = qr.datatable;
+    let printed = null;
+    try { printed = qr.get_data_for_print().length; } catch (e) { printed = 'threw: ' + (e && e.message || e); }
+    return {
+      all: dt.datamanager.getFilteredRowIndices().length,
+      visible: dt.bodyRenderer.visibleRowIndices.length,
+      dom: document.querySelectorAll('tbody .dt-row').length,
+      printed,
+      data: qr.data.length,
+    };
+  })()`);
+	console.log(JSON.stringify(visible));
+	ok(
+		"visibleRowIndices is every row the table shows, past the virtualization window",
+		visible.visible === visible.all && visible.all > visible.dom,
+		JSON.stringify(visible),
+	);
+	ok(
+		"get_data_for_print() returns every row, not one screenful",
+		typeof visible.printed === "number" && visible.printed >= visible.all,
+		JSON.stringify({ printed: visible.printed, all: visible.all }),
+	);
+
+	// --- Link cells preview in the side panel --------------------------------
+	// `setup_link_side_panel` delegates `a[data-doctype][data-name]` clicks to
+	// `frappe.ui.handle_link_cell_click`, which finds the column from the nearest
+	// `.dt-cell[data-col-index]` and `datatable.getColumn()`
+	// (link_side_panel.js:16-40). The report's own columns are not Link columns, so
+	// a Link anchor is planted in a cell and the column's `fieldtype` set, which
+	// is exactly what a query report that has one looks like. The panel's bundle
+	// is stubbed; what is under test is that the engine gives the handler what it
+	// reads.
+	const sidePanel = await page.eval<SidePanelProbe>(`(() => {
+    const qr = frappe.query_report;
+    const dt = qr.datatable;
+    const events = $._data(qr.$report[0], 'events');
+    const wired = !!(events && events.click && events.click.some((h) => h.namespace === 'side-panel'));
+    const td = document.querySelector('tbody .dt-cell[data-col-index="2"]');
+    const content = td.querySelector('.dt-cell__content') || td;
+    const original = content.innerHTML;
+    content.innerHTML = '<a data-doctype="User" data-name="Administrator" href="#">x</a>';
+    const column = dt.getColumn(2);
+    const savedType = column.fieldtype;
+    column.fieldtype = 'Link';
+    const saved = { require: frappe.require, panel: frappe.ui.get_side_panel };
+    const res = { wired, handled: false, opened: null, required: null, column: column && column.id };
+    frappe.require = (name) => { res.required = name; return Promise.resolve(); };
+    frappe.ui.get_side_panel = () => ({ open: (doctype, name) => { res.opened = [doctype, name]; } });
+    const evt = { which: 1, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
+      currentTarget: content.firstChild, preventDefault() {}, stopPropagation() {} };
+    res.handled = frappe.ui.handle_link_cell_click(evt, dt) === true;
+    return new Promise((done) => setTimeout(() => {
+      frappe.require = saved.require;
+      frappe.ui.get_side_panel = saved.panel;
+      column.fieldtype = savedType;
+      content.innerHTML = original;
+      done(res);
+    }, 100));
+  })()`);
+	console.log(JSON.stringify(sidePanel));
+	ok("QueryReport wires the Link-cell side panel", sidePanel.wired);
+	ok(
+		"the side-panel handler finds its column through .dt-cell[data-col-index] and getColumn()",
+		sidePanel.handled &&
+			sidePanel.required === "side_panel.bundle.js" &&
+			sidePanel.opened?.join("/") === "User/Administrator",
+		JSON.stringify(sidePanel),
+	);
+
+	// --- the column header menu ---------------------------------------------
+	// frappe-datatable's `dt-dropdown`: Sort Ascending / Descending, Reset
+	// sorting, Remove column, Freeze — as a Carbon overflow menu on each header.
+	// Sorting through it has to land on `columns[].sortOrder`, which is what
+	// Report View's "Export all rows" reads back (report_view.js:1795-1818).
+	const std = await page.eval<number>(`frappe.query_report.datatable.standardColumnCount`);
+	const toggles = await page.eval<number>(`document.querySelectorAll('thead .cf-dt-menu__toggle').length`);
+	const toggleBox = await page.eval<{ x: number; y: number }>(`(() => {
+    const th = document.querySelector('thead th[data-col-index="${std}"]');
+    th.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    const r = th.querySelector('.cf-dt-menu__toggle').getBoundingClientRect();
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+  })()`);
+	const clickAt = async (x: number, y: number): Promise<void> => {
+		await page.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+		await page.send("Input.dispatchMouseEvent", {
+			type: "mousePressed",
+			x,
+			y,
+			button: "left",
+			clickCount: 1,
+		});
+		await page.send("Input.dispatchMouseEvent", {
+			type: "mouseReleased",
+			x,
+			y,
+			button: "left",
+			clickCount: 1,
+		});
+	};
+	await clickAt(toggleBox.x, toggleBox.y);
+	await page.waitFor(`!!document.querySelector('.cf-dt-menu:not([hidden]) button')`, { timeout: 5000 });
+	const labels = await page.eval<string[]>(
+		`[...document.querySelectorAll('.cf-dt-menu:not([hidden]) .cds--overflow-menu-options__option-content')].map((n) => n.textContent.trim())`,
+	);
+	const sortDesc = await page.eval<{ x: number; y: number }>(`(() => {
+    const item = [...document.querySelectorAll('.cf-dt-menu:not([hidden]) button')].find((b) => b.textContent.trim() === 'Sort Descending');
+    const r = item.getBoundingClientRect();
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+  })()`);
+	await clickAt(sortDesc.x, sortDesc.y);
+	await new Promise((r) => setTimeout(r, 400));
+	const sorted = await page.eval<{ sorted: Array<string | undefined>; currentSort: string }>(`(() => {
+    const dt = frappe.query_report.datatable;
+    return { sorted: dt.datamanager.getColumns().map((c) => c.sortOrder), currentSort: JSON.stringify(dt.datamanager.currentSort) };
+  })()`);
+	await page.eval(`(frappe.query_report.datatable.sortColumn(${std}, 'none'), true)`);
+	await new Promise((r) => setTimeout(r, 200));
+	const afterReset = await page.eval<Array<string | undefined>>(
+		`frappe.query_report.datatable.datamanager.getColumns().map((c) => c.sortOrder)`,
+	);
+	const menu: HeaderMenuProbe = {
+		toggles,
+		labels,
+		sorted: sorted.sorted,
+		currentSort: sorted.currentSort,
+		afterReset,
+	};
+	console.log(JSON.stringify(menu));
+	ok(
+		"data columns get a header menu; the checkbox and serial columns do not",
+		menu.toggles > 0 && menu.toggles === base.cols - std,
+		JSON.stringify({ toggles: menu.toggles, cols: base.cols, std }),
+	);
+	ok(
+		"the menu offers frappe-datatable's items",
+		["Sort Ascending", "Sort Descending", "Reset sorting", "Remove column", "Freeze"].every((l) =>
+			menu.labels.includes(l),
+		),
+		JSON.stringify(menu.labels),
+	);
+	ok(
+		"sorting through the menu writes columns[].sortOrder (what export reads)",
+		menu.sorted[std] === "desc" && menu.sorted.filter((o) => o === "desc").length === 1,
+		JSON.stringify(menu.sorted),
+	);
+	ok(
+		"resetting the sort clears every column's sortOrder",
+		menu.afterReset.every((o) => o === "none"),
+		JSON.stringify(menu.afterReset),
 	);
 
 	// Install a timesheet_review-shaped consumer and re-render through it.

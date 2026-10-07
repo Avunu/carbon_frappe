@@ -15,7 +15,7 @@
 //      possible. So `ensureChildRow` is called for every row on every render,
 //      not just the open one. The expensive part (frappe's GridRowForm, which
 //      builds a whole `frappe.ui.form.Layout`) stays lazy: grid_row.js only
-//      constructs it on first expand.
+//      constructs it on first expand (grid_row.js:1385).
 //
 //   3. `data-previous-value="collapsed"` means EXPANDED. The name is inverted
 //      upstream too (@carbon/react TableExpandRow.tsx:160 —
@@ -23,10 +23,11 @@
 //      the chevron rotation and suppresses the parent cell's bottom border.
 //
 // WHAT THE CHILD ROW MUST NOT BE: `.grid-row`. frappe binds Sortable with
-// `draggable: ".grid-row"` (grid.js:752-787) and `renumber_based_on_dom()`
+// `draggable: ".grid-row"` (grid.js:909-950) and `renumber_based_on_dom()`
 // walks the same selector to rewrite `idx` after a drag. A permanently
 // present child row carrying that class would be draggable and would corrupt
 // row order. It carries no frappe classes at all.
+import { chevronRight16 } from "../../generated/icons.ts";
 import { CARBON } from "../engine/classes.ts";
 import type Grid from "frappe/public/js/frappe/form/grid";
 import type GridRow from "frappe/public/js/frappe/form/grid_row";
@@ -121,15 +122,13 @@ export interface CarbonGridRow extends GridRow {
 	expand_node(): HTMLButtonElement;
 	/** `_menu` column content. */
 	menu_node(): HTMLElement;
-	/** The cell element for a fieldname, for the engine to place. */
-	get_column_node(fieldname: string): HTMLElement | null;
 
 	/**
 	 * frappe's two-argument `toggle_view` plus `{ modal: true }`.
 	 *
 	 * Widening an override with an OPTIONAL parameter keeps it assignable to the
 	 * base declaration, which is what lets ./row_menu call it three-arg through
-	 * this type while frappe keeps re-entering it two-arg (grid_row.js:1460).
+	 * this type while frappe keeps re-entering it two-arg (grid_row.js:1367, 1460).
 	 */
 	toggle_view(
 		show?: boolean | undefined,
@@ -137,14 +136,6 @@ export interface CarbonGridRow extends GridRow {
 		opts?: { modal?: boolean | undefined } | undefined,
 	): this | undefined;
 }
-
-/** Carbon's ChevronRight 16 (@carbon/icons), inlined — the engine has no icon dep. */
-const CHEVRON =
-	'<svg class="' +
-	CARBON.expandSvg +
-	'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"' +
-	' fill="currentColor" aria-hidden="true" focusable="false"' +
-	' preserveAspectRatio="xMidYMid meet"><path d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"/></svg>';
 
 /** ids go into `aria-controls`, so anything outside [A-Za-z0-9_-] has to go. */
 function idSafe(value: unknown): string {
@@ -218,13 +209,13 @@ export function expandButton(grid_row: CarbonGridRow): HTMLButtonElement {
 		const button = document.createElement("button");
 		button.type = "button";
 		button.className = CARBON.expandRow;
-		button.innerHTML = CHEVRON;
+		button.innerHTML = chevronRight16;
 		button.addEventListener("click", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 			// `toggle_view()` with no argument is frappe's accordion: it opens
 			// this row only when no other row is open, and otherwise closes the
-			// open one (grid_row.js:1448). Passing an explicit boolean is what
+			// open one (grid_row.js:1353-1356). Passing an explicit boolean is what
 			// makes the chevron behave like a chevron.
 			grid_row.toggle_view(!grid_row.is_expanded());
 		});

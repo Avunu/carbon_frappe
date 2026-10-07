@@ -1,31 +1,38 @@
-// The header's view model, read from frappe's Workspace Sidebar.
+// The header's view model, read from frappe's module sidebar.
 //
 // Carbon's global header names the product and carries its top-level
-// navigation. In frappe v16 both of those are facts the LEFT sidebar already
-// knows: `frappe.app.sidebar` resolves the route to a Workspace Sidebar
-// (ui/sidebar/sidebar.js:665-689), names it (`sidebar_title`), finds the app
-// that owns it (`choose_app_name()`, :43-77), and renders its items. The header
-// is a PROJECTION of that — it never resolves routes or builds hrefs itself.
+// navigation. In frappe v16.50 both of those are facts the LEFT sidebar already
+// knows: `frappe.app.sidebar` resolves the route to a SHELL (a key of
+// `frappe.boot.module_sidebars`; `set_workspace_sidebar`, ui/sidebar/sidebar.js:812),
+// keeps it in `current_module`, finds the app that owns it (`get_sidebar_app()`,
+// :282-289) and renders its items. The header is a PROJECTION of that — it never
+// resolves routes or builds hrefs itself.
 //
 // The items come from the sidebar's rendered DOM rather than from
-// `boot.workspace_sidebar_item`, deliberately. `TypeLink.get_path()`
-// (sidebar_item.js:14-76) has six routing branches — reports gated on an
-// enabled Report doc, public vs private workspaces, URLs, pages with
-// route_options, doctypes with filters, tabs — and `make()` (:87-90) drops any
-// item that resolves to no path. Reading the DOM inherits both the routing and
-// those render decisions; re-deriving them from the data would be a second
-// router that drifts. Labels are also already translated there (boot.py:465).
+// `boot.module_sidebars[shell].items`, deliberately. `get_route()`
+// (sidebar_item.js:58-138) has six routing branches — reports gated on an enabled
+// Report doc, public vs private workspaces, URLs, pages with route_options,
+// doctypes with filters, tabs — plus the shell prefix `in_shell()` writes into every
+// desk href (:17-30), and `make()` (:161-166) drops any item that resolves to no
+// path. Reading the DOM inherits all of it; re-deriving it from the data would be a
+// second router that drifts. Labels are also already translated there (sidebar.py:2079).
 //
 // What the DOM projection depends on (sidebar_item.html):
-//   .sidebar-items > .sidebar-item-container            one per top-level row (:1)
+//   .sidebar-items > .sidebar-item-container            one per top-level row (:2)
 //     [.section-item]                                   a Section Break (:2)
-//     > .standard-sidebar-item > .item-anchor           the row's anchor (:10, :14, :23)
-//         > .sidebar-item-label                         the label (:15, :39)
-//     > .nested-container > .sidebar-item-container     the section's children (:61)
-// `href` is written only when frappe computed a path (:24-26); an anchor with
-// no href is a Sidebar Item Group, whose click opens a dialog from a handler
-// on its wrapper (sidebar_item.js:369). Those become "actions" that delegate
-// the click back to frappe's element.
+//     > .standard-sidebar-item > .item-anchor           the row's anchor (:7, :11, :25)
+//         > .sidebar-item-label                         the label (:12, :33)
+//     > .nested-container > .sidebar-item-container     the section's children (:43)
+// `href` is written only when frappe computed a path (:21-24); an anchor with no
+// href is a Section Break drawn as a collapsible row, whose click toggles its
+// children (sidebar_item.js:327-345). Those become "actions" that delegate the
+// click back to frappe's element.
+//
+// What changed from 16.33 is the STATE, not the markup: the name and the app come
+// from `current_module` / `sidebar_data.label` / `get_sidebar_app()`
+// (`sidebar_title`, `choose_app_name()` and `frappe.current_app` are gone), and
+// "which row is current" is the one `.active-sidebar` that `find_active_item()`
+// writes (sidebar.js:547-575), not a second pathname rule re-derived here.
 import type { FrappeBootAppEntry, FrappeSidebar } from "frappe-types";
 import { text } from "./dom.ts";
 
@@ -61,87 +68,77 @@ export type ShellLeaf = ShellLink | ShellAction;
 export type ShellItem = ShellLeaf | ShellGroup;
 
 export interface ShellModel {
-	/** The app title (regular weight), or `""` when nothing owns the sidebar. */
+	/** The app title (regular weight), or `""` when no app owns the shell on screen. */
 	prefix: string;
-	/** The product name (semibold): the workspace title, or "Desktop" on the launcher. */
+	/** The product name (semibold): the module's label, or "Desktop" on the launcher. */
 	name: string;
 	/**
-	 * `sidebar.sidebar_title` as stored — untranslated, `""` on the launcher.
-	 * Desktop Icon labels are matched against this (shell/desktop.ts), the way
-	 * `SidebarHeader.set_header_icon` finds the icon for the current sidebar
-	 * (sidebar_header.js:279-281).
+	 * `sidebar.current_module` — the shell on screen — or `""` on the launcher.
+	 * The switcher marks the app (or, on the icon grid, the icon) that opens it.
 	 */
-	workspace: string;
-	/** Where the header name links: the sidebar's first link, the app's home, or `/desk`. */
+	module: string;
+	/** Where the header name links: the shell's landing route, its app's, or `/desk`. */
 	home: string;
 	items: ShellItem[];
-	/** No sidebar to project — the landing page, a `hide_sidebar` page, or before the first `setup()`. */
+	/** No sidebar to project — the launcher, a page that hides the panel, or before the first `setup()`. */
 	navHidden: boolean;
 	/** The sidebar wrapper is hidden, so toggling it would only flip localStorage. */
 	menuDisabled: boolean;
 	/** `sidebar.sidebar_expanded`, defaulting to collapsed. */
 	expanded: boolean;
-	/** The `app_data` entry that owns the current sidebar, for the prefix and the switcher. */
-	app: FrappeBootAppEntry | undefined;
+	/** `get_sidebar_app()`: the `app_data` entry that owns the shell on screen, for the prefix and the switcher. */
+	app: FrappeBootAppEntry | null | undefined;
 	/** Everything the nav and name render from, joined — equal means "nothing to re-render". */
 	signature: string;
 }
 
 /**
- * The app that owns the current sidebar — `choose_app_name()`'s own
- * predicate (sidebar.js:47-50), re-applied.
+ * The href of the one sidebar row frappe lit as current, or `null`.
  *
- * Not `frappe.current_app`: that is assigned only on a match (:53) and never
- * cleared, so after "My Workspaces" or a folder sidebar it still names the
- * previous app while `header_subtitle` has moved on to the user / folder.
+ * `find_active_item()` scores every `.item-anchor[href]` by `route_claim()` and
+ * `highlight_active_item()` writes `.active-sidebar` on the winner's
+ * `.standard-sidebar-item` (sidebar.js:513-518, 547-575) — one row, the longest
+ * and most specific claim. Scoped to `.sidebar-items` because the sidebar header
+ * also takes the class while its menu is open (sidebar_header.js:273-283).
  */
-export function appForSidebar(sidebar: FrappeSidebar): FrappeBootAppEntry | undefined {
-	const title = sidebar.sidebar_title;
-	const owner = sidebar.sidebar_data && sidebar.sidebar_data.app;
-	if (!title && !owner) return undefined;
-	const apps = (window.frappe && frappe.boot && frappe.boot.app_data) || [];
-	return apps.find((a) => (!!title && a.workspaces.includes(title)) || (!!owner && a.app_name === owner));
+export function activeHref(): string | null {
+	const anchor = document.querySelector(".body-sidebar .sidebar-items .active-sidebar > a.item-anchor[href]");
+	return anchor ? anchor.getAttribute("href") : null;
 }
 
 /**
- * frappe's own current-item rule (sidebar.js:424-433): the href, stripped of
- * query and hash and any trailing slash, equals the pathname or is a
- * `/`-terminated prefix of it.
+ * The slice of `Element` the sidebar walk reads. Narrower than `Element` so the walk
+ * can be run over a fake tree in a unit test (test/unit/model.test.ts), which has no DOM;
+ * every `Element` satisfies it.
  */
-export function isCurrentHref(href: string): boolean {
-	const clean = (s: string): string => {
-		try {
-			return decodeURIComponent(s).replace(/\/$/, "");
-		} catch {
-			return s.replace(/\/$/, "");
-		}
-	};
-	const bare = (href.split("?")[0] ?? "").split("#")[0] ?? "";
-	const h = clean(bare);
-	const p = clean(window.location.pathname);
-	return !!h && h !== "#" && (p === h || p.startsWith(h + "/"));
+export interface RowNode {
+	getAttribute(name: string): string | null;
+	querySelector(selectors: string): RowNode | null;
+	querySelectorAll(selectors: string): Iterable<RowNode>;
+	readonly classList: { contains(token: string): boolean };
+	readonly textContent: string | null;
 }
 
-function leaf(anchor: Element, key: string, label: string): ShellLeaf | null {
+function leaf(anchor: RowNode, key: string, label: string): ShellLeaf | null {
 	const href = anchor.getAttribute("href");
 	if (href) {
 		return { kind: "link", key, label, href, target: anchor.getAttribute("target") || null };
 	}
-	// no href: a Sidebar Item Group (or drift). Only a real HTMLElement can
-	// receive the delegated click.
+	// no href: a Section Break drawn as a row (or drift). Only a real HTMLElement
+	// can receive the delegated click.
 	if (anchor instanceof HTMLElement) return { kind: "action", key, label, source: anchor };
 	return null;
 }
 
-function rowAnchor(container: Element): Element | null {
+function rowAnchor(container: RowNode): RowNode | null {
 	return container.querySelector(":scope > .standard-sidebar-item > .item-anchor");
 }
 
-function rowLabel(anchor: Element | null): string {
+function rowLabel(anchor: RowNode | null): string {
 	return text(anchor && anchor.querySelector(":scope > .sidebar-item-label"));
 }
 
-function readChildren(section: Element, prefix: string): ShellLeaf[] {
+function readChildren(section: RowNode, prefix: string): ShellLeaf[] {
 	const out: ShellLeaf[] = [];
 	const nested = section.querySelector(":scope > .nested-container");
 	if (!nested) return out;
@@ -157,18 +154,18 @@ function readChildren(section: Element, prefix: string): ShellLeaf[] {
 }
 
 /** Walk the sidebar's rendered rows, in order. */
-export function readSidebar(body: Element): ShellItem[] {
+export function readSidebar(body: RowNode): ShellItem[] {
 	const out: ShellItem[] = [];
 	let i = 0;
 	for (const c of body.querySelectorAll(":scope .sidebar-items > .sidebar-item-container")) {
 		const anchor = rowAnchor(c);
 		const label = rowLabel(anchor);
-		// Spacers render no label; edit-mode chrome renders no anchor
+		// Spacers render no label; a row with no anchor is chrome, not navigation
 		if (!anchor || !label) continue;
 		const key = `${i++}`;
 		if (c.classList.contains("section-item")) {
 			const items = readChildren(c, key);
-			// an empty section (edit mode renders them) has nothing to open
+			// an empty section has nothing to open
 			if (items.length) out.push({ kind: "group", key, label, items });
 			continue;
 		}
@@ -188,12 +185,12 @@ function firstLink(items: ShellItem[]): ShellLink | undefined {
 function signatureOf(
 	prefix: string,
 	name: string,
-	workspace: string,
+	module: string,
 	home: string,
 	navHidden: boolean,
 	items: ShellItem[],
 ): string {
-	const parts: string[] = [prefix, name, workspace, home, navHidden ? "hidden" : "shown"];
+	const parts: string[] = [prefix, name, module, home, navHidden ? "hidden" : "shown"];
 	for (const item of items) {
 		if (item.kind === "group") {
 			parts.push(
@@ -209,7 +206,7 @@ function signatureOf(
 const EMPTY: Omit<ShellModel, "signature"> = {
 	prefix: "",
 	name: "",
-	workspace: "",
+	module: "",
 	home: "/desk",
 	items: [],
 	navHidden: true,
@@ -219,14 +216,30 @@ const EMPTY: Omit<ShellModel, "signature"> = {
 };
 
 function withSignature(m: Omit<ShellModel, "signature">): ShellModel {
-	return { ...m, signature: signatureOf(m.prefix, m.name, m.workspace, m.home, m.navHidden, m.items) };
+	return { ...m, signature: signatureOf(m.prefix, m.name, m.module, m.home, m.navHidden, m.items) };
+}
+
+/**
+ * Whether the page on screen is the launcher.
+ *
+ * `/desk` itself renders the Desktop page, which opts out of both shells
+ * (desktop.js:22-23: `hide_sidebar` and `hide_dock`), and `Sidebar` answers each
+ * decision with `page_allows_sidebar()` / `page_allows_dock()` (sidebar.js:342-356).
+ * A page that hides both has no module to name, whatever `current_module` still
+ * holds from the last page — `set_workspace_sidebar` keeps the shell on screen
+ * for a route it does not know and chooses the user's home shell for an empty
+ * one (:825-836), so `current_module` is set on the launcher too. Before the first
+ * page exists both answers are false, which reads as the launcher as well.
+ */
+function onLauncher(sidebar: FrappeSidebar): boolean {
+	return !sidebar.page_allows_sidebar() && !sidebar.page_allows_dock();
 }
 
 /**
  * Read the header's state from the live sidebar.
  *
- * `frappe.app` is `{}` until the Application constructor returns (desk.js:10-12)
- * and the Sidebar constructor bails on an incomplete setup (sidebar.js:5-8),
+ * `frappe.app` is `{}` until the Application constructor returns (desk.js:7-12)
+ * and the Sidebar constructor bails on an incomplete setup (sidebar.js:58-60),
  * so every step is guarded and the fallback is the launcher state.
  */
 export function readModel(): ShellModel {
@@ -239,29 +252,32 @@ export function readModel(): ShellModel {
 
 	const wrapper = sidebar.wrapper;
 	const expanded = sidebar.sidebar_expanded === true;
-	// The wrapper is hidden by container.js:87-93 on every `hide_sidebar` page
-	// (the launcher above all), and `current_sub_path` is `""` on `/desk`
-	// (router.js:146, 515-522). Both are read AFTER the route rendered, which
-	// is when every caller of this function runs.
-	const hidden = !wrapper || wrapper.is(":hidden");
-	const landing = !!frappe.router && frappe.router.current_sub_path === "";
+	// `apply_page_visibility()` hides the wrapper with jQuery's `.hide()`, an inline
+	// `display: none` (sidebar.js:359-370). Not `:hidden`, which also answers true for
+	// a zero-width box — and a collapsed sidebar beside a pinned dock is one
+	// (`.sidebar-hidden`, dock.scss), which would disable the hamburger that reopens it.
+	const el = wrapper ? wrapper.get(0) : undefined;
+	const hidden = !el || getComputedStyle(el).display === "none";
 
-	if (landing || !sidebar.sidebar_title) {
+	const module = sidebar.current_module;
+	if (!module || onLauncher(sidebar)) {
 		return withSignature({ ...EMPTY, name: desktop, expanded, menuDisabled: hidden });
 	}
 
-	const app = appForSidebar(sidebar);
-	const prefix = app ? app.app_title : sidebar.header_subtitle || "";
-	const name = translate(sidebar.sidebar_title);
-	const body = wrapper ? wrapper.get(0) : undefined;
-	const items = body ? readSidebar(body) : [];
+	const app = sidebar.get_sidebar_app();
+	const data = sidebar.sidebar_data;
+	const prefix = app ? translate(app.app_title || app.app_name) : "";
+	const name = translate((data && data.label) || module);
+	const items = el ? readSidebar(el) : [];
 	const first = firstLink(items);
-	const home = first ? first.href : (app && app.app_route) || "/desk";
+	// the dock's own "open this module" route (sidebar.js:1058-1067), so the name and
+	// the dock tile cannot disagree; the rendered first link only when that is null
+	const home = sidebar.module_landing_route(module) || (first && first.href) || "/desk";
 
 	return withSignature({
 		prefix,
 		name,
-		workspace: sidebar.sidebar_title,
+		module,
 		home,
 		items,
 		navHidden: hidden,

@@ -14,11 +14,18 @@ $dropdown-border-radius: 0;
 // IBM Plex
 @import "./carbon/fonts";
 
-// frappe's website styles, recompiled (mirror of frappe/public/scss/website.bundle.scss,
-// which is itself just `@import "./website/index"`)
+// frappe's website styles, recompiled (mirror of frappe/public/scss/website.bundle.scss:
+// `./website/index`, the Espresso `.es-*` components that web forms and portal
+// pages render with, and `common/utilities` last)
 @import "frappe/public/scss/website/index";
+@import "frappe/public/scss/espresso_components";
 
 // Carbon layers
 @import "./carbon/themes";
 @import "./map";
 @import "./web";
+
+// frappe's utility classes go after the Carbon layers for the reason given in
+// desk.bundle.scss: they must beat component rules, and these are the component
+// rules now.
+@import "frappe/public/scss/common/utilities";

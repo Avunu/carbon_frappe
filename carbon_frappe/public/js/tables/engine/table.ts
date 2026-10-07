@@ -213,6 +213,16 @@ export interface CarbonColumnSpec<TData extends RowData = CarbonTableData> {
 	/** Ignored when `accessor` is a function; defaults to `id`. */
 	accessorKey?: string | undefined;
 	pinned?: CarbonColumnPinned | undefined;
+	/**
+	 * Take the table's spare width. When the columns add up to less than the
+	 * container, this column (the first one that sets it) grows to fill the
+	 * difference and every other column keeps exactly its width; with no spare
+	 * width it is its `size` like any other. Without it the browser stretches
+	 * every column in proportion. Its `size` is then a MINIMUM as far as what is
+	 * drawn goes, which is why a drag on its handle starts from the width it is
+	 * drawn at.
+	 */
+	fill?: boolean | undefined;
 	hidden?: boolean | undefined;
 	align?: RenderColumnAlign | undefined;
 }
@@ -346,13 +356,48 @@ export type CarbonRowReleaseHook<TData extends RowData> = (
 export type CarbonRegionHook<TData extends RowData> = (node: HTMLElement, host: CarbonTable<TData>) => void;
 
 /**
+ * What `onColumnResize` carries: one column whose width a drag (or a double-click
+ * reset) has just settled.
+ *
+ * The engine, not the adapter, owns column widths (they live in TanStack's
+ * `columnSizing` state and are written to `<colgroup>`), so this is the only way
+ * an adapter learns what the user chose and can persist it — the Grid hands it to
+ * `grid.save_column_width`, the List view to its user settings.
+ */
+export interface CarbonColumnResize {
+	/** The column's id (its spec `id`, and its `data-col-id`). */
+	columnId: string;
+	/** The final width, in whole px, after the column's `minSize`/`maxSize` clamp. */
+	width: number;
+}
+
+/**
+ * Narrow an `emit` argument to a {@link CarbonColumnResize}.
+ *
+ * Handlers receive `unknown[]` (see {@link CarbonTableEventHandler}), so a
+ * consumer of `onColumnResize` proves the shape here instead of casting it.
+ */
+export function isColumnResize(value: unknown): value is CarbonColumnResize {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"columnId" in value &&
+		typeof value.columnId === "string" &&
+		"width" in value &&
+		typeof value.width === "number"
+	);
+}
+
+/**
  * An event handler.
  *
  * `this` is the engine, and the arguments are open: `emit` is variadic and
  * `fn.apply(this, args)` is what frappe-datatable's `fireEvent` did, so a
- * handler that wants its first argument as a column narrows it itself. The four
+ * handler that wants its first argument as a column narrows it itself. The
  * events the engine emits are `onDestroy`, `onRender`, `onSortColumn` (the
- * column) and `onFilterColumn` (the column and the typed string).
+ * column), `onFilterColumn` (the column and the typed string) and
+ * `onColumnResize` (a {@link CarbonColumnResize}; test it with
+ * {@link isColumnResize}).
  */
 export type CarbonTableEventHandler<TData extends RowData> = (
 	this: CarbonTable<TData>,
@@ -844,6 +889,18 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		return column ? column.getSize() : null;
 	}
 
+	/**
+	 * Forget every width a user dragged or `setColumnSize` set, so each column is
+	 * back at the `size` its spec declares. For an adapter whose spec sizes have
+	 * just been rebuilt from a source of truth that already holds the user's
+	 * choices (the Grid, after Configure Columns): a stale override would
+	 * otherwise outrank the new spec.
+	 */
+	resetColumnSizes(): this {
+		this.table.resetColumnSizing(true);
+		return this;
+	}
+
 	/** Invoke a region hook once; a failure must not take the table down. */
 	fillRegion(name: "renderToolbar" | "renderFooter", node: HTMLElement | null | undefined): void {
 		const fn = this.options[name];
@@ -951,6 +1008,11 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		if (spec && spec.label != null) return String(spec.label);
 		const header = column.columnDef.header;
 		return typeof header === "string" ? header : column.id;
+	}
+
+	columnFills(column: CarbonColumn<TData>): boolean {
+		const spec = this.getSpec(column);
+		return !!(spec && spec.fill);
 	}
 
 	columnFilterable(column: CarbonColumn<TData>): boolean {
@@ -1118,7 +1180,29 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 		}
 	}
 
-	/** Carbon puts the resize affordance on the header cell's trailing edge. */
+	/**
+	 * The leaf header TanStack holds for a column NOW.
+	 *
+	 * A header cell's entry outlives `setColumns()` (it is keyed by column id), but
+	 * every `setColumns()` builds new `Column` and `Header` objects whose
+	 * `columnDef.size` is the new spec's. A resize handler that closed over the
+	 * objects from the render that created it would start every drag from the
+	 * size the column had THEN, so the lookup happens at drag time.
+	 */
+	currentHeader(columnId: string): CarbonHeader<TData> | undefined {
+		const groups = this.table.getHeaderGroups();
+		const last = groups[groups.length - 1];
+		return last ? last.headers.find((h) => h.column.id === columnId) : undefined;
+	}
+
+	/**
+	 * Carbon puts the resize affordance on the header cell's trailing edge.
+	 *
+	 * TanStack owns the drag itself (`header.getResizeHandler()`, `onChange` mode,
+	 * so the `<colgroup>` follows the pointer); what it does not do is say when the
+	 * user is DONE. This does, once per drag: the settled width goes out as
+	 * `onColumnResize` ({@link CarbonColumnResize}) so an adapter can persist it.
+	 */
 	wireResizeHandle(
 		entry: HeaderCellEntry,
 		header: CarbonHeader<TData> | undefined,
@@ -1132,19 +1216,71 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 			return;
 		}
 		if (entry.resizer) return;
+		const columnId = column.id;
 		const handle = el("span", {
 			className: "cf-table__resize-handle",
 			attrs: { role: "separator", "aria-orientation": "vertical" },
 		});
-		const start = header.getResizeHandler();
+		// The container's document rather than the global one: frappe renders into
+		// iframes, and a drag that starts there ends there.
+		const doc = this.container.ownerDocument;
+		const begin = (event: Event): void => {
+			const live = this.table.getColumn(columnId);
+			const liveHeader = this.currentHeader(columnId);
+			if (!live || !liveHeader) return;
+			// A column that absorbs spare width is drawn wider than its size
+			// says, and TanStack measures a drag from the size. Start from what
+			// is on screen, or the handle would sit still until the pointer had
+			// crossed the whole difference.
+			if (this.columnFills(live)) {
+				const drawn = Math.round(entry.th.getBoundingClientRect().width);
+				if (drawn > live.getSize()) this.setColumnSize(columnId, drawn);
+			}
+			const startWidth = live.getSize();
+			liveHeader.getResizeHandler(doc)(event);
+			// TanStack registered its end listeners inside the call above, so
+			// these run after its final `columnSizing` commit and `getSize()` is
+			// the settled width. A drag that never started (a second touch) lands
+			// on an unchanged width and emits nothing.
+			const ends = event.type === "touchstart" ? ["touchend", "touchcancel"] : ["mouseup"];
+			const settle = (): void => {
+				for (const type of ends) doc.removeEventListener(type, settle);
+				this.settleResize(columnId, startWidth);
+			};
+			for (const type of ends) doc.addEventListener(type, settle);
+		};
 		// The shipped handler distinguishes touchstart from the mouse path, so
 		// both must be bound; a lone pointerdown gives no working touch resize.
-		handle.addEventListener("mousedown", start);
-		handle.addEventListener("touchstart", start, { passive: true });
-		handle.addEventListener("dblclick", () => column.resetSize());
+		handle.addEventListener("mousedown", begin);
+		handle.addEventListener("touchstart", begin, { passive: true });
+		// Double-click puts the column back at the width its spec declared.
+		handle.addEventListener("dblclick", () => {
+			const live = this.table.getColumn(columnId);
+			if (!live) return;
+			const before = live.getSize();
+			live.resetSize();
+			this.settleResize(columnId, before);
+		});
 		handle.addEventListener("click", (e) => e.stopPropagation());
 		entry.th.appendChild(handle);
 		entry.resizer = handle;
+	}
+
+	/**
+	 * Close out a resize: round the width to whole px (frappe stores widths as
+	 * integers, and the render is within half a pixel of it), write the rounded
+	 * value back so the table and what an adapter persists agree, and announce it.
+	 * Nothing is announced when the width did not change, which is what a plain
+	 * click on the handle looks like.
+	 */
+	settleResize(columnId: string, startWidth: number): void {
+		const size = this.getColumnSize(columnId);
+		if (size === null) return;
+		const width = Math.round(size);
+		if (width === Math.round(startWidth)) return;
+		if (width !== size) this.setColumnSize(columnId, width);
+		const detail: CarbonColumnResize = { columnId, width };
+		this.emit("onColumnResize", detail);
 	}
 
 	wireFilterInput(entry: FilterCellEntry, column: CarbonColumn<TData>): void {

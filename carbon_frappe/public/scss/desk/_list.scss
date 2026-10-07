@@ -161,20 +161,13 @@
 	background: var(--card-bg);
 }
 
-.page-title .title-text,
-.page-title h3 {
-	font-size: var(--text-2xl);
-	font-weight: var(--font-weight-regular);
-	color: var(--cds-text-primary);
-}
-
 // filter/tag pills -> Carbon dismissible tag (24px, pill, gray)
 .filter-pill,
 .tag-pill {
 	background-color: var(--cds-layer-accent-01);
 	color: var(--cds-text-primary);
 	border: none;
-	border-radius: var(--border-radius-full);
+	border-radius: var(--radius-full);
 	font-size: var(--text-xs);
 
 	&:hover {
@@ -221,13 +214,21 @@
 	}
 }
 
-// list paging area -> flat Carbon pagination-style buttons
+// list paging area. frappe 16.50 builds it from `frappe.ui.TabButtons` for the
+// page-size choice (base_list.js:388-411) and an `es-button` for Load More
+// (:413-423); the `.btn-group .btn` / `.btn-paging` markup this used to restyle
+// is gone. The switcher's Carbon look (a bordered box of flush segments, the
+// chosen one inverted) is the desk-wide `.es-tab-buttons` rule in
+// desk/_modals.scss, and Load More is styled with every other es-button in
+// desk/_buttons.scss. All that is left to say here is size: espresso's pill is
+// 26px (5px of padding on a 16px line), and Carbon's small content switcher is
+// 32px — the height Load More already has beside it.
 .list-paging-area {
 	border-top: 1px solid var(--carbon-border-subtle);
 
-	.btn-group .btn {
-		border-radius: 0;
-		border: 1px solid var(--carbon-border-subtle);
+	.es-tab-buttons .es-pill {
+		padding-block: var(--cds-spacing-03, 0.5rem);
+		padding-inline: var(--cds-spacing-05, 1rem);
 	}
 }
 

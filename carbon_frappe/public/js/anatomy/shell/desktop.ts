@@ -1,51 +1,52 @@
-// The switcher's view model: frappe's desktop, as a tree.
+// The switcher's view model: what frappe's `/desk` desktop lays out, as a tree.
 //
-// The `/desk` landing page (desk/page/desktop/desktop.js) lays out
-// `frappe.boot.desktop_icons` — every Desktop Icon the user may see, already
-// permission-filtered and idx-sorted by the server
-// (desk/doctype/desktop_icon/desktop_icon.py:122-213). The switcher shows the
-// same icons, in the same order, with the same nesting, so the rules here are
-// the desktop page's own, re-applied over the boot data:
+// Two desktops exist in v16.50, chosen by Desktop Settings -> Desktop Page
+// (boot.py:265-270), and the switcher mirrors whichever one the site renders:
 //
-//   - `DesktopPage.prepare()` (desktop.js:184-211): a `hidden` icon is dropped;
-//     an icon whose `parent_icon` names a VISIBLE icon nests under it; any other
-//     icon — no parent, or a hidden one — is a top-level row. That promotion is
-//     why ERPNext's workspaces sit at the top level on a stock site: the
-//     "ERPNext" App icon ships hidden (its label collides with the app title).
-//   - `DesktopIcon.validate_icon()` (:1082-1093): a Folder with no visible
-//     children is not rendered; "My Workspaces" is not rendered while its
-//     sidebar is empty.
-//   - `DesktopIcon.setup_click()` (:1121-1147): ANY icon with children — a
-//     Folder or an App — opens the children instead of navigating, so both
-//     kinds are expandable rows here and neither carries an href of its own.
-//   - `get_route(desktop_icon)` (:46-110) is `frappe.utils.get_route_for_icon`
-//     (utils/utils.js:1314-1370) with `window.location.origin` prefixed for
-//     External links; the leaf's href is that route, `_blank` when it is
-//     absolute (:1149-1151). A leaf the route cannot resolve shows a msgprint
-//     on the desktop (:1155-1161); it is skipped here — a switcher row that
-//     only says "misconfigured" is noise, and the desktop still reports it.
-//   - Children keep `idx` order (`get_child_icons_data`, :1094-1096); the
-//     top level keeps boot order. Boot is already idx-sorted, and the sort is
-//     stable, so both are "boot order".
-//   - Labels are `__(icon.label)` (ui/desktop_icon.html:19).
+// 1. THE APPS SCREEN (`Apps`, the default). `DesktopPage.render_app_icons`
+//    (desk/page/desktop/desktop.js:169-212) draws one tile per `app_data` entry
+//    that opted into the screen (`on_apps_screen`), ordered by `sequence_id`
+//    (lower first, ties in installed-apps order — `sort()` is stable), and each
+//    tile leads to `sidebar.app_landing_route(app) || app.app_route || "/desk"`,
+//    in a new tab when that is an absolute URL (:216-219). That is also exactly
+//    the "Apps" submenu of frappe's own sidebar-header menu, which has no rail
+//    to switch with (ui/sidebar/sidebar_header.js:192-225): the two are one list.
+//    The current app (`sidebar.get_sidebar_app()`) is the selected row. Modules
+//    inside an app are NOT here: the dock is the module switcher, and a module
+//    row under an app would show the same list twice.
 //
-// NOT `ui/sidebar/sidebar_header.js`'s "Workspaces" menu: that one is scoped
-// to `frappe.current_app`, moves Folders first, and drops External icons —
-// three ways it differs from the desktop the user is asked to recognise.
+// 2. THE DESKTOP ICON GRID (`Desktop Icons`, retiring — desk/RETIRING.md). The
+//    grid is `frappe.boot.desktop_icons`, which the server puts in the payload
+//    ONLY in this mode (boot.py:265-270), permission-filtered and idx-sorted
+//    (desk/doctype/desktop_icon/desktop_icon.py:243-310). The rules re-applied
+//    over it are the grid's own (public/js/desktop_icons.bundle.js):
+//      - `DesktopIconsPage.prepare()` (:167-198): a `hidden` icon is dropped; an
+//        icon whose `parent_icon` names a VISIBLE icon nests under it; any other
+//        icon — no parent, or a hidden one — is a top-level row.
+//      - `DesktopIcon.validate_icon()` (:627-632): a Folder with no visible
+//        children is not rendered.
+//      - `DesktopIcon.setup_click()` (:707-751): ANY icon with children — a Folder
+//        or an App — opens the children instead of navigating, so both kinds are
+//        expandable rows here and neither carries an href of its own.
+//      - Order: every grid sorts its icons by `idx`, then by label
+//        (`DesktopIconGrid.prepare()`, :413-419, which the top level and a
+//        folder's modal both go through), whatever order boot sent them in.
+//      - Labels are `__(icon.label)` (ui/desktop_icons_item.html:19).
+//    A leaf the route cannot resolve shows a msgprint on the desktop (:741-748);
+//    it is skipped here — a switcher row that only says "misconfigured" is noise,
+//    and the desktop still reports it. The user's saved Desktop Layout (edit
+//    mode reorders and hides) arrives from the page's own template context
+//    (desktop.html `#desktop-layout`), not boot, and is not read.
 //
-// Also not the user's saved Desktop Layout (edit-mode reorders and hides):
-// that is fetched by the landing page from its own template context
-// (desktop.py:17, desktop.js:253-255) and is not in boot. Reading it here
-// would be one more request per session; this module takes boot only, and
-// `buildDesktopTree`'s signature is the seam if that changes.
-//
-// Pure: takes the boot arrays and the current sidebar title, returns a tree.
-// Nothing here touches the DOM, so the rules can be checked against fixtures.
-import type { FrappeDesktopIconRecord, FrappeWorkspaceSidebar } from "frappe-types";
+// Pure: both builders take the boot arrays plus a route resolver and return a
+// tree. Nothing here touches the DOM or `frappe`, so the rules can be checked
+// against fixtures (test/unit/desktop.test.ts); shell/switcher.ts supplies the
+// resolvers.
+import type { FrappeBootAppEntry, FrappeDesktopIconRecord } from "frappe-types";
 
 /** One switcher row. `children` non-empty ⇒ an expandable row with no href. */
 export interface DesktopEntry {
-	/** The icon's untranslated label — the key `sidebar_title` is matched against. */
+	/** The row's identity: an app's `app_name`, or an icon's untranslated label. Keys the expanded set. */
 	label: string;
 	/** Translated, for display. */
 	title: string;
@@ -53,41 +54,71 @@ export interface DesktopEntry {
 	href: string | null;
 	/** `_blank` for absolute URLs, as the desktop sets it. */
 	target: string | null;
-	/** The icon whose label is the current Workspace Sidebar's title. */
+	/** The app, or the icon, that owns the shell on screen. */
 	selected: boolean;
 	children: DesktopEntry[];
 }
 
-function translate(s: string): string {
-	return typeof __ === "function" ? __(s) : s;
+/** Where a desktop icon leads, and the shell it opens, as `DesktopIcon.icon_route` resolves them. */
+export interface IconRoute {
+	href: string;
+	/** The `module_sidebars` key the icon opens, or `null` for an External link. */
+	shell: string | null;
+}
+
+export interface DesktopTranslate {
+	(s: string): string;
+}
+
+const identity: DesktopTranslate = (s) => s;
+
+function targetFor(href: string): string | null {
+	return href.startsWith("http") ? "_blank" : null;
 }
 
 /**
- * The desktop's route for a leaf, or `null` when frappe cannot resolve one.
+ * The Apps screen's tiles, as switcher rows.
  *
- * `get_route_for_icon` is the desktop's `get_route` minus the origin prefix
- * on External links (utils.js:1318-1319 vs desktop.js:51-54); the prefix only
- * matters for `startsWith("http")`, which is checked on the raw link here.
+ * @param apps       `frappe.boot.app_data`
+ * @param current    `app_name` of `sidebar.get_sidebar_app()`, or `null` on the launcher
+ * @param route      `sidebar.app_landing_route(app)`
+ * @param translate  `__`
  */
-function routeFor(icon: FrappeDesktopIconRecord): { href: string; target: string | null } | null {
-	const utils = window.frappe && frappe.utils;
-	if (!utils || typeof utils.get_route_for_icon !== "function") return null;
-	const route = utils.get_route_for_icon(icon);
-	if (!route) return null;
-	return { href: route, target: /^https?:/.test(route) ? "_blank" : null };
+export function buildAppsTree(
+	apps: readonly FrappeBootAppEntry[],
+	current: string | null,
+	route: (app: FrappeBootAppEntry) => string | null | undefined,
+	translate: DesktopTranslate = identity,
+): DesktopEntry[] {
+	return apps
+		.filter((app) => app.on_apps_screen)
+		.map((app, index) => ({ app, index }))
+		.sort((a, b) => (a.app.sequence_id ?? 100) - (b.app.sequence_id ?? 100) || a.index - b.index)
+		.map(({ app }) => {
+			const href = route(app) || app.app_route || "/desk";
+			return {
+				label: app.app_name,
+				title: translate(app.app_title || app.app_name),
+				href,
+				target: targetFor(href),
+				selected: !!current && app.app_name === current,
+				children: [],
+			};
+		});
 }
 
 /**
- * Build the desktop's icon tree.
+ * The Desktop Icon grid, as switcher rows.
  *
  * @param icons    `frappe.boot.desktop_icons`
- * @param sidebars `frappe.boot.workspace_sidebar_item`, for the "My Workspaces" rule
- * @param current  the current `sidebar.sidebar_title` (untranslated), or `""`
+ * @param current  the `module_sidebars` key on screen (`sidebar.current_module`), or `""`
+ * @param resolve  the grid's `get_route` for an icon, plus the shell it opens
  */
 export function buildDesktopTree(
 	icons: readonly FrappeDesktopIconRecord[],
-	sidebars: Readonly<Record<string, FrappeWorkspaceSidebar>>,
 	current: string,
+	resolve: (icon: FrappeDesktopIconRecord) => IconRoute | null,
+	translate: DesktopTranslate = identity,
 ): DesktopEntry[] {
 	// prepare(): the visible icons, by label — a parent must be in here to nest
 	const visible = new Map<string, FrappeDesktopIconRecord>();
@@ -96,13 +127,7 @@ export function buildDesktopTree(
 		visible.set(icon.label, icon);
 	}
 
-	// validate_icon(): "My Workspaces" only while its sidebar has items
-	const myWorkspaces = sidebars["my workspaces"];
-	if (visible.has("My Workspaces") && !(myWorkspaces && myWorkspaces.items.length)) {
-		visible.delete("My Workspaces");
-	}
-
-	// children by parent label, in boot (= idx) order
+	// children by parent label
 	const childrenOf = new Map<string, FrappeDesktopIconRecord[]>();
 	const top: FrappeDesktopIconRecord[] = [];
 	for (const icon of visible.values()) {
@@ -116,22 +141,27 @@ export function buildDesktopTree(
 		}
 	}
 
+	// the grid's order: `idx`, then label, as `localeCompare` says (no locale argument, as there)
+	const gridOrder = (a: FrappeDesktopIconRecord, b: FrappeDesktopIconRecord): number =>
+		a.idx === b.idx ? a.label.localeCompare(b.label) : a.idx - b.idx;
+	top.sort(gridOrder);
+
 	function leaf(icon: FrappeDesktopIconRecord): DesktopEntry | null {
-		const route = routeFor(icon);
+		const route = resolve(icon);
 		if (!route) return null;
 		return {
 			label: icon.label,
 			title: translate(icon.label),
-			selected: !!current && icon.label === current,
+			selected: !!current && route.shell === current,
 			href: route.href,
-			target: route.target,
+			target: targetFor(route.href),
 			children: [],
 		};
 	}
 
 	function entry(icon: FrappeDesktopIconRecord): DesktopEntry | null {
 		const children: DesktopEntry[] = [];
-		for (const k of childrenOf.get(icon.label) || []) {
+		for (const k of (childrenOf.get(icon.label) || []).sort(gridOrder)) {
 			// one level: the desktop's modal lists a folder's icons flat
 			const child = leaf(k);
 			if (child) children.push(child);
@@ -140,7 +170,7 @@ export function buildDesktopTree(
 			return {
 				label: icon.label,
 				title: translate(icon.label),
-				selected: !!current && icon.label === current,
+				selected: false,
 				href: null,
 				target: null,
 				children,

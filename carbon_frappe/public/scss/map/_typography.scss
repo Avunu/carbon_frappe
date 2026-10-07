@@ -6,40 +6,43 @@
 		sans-serif;
 	--font-family-mono: "IBM Plex Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
 
-	// Plex has no 420 optical weight and Carbon's idiom caps emphasis at
-	// SemiBold; bold/black collapse to 600 (QA fallback: 700 — Plex ships it).
+	// Plex has no 420 optical weight (frappe's regular) and Carbon's idiom caps
+	// emphasis at SemiBold; bold/black collapse to 600 (QA fallback: 700 — Plex
+	// ships it). frappe's legacy `--weight-*` names alias these (legacy.css), so
+	// pinning them once covers both.
 	--font-weight-regular: 400;
 	--font-weight-medium: 500;
 	--font-weight-semibold: 600;
 	--font-weight-bold: 600;
 	--font-weight-black: 600;
-	// frappe v16's espresso scale (espresso/_typography.scss:27-31) uses these
-	// names — `.frappe-control` reads `--weight-regular`, which is 420 there —
-	// so they are pinned to the same values.
-	--weight-regular: 400;
-	--weight-medium: 500;
-	--weight-semibold: 600;
-	--weight-bold: 600;
-	--weight-black: 600;
 
-	// Snap frappe's 16-step ramp onto Carbon's productive type scale, which has
-	// exactly eight sizes: 12 / 14 / 16 / 20 / 28 / 32 / 42 / 54. frappe's 11,
-	// 18, 24, 26, 40, 48 are not Carbon steps and move to the nearest one.
-	// Collapsing is unavoidable at 8-onto-16; where a frappe step falls midway
-	// (24px) it snaps down, keeping it in the productive range rather than
-	// promoting it to a display size.
+	// Snap frappe's 18-step ramp (css/espresso/typography.css) onto Carbon's
+	// productive type scale, which has exactly eight sizes: 12 / 14 / 16 / 20 /
+	// 28 / 32 / 42 / 54. Collapsing is unavoidable at 8-onto-18. A step that falls
+	// midway between two Carbon sizes snaps DOWN, keeping it in the productive
+	// range rather than promoting it to a display size: 18 -> 16, 24 -> 20. The
+	// one exception is 48, which keeps the 54 it already had under its old name
+	// (`--text-9xl` before frappe v16.50 inserted 15px and 17px and shifted every
+	// larger name up one), so no heading changed size by being renumbered.
+	// Unchanged by the snap and so not repeated: xs 12, base 14, lg 16, 3xl 20,
+	// 6xl 28, 7xl 32.
 	--text-tiny: 12px; // label-01 / caption-01 / helper-text-01 (was 11)
-	--text-2xs: 12px;
+	--text-2xs: 12px; // (was 11)
 	--text-sm: 14px; // body-compact-01 (was 13, not a Carbon step)
-	--text-xl: 16px; // body-02 / heading-02 (was 18)
-	--text-2xl: 20px; // heading-03
-	--text-3xl: 20px; // heading-03 (was 24)
-	--text-4xl: 28px; // heading-04 (was 26)
-	--text-5xl: 28px; // heading-04
-	--text-6xl: 32px; // heading-05 — pinned so the number card can rely on it
-	--text-7xl: 42px; // heading-06 (was 40)
-	--text-8xl: 42px; // heading-06 (was 44)
-	--text-9xl: 54px; // heading-07 (was 48)
+	--text-xl: 16px; // body-02 / heading-02 (was 17)
+	--text-2xl: 16px; // heading-02 (was 18)
+	--text-4xl: 20px; // heading-03 (was 24)
+	--text-5xl: 28px; // heading-04 (was 26)
+	--text-8xl: 42px; // heading-06 (was 40)
+	--text-9xl: 42px; // heading-06 (was 44)
+	--text-10xl: 54px; // heading-07 (was 48)
+	--text-11xl: 54px; // heading-07 (was 52)
+	--text-12xl: 54px; // heading-07 (was 56)
+
+	// The paragraph sizes (`--text-p-*`) repeat the 13px and 17px steps, so they
+	// follow the same snap rather than keep a size Carbon does not have.
+	--text-p-sm: var(--text-sm);
+	--text-p-xl: var(--text-xl);
 }
 
 // Carbon body-compact-01 (the 14px desk body size) carries 0.16px tracking.
@@ -68,14 +71,14 @@ h4,
 // consumers instead. heading-03 20/28, heading-04 28/36, heading-05 32/40.
 h1,
 .h1 {
-	font-size: var(--text-4xl); // heading-04
+	font-size: var(--text-6xl); // heading-04
 	line-height: 36px;
 	font-weight: var(--font-weight-regular);
 }
 
 h2,
 .h2 {
-	font-size: var(--text-2xl); // heading-03
+	font-size: var(--text-3xl); // heading-03
 	line-height: 28px;
 	font-weight: var(--font-weight-regular);
 }

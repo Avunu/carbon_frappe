@@ -2,13 +2,13 @@
 // Two consumers, both in desk/_page-head.scss and desk/_form.scss:
 //
 //  1. The rule between the breadcrumb trail and the title (desk/_page-head.scss)
-//     used to be a border on the title's own `<li>` — which, like the pill
-//     (title_indicator.ts), can only ever be as wide as that li's own box, not
-//     the full head. A pseudo-element on `.page-head-content` draws it full
-//     width instead, positioned at `--cf-trail-rule-top`: the title li's own
-//     top edge, which is exactly where the trail's wrapped line(s) end,
-//     however many there are (a short trail, a wrapped long one, a title that
-//     itself wraps to two lines — all of it is just "wherever the li starts").
+//     used to be a border on the title's own `<li>`, which can only ever be as
+//     wide as that li's own box, not the full head. A pseudo-element on
+//     `.page-head-content` draws it full width instead, positioned at
+//     `--cf-trail-rule-top`: the title li's own top edge, which is exactly where
+//     the trail's wrapped line(s) end, however many there are (a short trail, a
+//     wrapped long one, a title that itself wraps to two lines — all of it is
+//     just "wherever the li starts").
 //
 //  2. `.form-tabs-list` staying pinned below the header while the form scrolls
 //     under it (frappe: desk/form.scss:484-485, ALREADY `position: sticky`)
@@ -39,7 +39,13 @@ function measure(pageHead: HTMLElement): void {
 	const contentRect = pageHead.getBoundingClientRect();
 	document.documentElement.style.setProperty("--cf-page-head-height", `${contentRect.height}px`);
 
-	const lastCrumb = pageHead.querySelector<HTMLElement>(".page-title .navbar-breadcrumbs > li:last-child");
+	// frappe 16.50 draws the trail as `nav.es-breadcrumbs > ol > li` (page.html:15,
+	// filled by Page.render_breadcrumbs, page.js:1019); the `<ul>` this used to
+	// read, with `li` as its direct children, is gone, and the empty match left
+	// the rule stuck at its CSS fallback.
+	const lastCrumb = pageHead.querySelector<HTMLElement>(
+		".page-title .navbar-breadcrumbs > ol > li:last-child",
+	);
 	const content = pageHead.querySelector<HTMLElement>(".page-head-content");
 	if (!lastCrumb || !content) return;
 	const top = lastCrumb.getBoundingClientRect().top - content.getBoundingClientRect().top;
@@ -62,8 +68,7 @@ function attach(): boolean {
 	// throw unwinds past this function entirely, back out to the interval
 	// callback below, silently — nothing surfaces a `SyntaxError` thrown
 	// inside a `setInterval` tick as a console error). `$(...).get(0)` is the
-	// idiom the rest of this file (and title_indicator.ts) already uses for
-	// exactly this selector.
+	// idiom for exactly this selector.
 	const pageHead = $(".page-container:visible .page-head").get(0);
 	if (!pageHead) return false;
 	observer.disconnect();
@@ -72,9 +77,8 @@ function attach(): boolean {
 	return true;
 }
 
-// Route changes swap which `.page-head` is `:visible`; poll briefly the same
-// way title_indicator.ts and editable_title.ts do, since the new one is not
-// necessarily visible/rendered the instant the route event fires.
+// Route changes swap which `.page-head` is `:visible`; poll briefly, since the
+// new one is not necessarily visible/rendered the instant the route event fires.
 let timer: ReturnType<typeof setInterval> | null = null;
 function attachSoon(): void {
 	if (timer) clearInterval(timer);

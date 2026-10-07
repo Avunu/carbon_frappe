@@ -1,6 +1,12 @@
 // Frappe / frappe-ui variable remap onto Carbon tokens (var(--cds-*)).
-// Ordered: raw palette first (cascades through espresso's semantic layer),
-// then semantic pins, legacy pins, shape/type/effects.
+// Ordered: raw palette first (frappe aliases its semantic and legacy layers onto
+// it, so it is the primary colour mechanism), then the neutral role pins, legacy
+// pins and shims, then shape/type/effects.
+//
+// Two partials are NOT imported here, because they have to land BEFORE this index
+// so the role pins in _colors-semantic.scss win over them, and each belongs to one
+// bundle only: _colors-semantic-spa.scss (carbon_frappe_ui.bundle.scss) and
+// _colors-semantic-zone.scss (desk.bundle.scss).
 @import "./colors-palette";
 @import "./colors-semantic";
 @import "./colors-legacy";

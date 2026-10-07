@@ -136,7 +136,15 @@ pre,
 .avatar,
 .avatar-frame,
 .es-avatar {
-	border-radius: var(--border-radius-full);
+	border-radius: var(--radius-full);
+}
+
+// A solid espresso badge sets `--ink-<hue>-1` (white) on a status fill. On g100 the
+// dark ramp's fill steps are the bright ones — they double as the dark theme's TEXT
+// colours — and white on them is ~2.3:1. `--ink-base` is the role frappe's own gray
+// badge already uses for text on a strong fill: white on g10, #161616 on g100.
+.es-badge[data-variant="solid"] {
+	color: var(--ink-base);
 }
 
 // Form surface. .form-page's tab content carries the canvas tint now
@@ -197,8 +205,8 @@ pre,
 }
 
 // legacy #desktop page: its own desktop.css declares `--desktop-modal-radius: 30px`
-// at :root and loads *after* this bundle, so the token override in map/_radius.scss
-// can't reach it. Square the modal at the consumer instead — !important because we
+// at :root and loads *after* this bundle, so a token override here can't reach it.
+// Square the modal at the consumer instead — !important because we
 // tie on specificity with desktop.css's `.desktop-modal .modal-dialog .modal-content`
 // but lose on load order.
 .desktop-modal .modal-dialog .modal-content {
@@ -210,13 +218,13 @@ pre,
 // $focus, inset. :focus-visible (keyboard only) so mouse clicks stay quiet.
 // WP3/4 already cover form controls, buttons and bootstrap tabs; this catches
 // the long tail the audit found unringed: links, menu items, tree/sidebar,
-// espresso tabs and content-switcher segments.
+// espresso tabs and content-switcher segments. (Breadcrumb crumbs are
+// `.es-breadcrumbs__item`s now and carry their ring in desk/_breadcrumbs.scss.)
 .dropdown-item:focus-visible,
 .dropdown-menu a:focus-visible,
 .awesomplete > ul > li:focus-visible,
 a.tree-link:focus-visible,
 .sidebar-item-container .item-anchor:focus-visible,
-.navbar-breadcrumbs a:focus-visible,
 .es-tabs__tab:focus-visible,
 .es-tab-buttons button:focus-visible,
 .list-row-container .list-subject a:focus-visible {

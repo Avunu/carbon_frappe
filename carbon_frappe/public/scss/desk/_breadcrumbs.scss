@@ -1,104 +1,98 @@
-// WP — Breadcrumbs -> Carbon Design System breadcrumb.
+// Breadcrumbs -> Carbon Design System breadcrumb.
 //
-// Frappe's default (frappe/public/scss/desk/breadcrumb.scss) renders breadcrumb
-// links in muted gray (--ink-gray-5) at --text-lg / medium weight, with a dark
-// last item. Carbon's breadcrumb is different in kind: $link-primary (blue)
-// links, body-compact-01 (14px / regular), no underline until hover, a
-// $text-secondary "/" divider, and a $text-primary (near-black) *current page*
-// that reads as text, not a link.
+// frappe v16.50 draws the trail with Espresso's breadcrumbs component
+// (css/espresso/components/breadcrumbs.css, built by
+// js/frappe/ui/components/breadcrumbs.js):
+//
+//   <nav class="es-breadcrumbs navbar-breadcrumbs"><ol>
+//     <li><a class="es-breadcrumbs__item" href="…"><span class="es-breadcrumbs__label">…
+//     <li><span class="es-breadcrumbs__item" aria-current="page">…           ← the page itself
+//
+// The `<ul class="navbar-breadcrumbs"><li><a>` this file used to restyle is
+// gone, and so is the `.title-text` link it sized. Espresso's own look is a
+// muted gray label at 16px / medium with a rounded hover chip; Carbon's
+// breadcrumb is different in kind: $link-primary links, body-compact-01
+// (14px / regular), no underline until hover, a "/" divider, and a
+// $text-primary *current page* that reads as text, not a link.
 //
 // All values are --cds-* tokens, which the carbon theme flips between light and
-// dark, so this converges in both themes. carbon's desk bundle @imports the
-// frappe bundle first, so these equal-specificity rules win by load order.
+// dark, so this converges in both themes. The desk bundle @imports frappe's
+// espresso components first, so equal-specificity rules here win by order; the
+// rules that meet a stronger frappe selector say so where they are.
+//
+// This file is the Carbon breadcrumb everywhere `.es-breadcrumbs` appears. What
+// only the PAGE HEAD does with it — the last crumb as heading-04, the rule
+// under the trail — is desk/_page-head.scss.
 
-.navbar-breadcrumbs {
-	// Every breadcrumb item except the current page is a link.
-	a {
-		color: var(--cds-link-primary);
-		font-size: var(--text-md); // 14px — Carbon body-compact-01
+.es-breadcrumbs {
+	// Carbon body-compact-01. The trail inherits the desk's 14px body size and
+	// tracking; stated so a frappe change to the base does not move it.
+	font-size: var(--text-base);
+
+	// "/" between items. frappe puts it on the `li` as a `::before` (so there is
+	// no divider before the first item), at 16px in $ink-gray-4. Carbon draws it
+	// in $text-primary with $spacing-03 either side.
+	li + li::before {
+		color: var(--cds-text-primary);
+		font-size: var(--text-base);
+		line-height: 18px;
+		margin-inline: 8px;
+	}
+
+	// Every crumb is an item (`a`, `button` or, for the current page, `span`),
+	// and the hand-written `<li><a>` the deprecated API still lets callers append
+	// is dressed the same by espresso's compat rule (breadcrumbs.css:47-58).
+	// Carbon's crumb has no padding, chip or radius of its own.
+	.es-breadcrumbs__item,
+	li > a:not(.es-breadcrumbs__item),
+	li > span:not(.es-breadcrumbs__item) {
+		padding: 0;
+		border-radius: 0;
+		font-size: var(--text-base);
+		line-height: 18px;
 		font-weight: var(--font-weight-regular);
-		letter-spacing: 0;
+		color: var(--cds-link-primary);
 		text-decoration: none;
+	}
 
+	a.es-breadcrumbs__item,
+	button.es-breadcrumbs__item,
+	li > a:not(.es-breadcrumbs__item) {
 		&:hover {
 			color: var(--cds-link-primary-hover);
 			text-decoration: underline;
 			text-underline-offset: 2px;
 		}
 
-		// "/" divider between items -> Carbon $text-secondary. (frappe's
-		// higher-specificity `li:first-child a::before { content: none }` still
-		// suppresses the divider before the home item.)
-		&::before {
-			content: "/";
-			color: var(--cds-text-secondary);
-			margin-left: 8px;
-			margin-right: 8px;
-			font-size: var(--text-md);
-			font-weight: var(--font-weight-regular);
-			letter-spacing: 0;
-			text-decoration: none;
+		// Carbon: a pressed link takes $text-primary.
+		&:active {
+			color: var(--cds-text-primary);
 		}
 	}
 
-	// Home (first) icon-link follows the link color. Frappe icons take their
-	// color from --icon-stroke, so re-point it locally — this is the idiomatic
-	// pattern (see frappe desk/form_sidebar.scss) and works for the stroke-based
-	// line icon without assuming fill vs stroke.
-	li:first-child a {
-		--icon-stroke: var(--cds-link-primary);
-
-		&:hover {
-			--icon-stroke: var(--cds-link-primary-hover);
-		}
+	// Icons ride along with the label (the page heading's `prefix`, an icon-only
+	// crumb): they follow the link colour, like the text they sit beside.
+	.es-breadcrumbs__item > svg {
+		color: inherit;
 	}
 
-	// Overflow "..." trigger -> render like a breadcrumb link, not a default btn.
-	.more-button.btn-default {
-		background: transparent;
-		border: none;
-		box-shadow: none;
-		--icon-stroke: var(--cds-link-primary);
-
-		&:hover {
-			background: var(--cds-layer-hover-01);
-			--icon-stroke: var(--cds-link-primary-hover);
-		}
+	// Carbon's focus ring on a link: the 2px $focus outline.
+	.es-breadcrumbs__item:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: 0;
 	}
-}
 
-// The workspace / doctype / form links carry frappe classes that get a separate
-// "page title" treatment which breaks trail consistency: `.title-text` is sized
-// to --text-2xl (20px) + $text-primary by desk/_list.scss, and to --text-lg
-// (16px) on Form routes by frappe's own rules. Force every breadcrumb item back
-// to the uniform link size/weight. The `.page-title ... li a.<class>` selector
-// (specificity 0,3,2) outranks both offenders, and carbon loads last.
-// :not(:last-child) throughout — the LAST crumb is the Carbon page heading
-// (desk/_page-head.scss sizes it heading-04), so it is deliberately exempt from
-// the uniform trail sizing below.
-.page-title .navbar-breadcrumbs li:not(:last-child) a.title-text,
-.page-title .navbar-breadcrumbs li:not(:last-child) a.title-text-form,
-.page-title .navbar-breadcrumbs li:not(:last-child) a.worksapce-breadcrumb {
-	font-size: var(--text-md);
-	font-weight: var(--font-weight-regular);
-	color: var(--cds-link-primary);
-}
-
-// Current page (last / disabled item) is text, not a link -> $text-primary,
-// no underline. Wins over the link colouring above (equal specificity, later)
-// and over frappe's `li:last-child > a { color: --ink-gray-9 !important }`.
-.page-title .navbar-breadcrumbs li:last-child > a,
-.page-title .navbar-breadcrumbs li.disabled > a {
-	color: var(--cds-text-primary) !important;
-	font-weight: var(--font-weight-regular);
-
-	// NO font-size here. This rule ties the specificity of the heading rule in
-	// desk/_page-head.scss and loads later (breadcrumbs is imported after
-	// page-head), so setting a size here silently won and knocked the page title
-	// back to 14px — visibly on workspace pages, whose last crumb carries no
-	// class for the heading rule to qualify against.
-	&:hover {
-		color: var(--cds-text-primary) !important;
+	// The current page is text, not a link -> $text-primary, no underline, no
+	// pointer. Espresso colours it $ink-gray-9 with a (0,3,0) selector, so this
+	// repeats that depth instead of leaning on source order; the :hover and
+	// :active forms are there because the print view puts an href back on the
+	// last crumb (form.js:30-31), and the link rules above would otherwise
+	// repaint it.
+	li:last-child .es-breadcrumbs__item,
+	li:last-child a.es-breadcrumbs__item:hover,
+	li:last-child a.es-breadcrumbs__item:active {
+		color: var(--cds-text-primary);
+		cursor: auto;
 		text-decoration: none;
 	}
 }

@@ -9,6 +9,9 @@
 		"types": ["node", "frappe-types/global"],
 		"allowImportingTsExtensions": true
 	},
-	"include": ["test/**/*.ts", "carbon_frappe/public/js/**/*.ts"],
+	// scripts/lib is the pure half of the build scripts (icon codegen, the drift
+	// audits' scanners); the tests import it directly. The scripts project owns
+	// it too — a module may belong to both.
+	"include": ["test/**/*.ts", "carbon_frappe/public/js/**/*.ts", "scripts/lib/**/*.ts"],
 	"exclude": ["node_modules", "carbon_frappe/public/dist"]
 }

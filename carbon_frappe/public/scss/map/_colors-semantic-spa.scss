@@ -1,0 +1,58 @@
+// frappe-ui SPA semantic layer — SPA bundle only (carbon_frappe_ui.bundle.scss).
+//
+// Why it exists. frappe's desk declares --surface-*/--ink-*/--outline-* as var()
+// aliases onto the ramps, so the ramp remap (_colors-palette.scss) reaches them
+// without help. frappe-ui v1 does not: it emits the same names as RESOLVED
+// LITERALS (`oklch(...)`; frappe-ui/tailwind/tokens.js, plugin.js), so the ramp
+// remap cannot reach them and every name the SPA reads would keep Espresso's own
+// colour. This partial re-declares the whole layer as aliases onto the (remapped)
+// ramp, which makes the one remap serve both. It is imported BEFORE ./map so the
+// exact-Carbon role pins in _colors-semantic.scss land after it and win.
+//
+// Generation assumptions. SPA bundles come in three token generations, and a name
+// can only mean one thing at a time:
+//
+//   - frappe-ui >= 1.0.0-rc.1 (Helpdesk, Wiki, Builder): the v2 names, with the
+//     chromatic INK scale shifted down one level (`ink-red-1` is the 100 tint, not
+//     white; migrate-tokens-v2.js `--ink-shift`). THIS is what is declared below.
+//   - frappe-ui 1.0.0-beta.29 (CRM) and frappe's own desk v16.50: the same v2
+//     names with the unshifted ink scale. Their chromatic ink resolves one ramp
+//     step off (`ink-red-6` lands on the 600 step instead of 500); Carbon's ramp
+//     repeats steps often enough that the result is usually the same colour, but
+//     it is not guaranteed.
+//   - frappe-ui v0 / flow beta.3: the OLD names. Best-effort only. The names that
+//     v2 dropped are aliased at the bottom (`--surface-white`, `--surface-cards`,
+//     ...). The names v2 REUSED with another meaning (`--surface-gray-5/6/7`,
+//     `--ink-<hue>-2/3/4`, `--outline-gray-5`, the accent surface 5/6/7) cannot be
+//     served at the same time as v2's, so a v0 app gets the v2 value under them.
+//     Serving v0 properly would take a separate bundle per generation.
+//
+// Alpha scales (`--surface-alpha-*`) and the alert-button tokens keep frappe-ui's
+// own values: the theme has no Carbon equivalent to put there.
+@import "./semantic-ramp";
+
+:root,
+[data-theme="light"] {
+	@include semantic-light($ui-ink: true);
+}
+
+[data-theme="dark"],
+.dark {
+	@include semantic-dark($ui-ink: true);
+}
+
+// -- v0 names that v2 dropped (best effort), aliased onto their v2 successors --
+// migrate-tokens-v2.js:90-137 is the authoritative old -> new table. The roles
+// they point at are the pins in _colors-semantic.scss.
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.dark {
+	--surface-white: var(--surface-base);
+	--surface-cards: var(--surface-elevation-1);
+	--surface-selected: var(--surface-elevation-3);
+	--surface-menu-bar: var(--surface-sidebar);
+	--outline-white: var(--outline-base);
+	--outline-gray-modal: var(--outline-elevation-2);
+	--outline-gray-modals: var(--outline-elevation-2);
+}

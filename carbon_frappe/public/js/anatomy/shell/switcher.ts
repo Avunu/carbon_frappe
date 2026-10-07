@@ -3,13 +3,15 @@
 // Carbon (patterns/global-header): "The switcher provides a way for the user
 // to easily navigate between products and systems", it is "the furthest right
 // icon", and "the switcher icon and the switcher panel should only be used
-// together". frappe's products are what its `/desk` landing page lays out —
-// the Desktop Icons: the installed apps AND the workspaces, as the user has
-// them on the desktop, in its order and with its nesting (shell/desktop.ts
-// re-applies the desktop page's rules over `boot.desktop_icons`). The current
-// workspace is selected, and the Desktop launcher sits below a divider — it is
-// also the first entry of frappe's own sidebar-header menu
-// (ui/sidebar/sidebar_header.js:10-17).
+// together". frappe's products are what its `/desk` landing page lays out: the
+// installed apps (the Apps screen), or on a site still set to the retiring Desktop
+// Icon grid, the icons as the user has them, in the grid's order and with its
+// nesting (shell/desktop.ts re-applies the desktop's rules over `boot.app_data`
+// or `boot.desktop_icons`, whichever the site renders). The row for the app that
+// owns the shell on screen is selected, and the Desktop launcher sits below a
+// divider — it is also the "All apps" entry of frappe's own sidebar-header menu
+// (ui/sidebar/sidebar_header.js:231-238). Modules are not here: the dock beside
+// the sidebar is the module switcher inside an app.
 //
 // Markup is @carbon/react's (UIShell/HeaderGlobalAction.tsx, HeaderPanel.tsx,
 // Switcher.tsx, SwitcherItem.tsx, SwitcherDivider.tsx):
@@ -21,8 +23,9 @@
 //       li > hr.cds--switcher__item--divider
 //
 // plus one row Carbon's Switcher does not have — an expandable one, for a
-// desktop Folder or an App icon with workspaces under it (the desktop opens
-// those in a modal, desktop.js:1123-1143). Carbon's SideNavMenu is the
+// desktop Folder or an App icon with workspaces under it on the icon grid (the
+// grid opens those in a modal, desktop_icons.bundle.js:707-722), which the Apps
+// screen never has. Carbon's SideNavMenu is the
 // disclosure pattern of the shell, but its CSS is the side-nav mixin, which
 // this theme deliberately does not include (the left panel is frappe's), so the
 // row borrows only its ARIA — a `<button aria-expanded aria-controls>` before
@@ -45,18 +48,19 @@
 // width off `--expanded`.
 //
 // Expansion is remembered for the session, and the group holding the current
-// workspace opens itself on every render — the panel is rebuilt on each
+// shell's icon opens itself on every render — the panel is rebuilt on each
 // `project()`, and a fresh one should show where the user is.
+import type { FrappeDesktopIconRecord, FrappeModuleSidebar } from "frappe-types";
 import type { ShellModel } from "./model.ts";
-import { buildDesktopTree } from "./desktop.ts";
-import type { DesktopEntry } from "./desktop.ts";
+import { buildAppsTree, buildDesktopTree } from "./desktop.ts";
+import type { DesktopEntry, IconRoute } from "./desktop.ts";
 import { chevronDown16Switcher, switcher20 } from "../../generated/shell-icons.ts";
 import { esc, isHTMLElement } from "./dom.ts";
 
 export interface ShellSwitcher {
 	/** The action button, so the orchestrator can keep it last in the global bar. */
 	button: HTMLButtonElement;
-	/** Rebuild the list; `model.workspace` is the entry to mark selected (none on the launcher). */
+	/** Rebuild the list; `model.app` (or, on the icon grid, `model.module`) is the entry to mark selected (none on the launcher). */
 	render(model: ShellModel): void;
 	close(): void;
 	isOpen(): boolean;
@@ -70,6 +74,33 @@ const SUBMENU_ID = "cf-switcher-submenu-";
 
 function translate(s: string): string {
 	return typeof __ === "function" ? __(s) : s;
+}
+
+/** `Utils.sidebar_for_module` (utils.js:1400-1404): the shell is its module's own key, else the one whose `module` it is. */
+function shellFor(module: string): FrappeModuleSidebar | undefined {
+	const all = frappe.boot.module_sidebars || {};
+	return all[module] || Object.values(all).find((entry) => entry.module === module);
+}
+
+/**
+ * The icon grid's `get_route` (desktop_icons.bundle.js:74-88): an External link is
+ * absolute (a relative one gets the origin), a Workspace Sidebar icon opens its
+ * shell's landing route — the same one the dock and the app tiles use.
+ */
+function iconRoute(icon: FrappeDesktopIconRecord): IconRoute | null {
+	if (icon.link_type === "External" && icon.link) {
+		return {
+			href: icon.link.startsWith("http") ? icon.link : window.location.origin + icon.link,
+			shell: null,
+		};
+	}
+	if (icon.link_type === "Workspace Sidebar") {
+		const sidebar = frappe.app && frappe.app.sidebar;
+		const shell = shellFor(icon.module || icon.label);
+		const href = shell && sidebar ? sidebar.module_landing_route(shell.name) : null;
+		if (shell && href) return { href, shell: shell.name };
+	}
+	return null;
 }
 
 function linkHtml(entry: DesktopEntry, open: boolean): string {
@@ -168,9 +199,18 @@ export function mountSwitcher(header: HTMLElement, global: HTMLElement): ShellSw
 
 	function render(model: ShellModel): void {
 		const boot = window.frappe && frappe.boot;
-		const icons = (boot && boot.desktop_icons) || [];
-		const sidebars = (boot && boot.workspace_sidebar_item) || {};
-		const tree = buildDesktopTree(icons, sidebars, model.workspace);
+		const sidebar = window.frappe && frappe.app && frappe.app.sidebar;
+		// only a site set to the Desktop Icon grid has the icons in its boot payload
+		// (boot.py:265-270); every other site renders the Apps screen
+		const icons = boot && boot.desktop_icons;
+		const tree = icons
+			? buildDesktopTree(icons, model.module, iconRoute, translate)
+			: buildAppsTree(
+					(boot && boot.app_data) || [],
+					model.app ? model.app.app_name : null,
+					(app) => (sidebar ? sidebar.app_landing_route(app) : null),
+					translate,
+				);
 		const parts: string[] = [];
 		tree.forEach((entry, i) => {
 			if (!entry.children.length) {
