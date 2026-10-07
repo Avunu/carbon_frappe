@@ -725,6 +725,16 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 		const supplied = this.host.createRowNode(row);
 		let entry: RowEntry | null | undefined = this.rows.get(row.id);
 
+		// The adapter may hand back a node it already supplied under ANOTHER id.
+		// The Grid does whenever a row is renamed in place: saving a form renames
+		// each new child row from `new-<doctype>-<hash>` to its real name, and
+		// frappe 16.50's identity-based reconciliation keeps the same GridRow,
+		// so the same <tr>, for the new docname. Starting a fresh entry there
+		// would build a second set of cells onto that <tr> and leave the first
+		// set (emptied, since the adapter's cell content moves) stranded in front
+		// of it: a row twice as wide as its <colgroup>, which splits the table.
+		if (!entry && supplied) entry = this.rekeyRow(supplied, row.id);
+
 		// The adapter may also REPLACE the element for a row id it has already
 		// rendered — `grid.reset_grid()` (which Configure Columns triggers)
 		// discards every GridRow and builds new ones for the same docnames.
@@ -812,6 +822,29 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 		reconcileOrder(tr, desired);
 		applyProfile(p, "row", tr, { host: this.host, row });
 		return tr;
+	}
+
+	/**
+	 * Move the entry rendered for `tr` under another id to `rowId`, with its
+	 * addendum, and return it; `null` when `tr` has not been rendered yet.
+	 *
+	 * The addendum moves too so that `renderBody`'s sweep of unseen ids does not
+	 * pull it out of the <tbody> (and an open detail form out from under the
+	 * user's focus) only for `reconcileOrder` to put it straight back.
+	 */
+	rekeyRow(tr: HTMLTableRowElement, rowId: string): RowEntry | null {
+		for (const [id, entry] of this.rows) {
+			if (entry.tr !== tr) continue;
+			this.rows.delete(id);
+			this.rows.set(rowId, entry);
+			const addendum = this.addenda.get(id);
+			if (addendum) {
+				this.addenda.delete(id);
+				this.addenda.set(rowId, addendum);
+			}
+			return entry;
+		}
+		return null;
 	}
 
 	/**
