@@ -1,5 +1,13 @@
 # Changelog
 
+## [16.2.1](https://github.com/Avunu/carbon_frappe/compare/v16.2.0...v16.2.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* new rows breaking grid on v16.5+ ([#59](https://github.com/Avunu/carbon_frappe/issues/59)) ([773cb27](https://github.com/Avunu/carbon_frappe/commit/773cb27f23d49e107c82b5b745cc38c31160ea6e))
+* z-index on list page form ([#60](https://github.com/Avunu/carbon_frappe/issues/60)) ([2a4981a](https://github.com/Avunu/carbon_frappe/commit/2a4981ab63a8dd26a8f49cc812d61a48890f4b07))
+
 ## [16.2.0](https://github.com/Avunu/carbon_frappe/compare/v16.1.0...v16.2.0) (2026-10-07)
 
 
