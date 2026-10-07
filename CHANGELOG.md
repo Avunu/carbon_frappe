@@ -1,5 +1,12 @@
 # Changelog
 
+## [16.2.2](https://github.com/Avunu/carbon_frappe/compare/v16.2.1...v16.2.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* list bulk-action bar, workspace cards and sizing, multiselect text on 16.50 ([#62](https://github.com/Avunu/carbon_frappe/issues/62)) ([769422e](https://github.com/Avunu/carbon_frappe/commit/769422e519a136b936bfec4c52cb01afab37d0c0))
+
 ## [16.2.1](https://github.com/Avunu/carbon_frappe/compare/v16.2.0...v16.2.1) (2026-10-07)
 
 
