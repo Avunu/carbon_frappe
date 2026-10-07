@@ -105,6 +105,18 @@ select.form-control,
 	}
 }
 
+// MultiSelectList (the Balance Sheet's Cost Center, every report's multi-value
+// filter) paints its value as an absolutely positioned `.status-text` pinned at
+// `top: 4px` (common/controls.scss) — the offset that centres a line of text in
+// frappe's 28px field, and 7px high in a 40px Carbon one, so it sat above the
+// text of every Link and Data field beside it. Centred the same way as the
+// Select placeholder above, and for the same reason by transform rather than
+// flex: the `.ellipsis` truncation has to keep working on a long selection.
+.multiselect-list .status-text {
+	top: 50%;
+	transform: translateY(-50%);
+}
+
 // Invalid state: Carbon uses a 2px support-error outline (not a red border)
 .frappe-control.has-error {
 	input,

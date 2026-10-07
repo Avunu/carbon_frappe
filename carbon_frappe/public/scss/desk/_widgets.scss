@@ -20,6 +20,46 @@
 	background-color: var(--cds-background);
 }
 
+// The workspace's own height. frappe sizes `.layout-main` as the viewport minus
+// the navbar minus `--page-head-height` minus 5px (desk/desktop.scss), so that
+// head + body just fill the scroller. Both numbers are 48px in stock frappe;
+// Carbon's page head is two rows (breadcrumb eyebrow + heading), 60.67px, so the
+// body ran 12px long and `.main-section` — the scroller — grew a scrollbar for
+// nothing. `--cf-page-head-height` is the head's measured height
+// (js/anatomy/page_head_metrics.ts), the same variable the form's sticky tab
+// bar already reads (desk/_form.scss).
+[data-page-route="Workspaces"] {
+	--page-head-height: var(--cf-page-head-height, 48px);
+
+	// The canvas has to reach the bottom edge. `.layout-main-section` is only as
+	// tall as its blocks, and below it `.page-container` and `.main-section`
+	// show their own card tone (desk/_list.scss) as a white bar — wherever the
+	// workspace is shorter than the viewport, and for the 5px frappe leaves
+	// under `.layout-main` always. The head keeps its own white fill.
+	background-color: var(--cds-background);
+}
+
+// Keyed on the route, not on `:has([data-page-route="Workspaces"])`: frappe keeps
+// every visited page in the DOM, only hidden, so the `:has()` form stayed true
+// after leaving a workspace and tinted the scroller behind every other page.
+//
+// Two tones, split at the page head's height. The scroller reserves a gutter
+// for its scrollbar (`scrollbar-gutter: stable`, frappe desk/main.scss) that
+// only ever shows the scroller's own fill; all grey, it read as a grey strip
+// beside the white head and the toolbar looked short of the right edge. The
+// fill is not scrolled with the content, so the white stays behind the sticky
+// head. The head's 1px bottom rule (page.scss) is repeated as the white's last
+// pixel, or it would stop short at the gutter.
+body[data-route^="Workspaces"] .main-section {
+	--cf-head: var(--cf-page-head-height, 48px);
+
+	background: linear-gradient(
+		var(--card-bg) calc(var(--cf-head) - 1px),
+		var(--border-color) calc(var(--cf-head) - 1px) var(--cf-head),
+		var(--cds-background) var(--cf-head)
+	);
+}
+
 // Carbon tile: $layer-01, flat, square, 16px padding; clickable tiles get
 // $layer-hover on hover.
 .widget {
@@ -45,6 +85,16 @@
 	}
 }
 
+// Link cards. frappe 16.50 draws them with no box at all — `background-color:
+// transparent`, no bottom padding — on the grounds that links are navigation,
+// not content (desk/desktop.scss `.links-widget-box`). Carbon's workspace is
+// tiles on a canvas, so they take the tile back, with the same 16px inset the
+// other tiles carry on every side.
+.widget.links-widget-box {
+	padding: 16px;
+	background-color: var(--cds-layer-01);
+}
+
 // Number cards -> Carbon KPI tile: title (heading-compact-01) over value
 // (heading-05, 32/40 regular) over a delta line (label-01).
 //
@@ -59,8 +109,20 @@
 [data-page-route="Workspaces"] .widget.number-widget-box {
 	min-height: 124px;
 	padding: 16px;
-	// the tile is layer-01 on the $background canvas; the tone carries it
+	// the tile is layer-01 on the $background canvas; the tone carries it.
+	// frappe 16.50 paints the card `--surface-base` (desk/desktop.scss), which
+	// the token remap makes Carbon's $background — the canvas itself — so the
+	// bare `.widget` fill above lost to it and the tile vanished into the page.
+	background-color: var(--cds-layer-01);
 	border-color: transparent;
+
+	// 16.50 darkens the outline on hover (`:hover` is one class deeper than the
+	// rule above, so it wins) and the whole card opens its list; a Carbon
+	// clickable tile answers with $layer-hover and keeps no outline.
+	&:hover {
+		background-color: var(--cds-layer-hover-01);
+		border-color: transparent;
+	}
 
 	.widget-head .widget-title {
 		font-size: var(--text-md); // 14

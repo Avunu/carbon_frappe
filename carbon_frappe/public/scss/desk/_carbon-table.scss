@@ -1137,6 +1137,16 @@
 // It must take NO layout space while hidden — it lives above the table in
 // `$result`, so a zero-height host plus an absolutely positioned bar is what
 // keeps an empty band from appearing over every unselected list.
+// `on_row_checked` hides the <thead> with jQuery's `.hide()` (inline
+// `display: none`), which takes its 48px out of the table: the rows slide up
+// and the first one lands underneath the bar. The bar covers the header, it
+// does not replace it in the flow — so the header keeps its space and only
+// stops being seen. (`.show()` clears the inline style, which ends the match.)
+.cf-table thead.list-header-subject[style*="display: none"] {
+	display: table-header-group !important;
+	visibility: hidden;
+}
+
 .list-carbon-header {
 	position: relative;
 	z-index: 4;
@@ -1160,7 +1170,16 @@
 		border: 0;
 	}
 
+	// Not `.cds--batch-actions`: that class is Carbon's slide-in bar, which
+	// rests bottom-anchored, transparent, clipped to nothing and translated out
+	// (_data-table-action.scss:335-352) until an `--active` class slides it in.
+	// `on_row_checked` toggles `display` instead, so with the class the bar sat
+	// invisible 48px ABOVE this zero-height host while the <thead> was hidden —
+	// the header just vanished on the first tick.
 	.checkbox-actions {
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline: 0;
 		display: flex;
 		align-items: center;
 		gap: var(--cds-spacing-05, 1rem);
