@@ -1,5 +1,17 @@
 # Changelog
 
+## [16.2.0](https://github.com/Avunu/carbon_frappe/compare/v16.1.0...v16.2.0) (2026-10-07)
+
+
+### Features
+
+* own the theme's icons as Carbon glyphs and target frappe 16.50 ([#53](https://github.com/Avunu/carbon_frappe/issues/53)) ([c47835b](https://github.com/Avunu/carbon_frappe/commit/c47835b3b12167fb9357bc53d2232ddd69b73d8d))
+
+
+### Bug Fixes
+
+* **icons:** paint legacy glyphs in ::before and close the icon audit's gaps ([#58](https://github.com/Avunu/carbon_frappe/issues/58)) ([3d3bd2a](https://github.com/Avunu/carbon_frappe/commit/3d3bd2a0f1af8b1c85ed3f76b5c3b3c0602519cb))
+
 ## [16.1.0](https://github.com/Avunu/carbon_frappe/compare/v16.0.1...v16.1.0) (2026-10-05)
 
 
