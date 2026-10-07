@@ -80,6 +80,12 @@ export interface ParsedGlyphModule {
 	/** The `//` comment lines that head the module. */
 	header: string[];
 	exports: { doc: string; name: string; value: string }[];
+	/**
+	 * Whatever is left once the header and the entries are taken out, minus
+	 * whitespace: code the generator never writes, which the entries alone
+	 * would not show.
+	 */
+	rest: string;
 }
 
 /** A JS string literal's value. The literals compared here are generator- or formatter-written. */
@@ -95,19 +101,24 @@ function decodeLiteral(quote: string, body: string): string {
  */
 export function parseGlyphModule(text: string): ParsedGlyphModule {
 	const header: string[] = [];
-	for (const line of text.split("\n")) {
+	const lines = text.split("\n");
+	for (const line of lines) {
 		if (!line.startsWith("//")) break;
 		header.push(line);
 	}
+	const body = lines.slice(header.length).join("\n");
 	const exports: ParsedGlyphModule["exports"] = [];
+	// the doc comment cannot run past its own `*/`, so code wedged between two
+	// entries is left over rather than swallowed into the next entry's doc
 	const entry =
-		/\/\*\*\s*(.*?)\s*\*\/\s*export const (\w+): string =\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)');/gs;
-	for (const m of text.matchAll(entry)) {
+		/\/\*\*\s*((?:(?!\*\/)[\s\S])*?)\s*\*\/\s*export const (\w+): string =\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)');/g;
+	for (const m of body.matchAll(entry)) {
 		const [, doc = "", name = "", double, single] = m;
 		const value = double !== undefined ? decodeLiteral('"', double) : decodeLiteral("'", single ?? "");
 		exports.push({ doc, name, value });
 	}
-	return { header, exports };
+	const rest = body.replace(entry, "").replace(/\s+/g, " ").trim();
+	return { header, exports, rest };
 }
 
 /** A stylesheet with every run of whitespace collapsed: what it says, not how it is laid out. */
@@ -117,8 +128,9 @@ export function normalizeStylesheet(text: string): string {
 
 /**
  * How a committed generated file differs from what the generator would write
- * now, or `[]`. TypeScript modules are compared entry by entry; the stylesheet
- * whole, whitespace aside.
+ * now, or `[]`. TypeScript modules are compared entry by entry, and anything
+ * outside the header and the entries must match too; the stylesheet whole,
+ * whitespace aside.
  */
 export function diffGeneratedFile(file: string, expected: string, committed: string): string[] {
 	if (file.endsWith(".ts")) {
@@ -137,6 +149,9 @@ export function diffGeneratedFile(file: string, expected: string, committed: str
 			else if (got.doc !== e.doc) problems.push(`${e.name}'s doc comment differs`);
 		}
 		for (const e of have.exports) if (!wantNames.has(e.name)) problems.push(`${e.name} is no longer listed`);
+		if (have.rest !== want.rest) {
+			problems.push(`it has text the generator does not write: ${JSON.stringify(have.rest.slice(0, 60))}`);
+		}
 		if (
 			!problems.length &&
 			want.exports.map((e) => e.name).join() !== have.exports.map((e) => e.name).join()
@@ -353,8 +368,9 @@ export function pinnedFrappeApps(flakeLock: unknown): string[] {
 /**
  * Check 9 against the apps installed next to frappe. When FRAPPE_PATH is not an
  * `apps/frappe` checkout there is no apps directory to read, so only frappe is
- * scanned; either way the audit says what it read, and fails if an app
- * flake.lock pins is not among it.
+ * scanned; either way the audit says what it read, and fails if an app in
+ * `pinnedApps` is not among it. The caller passes flake.lock's apps only under
+ * --strict: a frappe-only bench is a valid install, not drift.
  */
 export function auditLegacyEmitters(
 	frappeRoot: string,

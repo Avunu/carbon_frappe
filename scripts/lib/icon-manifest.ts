@@ -22,7 +22,8 @@
  *   name, fails too, so the tables cannot gather dead mappings.
  *
  * Which apps that covers: CI clones frappe, erpnext and hrms at the revisions
- * flake.lock pins, and the audit fails if any of those three is missing. The
+ * flake.lock pins, and the strict audit fails if any of those three is missing
+ * (a warn-only `bench build` on a frappe-only bench lists them as unverified). The
  * entries for apps no input pins (print_designer, helpdesk, wiki, webshop) are
  * verified only on a bench that has those apps installed; the audit prints
  * which apps it scanned and which named apps it could not.

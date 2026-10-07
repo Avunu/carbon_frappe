@@ -88,6 +88,18 @@ describe("parseGlyphModule and diffGeneratedFile", () => {
 		assert.deepEqual(diffGeneratedFile("x.ts", generated, header), ["up16 is missing"]);
 		assert.deepEqual(diffGeneratedFile("x.ts", header, formatted), ["up16 is no longer listed"]);
 	});
+	it("catches code the generator never writes, after or between the entries", () => {
+		for (const extra of ['export const evil16 = "<svg></svg>";', "export function boom() { return 1; }"]) {
+			assert.match(
+				diffGeneratedFile("x.ts", generated, `${formatted}${extra}\n`).join(),
+				/text the generator/,
+			);
+		}
+		const two = `${generated}/** down 16 — another. */\nexport const down16: string = "<svg/>";\n`;
+		const wedged = two.replace("/** down", "export function boom() {}\n/** down");
+		assert.deepEqual(parseGlyphModule(wedged).exports, parseGlyphModule(two).exports);
+		assert.match(diffGeneratedFile("x.ts", two, wedged).join(), /text the generator.*boom/);
+	});
 	it("compares a stylesheet whitespace aside, and nothing else aside", () => {
 		assert.deepEqual(diffGeneratedFile("x.scss", ".a {\n\tb: c;\n}\n", ".a {\n  b: c;\n}"), []);
 		assert.deepEqual(diffGeneratedFile("x.scss", ".a {\n\tb: c;\n}\n", ".a {\n\tb: d;\n}\n"), [
@@ -176,6 +188,18 @@ describe("scanLegacyEmitters and auditLegacyEmitters on a bench layout", () => {
 		assert.match(logs.join("\n"), /check 9 scanned frappe, hrms;/);
 		assert.ok(warnings.some((w) => /cannot read erpnext, which flake\.lock pins/.test(w)));
 		assert.ok(!warnings.some((w) => /fa-from-the-theme|fa-ignored/.test(w)));
+	});
+	it("lists an absent app as unverified, not as a finding, when no pinned apps are required (warn-only)", () => {
+		const warnings: string[] = [];
+		const logs: string[] = [];
+		auditLegacyEmitters(
+			path.join(apps, "frappe"),
+			[],
+			(m) => warnings.push(m),
+			(m) => logs.push(m),
+		);
+		assert.ok(!warnings.some((w) => /cannot read/.test(w)));
+		assert.match(logs.join("\n"), /unverified: .*\berpnext\b/);
 	});
 	it("says so, rather than returning silently, when FRAPPE_PATH is not an apps/frappe checkout", () => {
 		fs.cpSync(path.join(apps, "frappe"), path.join(root, "frappe-v16"), { recursive: true });

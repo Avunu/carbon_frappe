@@ -219,6 +219,22 @@ export function legacyStylesheet(opts: {
 		"\t\ttransform: rotate(360deg);",
 		"\t}",
 		"}",
+		"",
+		"// The glyph still reads as a spinner when it holds still.",
+		"@media (prefers-reduced-motion: reduce) {",
+		"\t.fa-spin::before {",
+		"\t\tanimation: none;",
+		"\t}",
+		"}",
+		"",
+		"// Forced colours replace an author background with Canvas, which would paint",
+		"// the masked glyph in the page's own background colour. A system colour is",
+		"// kept, and CanvasText is what the icon font's text was repainted in.",
+		"@media (forced-colors: active) {",
+		...selectors.map((s, i) => `\t${s}${i < selectors.length - 1 ? "," : " {"}`),
+		"\t\tbackground-color: CanvasText;",
+		"\t}",
+		"}",
 	];
 	for (const glyph of opts.glyphs) {
 		out.push("", `.${legacyClassName(glyph)} {`);

@@ -82,6 +82,19 @@ describe("legacyStylesheet", () => {
 		assert.match(css, /\.fa-spin::before \{\n\tanimation: cf-legacy-icon-spin/);
 		for (const modifier of LEGACY_MODIFIERS) assert.match(css, new RegExp(`\\.${modifier}::before[,\\s{]`));
 	});
+	it("holds the spinner still under reduced motion", () => {
+		assert.match(
+			css,
+			/@media \(prefers-reduced-motion: reduce\) \{\n\t\.fa-spin::before \{\n\t\tanimation: none;/,
+		);
+	});
+	it("paints every glyph in CanvasText under forced colours, where an author background becomes Canvas", () => {
+		const block = /@media \(forced-colors: active\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+		assert.match(
+			block,
+			/\.fa-lock::before,\n\t\.octicon-file-directory::before \{\n\t\tbackground-color: CanvasText;/,
+		);
+	});
 });
 
 describe("glyphModule", () => {

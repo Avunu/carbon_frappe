@@ -27,8 +27,9 @@
  *  8. Sprite references: the frappe sprite icons the theme still names exist.
  *  9. Legacy icon classes: every `fa-*` / `octicon-*` an installed app emits is
  *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts), and
- *     every entry there still has the emitters it names. Every app flake.lock
- *     pins must be installed next to frappe for this check to pass.
+ *     every entry there still has the emitters it names. Under --strict, every
+ *     app flake.lock pins must be installed next to frappe for this check to
+ *     pass; warn-only lists an absent one as unverified.
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -539,7 +540,10 @@ auditSpriteReferences(appRoot, frappeRoot, warn);
 // only repeat that cause, for classes its own desk still styled.
 if (predatesMirror.length === 0 && hasEspressoV2) {
 	const flakeLock: unknown = JSON.parse(fs.readFileSync(path.join(appRoot, "flake.lock"), "utf-8"));
-	auditLegacyEmitters(frappeRoot, pinnedFrappeApps(flakeLock), warn);
+	// Every app flake.lock pins is present only where CI or nix built the bench;
+	// the theme installs on a frappe-only bench too, so a `bench build` there
+	// lists them as unverified rather than counting their absence as drift.
+	auditLegacyEmitters(frappeRoot, strict ? pinnedFrappeApps(flakeLock) : [], warn);
 }
 
 if (failures) {

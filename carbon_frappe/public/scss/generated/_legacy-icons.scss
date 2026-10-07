@@ -53,6 +53,37 @@
 	}
 }
 
+// The glyph still reads as a spinner when it holds still.
+@media (prefers-reduced-motion: reduce) {
+	.fa-spin::before {
+		animation: none;
+	}
+}
+
+// Forced colours replace an author background with Canvas, which would paint
+// the masked glyph in the page's own background colour. A system colour is
+// kept, and CanvasText is what the icon font's text was repainted in.
+@media (forced-colors: active) {
+	.fa-lock::before,
+	.fa-spinner::before,
+	.fa-map-marker::before,
+	.fa-level-down::before,
+	.fa-check-circle::before,
+	.fa-code::before,
+	.fa-tag::before,
+	.fa-angle-double-right::before,
+	.fa-trash::before,
+	.fa-font::before,
+	.fa-image::before,
+	.fa-table::before,
+	.fa-square-o::before,
+	.fa-columns::before,
+	.fa-file-o::before,
+	.octicon-file-directory::before {
+		background-color: CanvasText;
+	}
+}
+
 .fa-lock {
 	// locked
 	--cf-legacy-icon: url("data:image/svg+xml,%3Csvg focusable='false' preserveAspectRatio='xMidYMid meet' xmlns='http://www.w3.org/2000/svg' fill='currentColor' aria-hidden='true' width='16' height='16' viewBox='0 0 32 32'%3E%3Cpath d='M24,14H22V8A6,6,0,0,0,10,8v6H8a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H24a2,2,0,0,0,2-2V16A2,2,0,0,0,24,14ZM12,8a4,4,0,0,1,8,0v6H12ZM24,28H8V16H24Z'%3E%3C/path%3E%3C/svg%3E");
