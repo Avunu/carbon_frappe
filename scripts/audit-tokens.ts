@@ -5,14 +5,17 @@
  *
  *  1. Carbon token references: every `var(--cds-*)` we reference (without a
  *     fallback) must exist in @carbon/themes' emitted token set.
- *  2. Frappe variable pins: every espresso/legacy var we declare should still
- *     be declared by frappe (catches upstream renames/removals).
+ *  2. Frappe variable pins: every custom property scss/map pins should still be
+ *     declared by frappe (css/espresso/*.css and the SCSS partials), or be a
+ *     documented shim of a name frappe still READS but no longer declares.
  *  3. Shadow mirrors: the frappe SCSS entry files our shadow bundles
- *     recompile must still exist, frappe's desk.bundle.scss import list
- *     is diffed against our mirror (catches new imports we should add), and
- *     every `frappe/...` file our bundles import must still exist (catches
- *     imports frappe REMOVED — the octicons/FontAwesome/leaflet break).
- *  4. Mapping premises: the g10 light theme, the semantic pins, the g100 zone.
+ *     recompile must still exist; the import list of each of frappe's four
+ *     bundles (desk, website, login, email) is diffed against our mirror
+ *     (catches new imports we should add), and every `frappe/...` file our
+ *     bundles import must still exist (catches imports frappe REMOVED — the
+ *     octicons/FontAwesome/leaflet break).
+ *  4. Mapping premises: the g10 light theme, the semantic role pins and the
+ *     ramp-primary colour mechanism, bare `--radius`, the g100 zone.
  *  5. JS hooks: the frappe runtime shapes the theme monkey-patches.
  *  6. Carbon class names: every `cds--*` class the theme's SCSS or JS emits or
  *     targets still exists in @carbon/styles (catches Carbon renames).
@@ -30,6 +33,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { auditGeneratedIcons, auditLegacyEmitters, auditSpriteReferences } from "./lib/audit-icons.ts";
+import {
+	RAMP_CHAIN_PROBES,
+	SEMANTIC_ROLE_PINS,
+	SHIMS,
+	declaredCustomProps,
+	diffMirror,
+	diffSemanticAliases,
+	isSemanticName,
+	literalSemanticNames,
+	pinnedCustomProps,
+	readCustomProps,
+	semanticAliasesByTheme,
+} from "./lib/audit-tokens.ts";
 
 const require = createRequire(import.meta.url);
 const strict = process.argv.includes("--strict");
@@ -56,23 +72,53 @@ const ourScss = walk(scssRoot)
 	.map((f) => ({ file: path.relative(appRoot, f), text: fs.readFileSync(f, "utf-8") }));
 
 // ---- Check 4: the mapping premises actually hold -------------------------
-// Runs BEFORE the frappe early-exit — it only inspects our own sources, and the
-// two faults it guards were false comments describing behaviour that never
-// existed: (1) frappe's espresso semantic layer (--surface-*/--ink-*/--outline-*)
-// was assumed to cascade from the raw-ramp remap, but it's declared as literal
-// hex, so every semantic slot must be pinned to a --cds-* token explicitly;
-// (2) --radius-* was documented as squared but never declared, so frappe-ui SPA
-// rounding survived. Assert both premises are true in source, so a future edit
-// that quietly breaks them fails the audit instead of the rendering.
+// Runs BEFORE the frappe early-exit — it only inspects our own sources. (4b, further
+// down, asks frappe the same premises' other half.) Each premise is a fault this
+// theme has already had once, written down as a comment that was false:
+//
+// (1) Colour is RAMP-PRIMARY. Since v16.50 frappe's semantic layer
+//     (--surface-*/--ink-*/--outline-*) is a chain of var() aliases onto the raw
+//     ramps, so the ramp remap reaches every chromatic slot and legacy tint, and
+//     scss/map pins only the neutral ROLES that need an exact Carbon token
+//     (SEMANTIC_ROLE_PINS). Before v16.50 the layer was literal hex and every slot
+//     was pinned by hand, against indices that v16.50 then re-numbered, which left
+//     the old pins mis-targeted (`--surface-gray-5` meant another colour) without
+//     any error. So a role pin that disappears (the neutral ladder falls back to
+//     the ramp, wrong in dark) and a chromatic pin that appears (it shadows the
+//     remap and drifts from it) both fail here. The SPA partial is exempt: it
+//     declares frappe-ui's literal names on purpose.
+// (2) Radii are squared at the names frappe reads. Bare `--radius` is Bootstrap's
+//     `$border-radius`, `$input-border-radius` and 178 rules; the numbered
+//     `--radius-N` scale is the es-* components' and frappe-ui's.
 const allScssText = ourScss.map((s) => s.text).join("\n");
-if (!/--surface-[a-z0-9-]+\s*:\s*var\(--cds-/.test(allScssText)) {
-	warn("no --surface-* var is pinned to a --cds-* token — semantic layer would keep frappe literals");
+const mapPartials = ourScss.filter(
+	({ file }) => file.includes(`scss${path.sep}map${path.sep}`) && !file.endsWith("-spa.scss"),
+);
+const mapPins = new Set<string>();
+for (const { text } of mapPartials) {
+	for (const name of pinnedCustomProps(text)) mapPins.add(name);
 }
-if (!/--ink-[a-z0-9-]+\s*:\s*var\(--cds-/.test(allScssText)) {
-	warn("no --ink-* var is pinned to a --cds-* token — semantic layer would keep frappe literals");
+for (const role of SEMANTIC_ROLE_PINS) {
+	if (!mapPins.has(role)) {
+		warn(
+			`scss/map no longer pins ${role} — that neutral role would fall back to the ramp, which is wrong on g100`,
+		);
+	}
+}
+for (const pin of mapPins) {
+	if (isSemanticName(pin) && !SEMANTIC_ROLE_PINS.includes(pin) && !SHIMS.some((s) => s.name === pin)) {
+		warn(
+			`scss/map pins ${pin}, which is not a neutral role in SEMANTIC_ROLE_PINS — frappe aliases the semantic layer onto the ramp, so the ramp remap colours it, and a literal pin shadows the remap; add it there only if Carbon names a role for it`,
+		);
+	}
 }
 if (!/--radius-\d+\s*:/.test(allScssText)) {
-	warn("--radius-* is not declared — frappe-ui SPA rounding would not be squared");
+	warn("--radius-* is not declared — frappe-ui SPA and es-* component rounding would not be squared");
+}
+if (!/^\s*--radius\s*:/m.test(allScssText)) {
+	warn(
+		"bare --radius is not pinned — Bootstrap's $border-radius and ~180 frappe rules keep the 8px rounding",
+	);
 }
 // (3) the light theme must be g10, not White. Their token KEY sets are
 // identical, so check 1 cannot tell them apart — but their values invert the
@@ -235,92 +281,167 @@ for (const { file, text } of ourScss) {
 	}
 }
 
+// ---- Is this a frappe the token mapping can be checked against? -----------
+// The map layer targets the Espresso v2 tokens frappe shipped in v16.50: plain CSS
+// under public/css/espresso, a semantic layer that is a chain of var() aliases onto
+// the raw ramps. An older frappe has neither, and every per-token finding against
+// it would be one more way of saying "the pin is old" — so checks 2 and 4b are
+// skipped for it, and the pin is reported once, with check 3's.
+const frappePublic = path.join(frappeRoot, "frappe", "public");
+const espressoDir = path.join(frappePublic, "css", "espresso");
+const hasEspressoV2 = fs.existsSync(path.join(espressoDir, "colors.css"));
+
 // ---- Check 2: frappe still declares the vars we pin -----------------------
-// frappe v16 declares its CSS custom properties in scss/espresso/*.scss (the
-// pre-v16 compiled css/espresso/*.css copies this check used to read are gone).
-const frappeVarFiles = [
-	"frappe/public/scss/espresso/_colors.scss",
-	"frappe/public/scss/espresso/_typography.scss",
-	"frappe/public/scss/espresso/_spacing.scss",
-	"frappe/public/scss/espresso/_shadows.scss",
-	"frappe/public/scss/espresso/_borders.scss",
-	"frappe/public/scss/common/css_variables.scss",
-	"frappe/public/scss/desk/css_variables.scss",
-	"frappe/public/scss/desk/sidebar.scss",
-	"frappe/public/scss/desk/dark.scss",
-	// --charts-* are owned by the vendored frappe-charts package, not by frappe:
-	// frappe's own scss re-declares only the 10 it overrides in dark mode, so
-	// reading it alone would flag every other --charts-* var as nonexistent.
-	// The dist CSS is the real authority and is what desk.bundle.scss imports.
-	"node_modules/frappe-charts/dist/frappe-charts.min.css",
-].map((f) => path.join(frappeRoot, f));
-
-// emitted by compiled Bootstrap ($theme-colors -> :root), not present in
-// frappe's scss sources as literal declarations
-const bootstrapVars = new Set(["--primary", "--secondary", "--danger", "--light", "--dark"]);
-
-const frappeVars = new Set<string>();
-for (const f of frappeVarFiles) {
-	if (!fs.existsSync(f)) {
-		warn(`frappe var source missing: ${path.relative(frappeRoot, f)} (frappe restructured?)`);
-		continue;
+// Frappe v16.50 declares its custom properties in TWO places: plain CSS under
+// public/css (css/espresso/*.css is the source of truth for the colour, effect,
+// radius, spacing and typography scales and for the legacy aliases) and the SCSS
+// partials under public/scss that own the component-level ones (css_variables,
+// dark, sidebar, dock, frappe_datatable, ...). Both are read, recursively. This
+// check used to read only scss/espresso/_*.scss, which now do nothing but `@import`
+// the CSS files, so it reported every Espresso token as removed.
+const bootstrapVarNames = new Set(["--primary", "--secondary", "--danger", "--light", "--dark"]);
+const frappeVars = new Set<string>(bootstrapVarNames);
+// What frappe's own sources READ, for the shim bookkeeping below.
+const frappeReads = new Set<string>();
+if (hasEspressoV2) {
+	const sourceFiles = (dir: string, ext: RegExp): string[] =>
+		fs.existsSync(dir)
+			? walk(dir).filter((f) => ext.test(f) && !f.includes(`${path.sep}node_modules${path.sep}`))
+			: [];
+	const declaring = [
+		...sourceFiles(path.join(frappePublic, "css"), /\.css$/),
+		...sourceFiles(path.join(frappePublic, "scss"), /\.scss$/),
+		// --charts-* are owned by the vendored frappe-charts package, not by frappe:
+		// frappe's own scss re-declares only the 10 it overrides in dark mode, so
+		// reading it alone would flag every other --charts-* var as nonexistent.
+		// The dist CSS is the real authority and is what desk.bundle.scss imports.
+		path.join(frappePublic, "node_modules", "frappe-charts", "dist", "frappe-charts.min.css"),
+	];
+	for (const f of declaring) {
+		if (!fs.existsSync(f)) {
+			warn(`frappe var source missing: ${path.relative(frappeRoot, f)} (frappe restructured?)`);
+			continue;
+		}
+		const text = fs.readFileSync(f, "utf-8");
+		for (const name of declaredCustomProps(text)) frappeVars.add(name);
+		for (const name of readCustomProps(text)) frappeReads.add(name);
 	}
-	for (const m of fs.readFileSync(f, "utf-8").matchAll(/(--[a-z0-9-]+)\s*:/g)) {
-		// Group 1 always participates in a match; the check is for the compiler.
-		const name = m[1];
-		if (name !== undefined) frappeVars.add(name);
+	// Components in .vue files carry styles that read tokens too.
+	for (const f of sourceFiles(path.join(frappePublic, "js"), /\.(?:js|vue|css)$/)) {
+		for (const name of readCustomProps(fs.readFileSync(f, "utf-8"))) frappeReads.add(name);
 	}
 }
 
-// vars we declare that are OURS by design, not frappe(-desk) pins:
-// --carbon-/--chart-color-/--cds- are theme-minted; --radius-*/--tw-* are
-// frappe-ui / Tailwind SPA tokens (squared/repointed for carbon_frappe_ui);
-// --elevation-*/--font-weight-* are frappe-ui semantic tokens (frappe desk uses
-// --shadow-*/--weight-*), so they never appear in the desk scss sources above.
-const ownPrefixes = [
-	"--carbon-",
-	"--chart-color-",
-	"--font-family-mono",
-	"--cds-",
-	"--radius-",
-	"--tw-",
-	"--elevation-",
-	"--font-weight-",
-];
-// Theme-minted aliases with no shared prefix: Carbon-only focus variants frappe
-// doesn't ship (frappe has --focus-{default,blue,green,yellow,red} only), the
-// derived component radii declared in _radius.scss, and frappe-ui surface names.
-const themeOwned = new Set([
-	"--focus-outline-default",
-	"--focus-outline-red",
-	"--focus-outline-green",
-	"--focus-outline-blue",
-	"--focus-outline-amber",
-	"--focus-outline-violet",
-	"--focus-amber",
-	"--focus-violet",
-	"--surface-base",
-	"--surface-sidebar",
-	"--outline-elevation-1",
-	"--outline-elevation-2",
-	"--card-border-radius",
-	"--dt-border-radius",
-	"--desktop-modal-radius",
-]);
-const mapFiles = ourScss.filter(({ file }) => file.includes(`scss${path.sep}map${path.sep}`));
-for (const { file, text } of mapFiles) {
-	for (const m of text.matchAll(/^\s*(--[a-z0-9-]+)\s*:/gm)) {
-		const name = m[1];
-		if (name === undefined) continue;
-		if (ownPrefixes.some((p) => name.startsWith(p)) || bootstrapVars.has(name)) continue;
-		if (themeOwned.has(name)) continue;
-		if (!frappeVars.has(name)) {
-			warn(`${file}: pins ${name}, which frappe no longer declares`);
+// vars we declare that are OURS by design, not pins of a frappe name:
+// --carbon-/--chart-color-/--cds-/--font-family-mono are theme-minted (frappe has no
+// mono-font token), --tw-* are Tailwind's, repointed for carbon_frappe_ui.
+const ownPrefixes = ["--carbon-", "--chart-color-", "--cds-", "--font-family-mono", "--tw-"];
+const isShim = (name: string): boolean => SHIMS.some((s) => s.name === name);
+const semanticDeclared = hasEspressoV2
+	? new Set([
+			...declaredCustomProps(fs.readFileSync(path.join(espressoDir, "colors.css"), "utf-8")),
+			...declaredCustomProps(fs.readFileSync(path.join(espressoDir, "legacy.css"), "utf-8")),
+		])
+	: new Set<string>();
+if (hasEspressoV2) {
+	for (const { file, text } of mapPartials) {
+		for (const name of pinnedCustomProps(text)) {
+			if (ownPrefixes.some((p) => name.startsWith(p)) || isShim(name)) continue;
+			// The semantic layer lives in colors.css and legacy.css; a name that
+			// only some SCSS partial declares is not the one the theme meant.
+			if (isSemanticName(name)) {
+				if (!semanticDeclared.has(name)) {
+					warn(
+						`${file}: pins ${name}, which css/espresso/colors.css and legacy.css no longer declare — a dead pin (if frappe still reads it, it is a shim: add it to SHIMS in scripts/lib/audit-tokens.ts)`,
+					);
+				}
+			} else if (!frappeVars.has(name)) {
+				warn(`${file}: pins ${name}, which frappe no longer declares`);
+			}
+		}
+	}
+	// A shim is a name frappe READS but no longer DECLARES. It stops being one the day
+	// frappe declares the name again (the pin is then redundant, and may shadow
+	// frappe's own value) or stops reading it (nothing is left to serve).
+	for (const shim of SHIMS) {
+		if (frappeVars.has(shim.name)) {
+			warn(`${shim.name} is a theme shim but frappe declares it again — drop the shim from scss/map`);
+		} else if (!frappeReads.has(shim.name)) {
+			warn(
+				`${shim.name} is a theme shim but frappe no longer reads it (was: ${shim.readBy}) — drop the shim`,
+			);
 		}
 	}
 }
 
-// ---- Check 3: shadow-mirror sources still exist; desk imports diffed ------
+// ---- Check 4b: frappe still has the shape check 4's premises assume --------
+// The semantic layer must still be a chain of aliases onto the ramps. If frappe
+// goes back to literal values the ramp remap cannot reach them, and the chromatic
+// slots the map layer deliberately does not pin would silently keep Espresso's own
+// colours — in both themes, with no error anywhere.
+if (hasEspressoV2) {
+	const colorsCss = fs.readFileSync(path.join(espressoDir, "colors.css"), "utf-8");
+	for (const [name, pattern] of RAMP_CHAIN_PROBES) {
+		if (!pattern.test(colorsCss)) {
+			warn(
+				`css/espresso/colors.css no longer declares ${name} as an alias onto the ramp — the ramp remap would not reach it`,
+			);
+		}
+	}
+	const literals = literalSemanticNames(colorsCss);
+	if (literals.length) {
+		warn(
+			`css/espresso/colors.css declares ${literals.length} semantic name(s) as literal values (${literals.slice(0, 3).join(", ")}${literals.length > 3 ? ", …" : ""}) — the ramp remap cannot reach them; pin them in scss/map/_colors-semantic.scss`,
+		);
+	}
+}
+
+// ---- Check 4c: the ramp-alias transcription still equals frappe's colors.css
+// scss/map/_semantic-ramp.scss rebuilds the semantic layer as aliases onto the ramps
+// for the two places that cannot inherit frappe's (the SPA bundle and the UI Shell
+// zone). It is colors.css's step arithmetic written as Sass, so it goes stale
+// without a sound when frappe re-indexes the layer, which v16.50 did to the v16.36
+// one. Compile the mixins and compare every name they declare, both themes.
+/** The one member of `sass` this check uses; `createRequire` answers `any`. */
+interface SassCompiler {
+	compileString(
+		source: string,
+		options: { loadPaths: string[]; silenceDeprecations: string[] },
+	): { css: string };
+}
+const isSassCompiler = (value: unknown): value is SassCompiler =>
+	typeof value === "object" &&
+	value !== null &&
+	"compileString" in value &&
+	typeof value.compileString === "function";
+if (hasEspressoV2) {
+	const sassModule: unknown = (() => {
+		try {
+			return require("sass");
+		} catch {
+			return undefined;
+		}
+	})();
+	if (!isSassCompiler(sassModule)) {
+		console.log("[audit] sass is not installed — skipping the semantic ramp-alias comparison (check 4c)");
+	} else {
+		const compiled = sassModule.compileString(
+			'@import "semantic-ramp"; :root { @include semantic-light(false); } [data-theme="dark"] { @include semantic-dark(false); }',
+			{ loadPaths: [path.join(scssRoot, "map")], silenceDeprecations: ["import"] },
+		).css;
+		const differences = diffSemanticAliases(
+			semanticAliasesByTheme(compiled),
+			semanticAliasesByTheme(fs.readFileSync(path.join(espressoDir, "colors.css"), "utf-8")),
+		);
+		if (differences.length) {
+			warn(
+				`scss/map/_semantic-ramp.scss no longer matches css/espresso/colors.css on ${differences.length} name(s) (${differences.slice(0, 3).join("; ")}) — frappe re-indexed its semantic layer; update the step functions and tables there`,
+			);
+		}
+	}
+}
+
+// ---- Check 3: shadow-mirror sources still exist; every bundle's imports diffed
 const mirrored = [
 	"frappe/public/scss/desk/index",
 	"frappe/public/scss/website/index",
@@ -334,11 +455,6 @@ for (const m of mirrored) {
 	}
 }
 
-const frappeDesk = fs.readFileSync(
-	path.join(frappeRoot, "frappe", "public", "scss", "desk.bundle.scss"),
-	"utf-8",
-);
-const ourDesk = fs.readFileSync(path.join(scssRoot, "desk.bundle.scss"), "utf-8");
 /**
  * What frappe v16.50.0 stopped importing into its desk bundle — octicons
  * (#39836), leaflet's stylesheets, now lazy-loaded (#39421), and FontAwesome
@@ -347,20 +463,38 @@ const ourDesk = fs.readFileSync(path.join(scssRoot, "desk.bundle.scss"), "utf-8"
  */
 const REMOVED_IN_16_50 = /\/(?:fontawesome|octicons)\/|\/lib\/leaflet/;
 const predatesMirror: string[] = [];
-for (const m of frappeDesk.matchAll(/@import\s+"([^"]+)"/g)) {
-	const imp = m[1];
-	if (imp === undefined) continue;
-	// inter fonts are intentionally replaced by IBM Plex
-	if (imp.includes("inter")) continue;
-	const normalized = imp.replace(/^~/, "").replace(/^\.\//, "");
-	if (ourDesk.includes(normalized)) continue;
-	if (REMOVED_IN_16_50.test(imp)) predatesMirror.push(imp);
-	else warn(`frappe desk.bundle.scss imports "${imp}" — not present in our desk mirror`);
+// Each of the four shadow bundles against the frappe bundle it replaces. Desk and
+// website list frappe's imports themselves, so Carbon's layers can sit between
+// them; login and email import frappe's whole bundle, which carries every import
+// frappe adds to it (see diffMirror). Inter is replaced by IBM Plex on purpose.
+for (const bundle of ["desk", "website", "login", "email"]) {
+	const frappeEntry = path.join(frappePublic, "scss", `${bundle}.bundle.scss`);
+	if (!fs.existsSync(frappeEntry)) {
+		warn(`frappe ${bundle}.bundle.scss is gone — the ${bundle} shadow bundle has nothing to mirror`);
+		continue;
+	}
+	const missing = diffMirror(
+		fs.readFileSync(frappeEntry, "utf-8"),
+		fs.readFileSync(path.join(scssRoot, `${bundle}.bundle.scss`), "utf-8"),
+		{ bundle, frappeEntryDir: "frappe/public/scss", omit: /\/fonts\/inter\// },
+	);
+	for (const imp of missing) {
+		if (REMOVED_IN_16_50.test(imp)) predatesMirror.push(imp);
+		else warn(`frappe ${bundle}.bundle.scss imports "${imp}" — not present in our ${bundle} mirror`);
+	}
 }
-if (predatesMirror.length) {
+// One finding for "this frappe is older than the mirror", however many ways it shows.
+if (predatesMirror.length || !hasEspressoV2) {
+	const evidence = [
+		...(predatesMirror.length
+			? [
+					`still imports ${predatesMirror.length} stylesheet(s) our desk mirror dropped (${predatesMirror.map((i) => path.basename(i)).join(", ")})`,
+				]
+			: []),
+		...(hasEspressoV2 ? [] : ["has no css/espresso/colors.css (the Espresso v2 tokens)"]),
+	].join(" and ");
 	warn(
-		`the frappe at ${frappeRoot} still imports ${predatesMirror.length} stylesheet(s) our desk mirror dropped ` +
-			`(${predatesMirror.map((i) => path.basename(i)).join(", ")}): it predates frappe v16.50.0, which removed them, and the mirror targets ≥ 16.50 — move the pin (\`nix flake update frappe\`)`,
+		`the frappe at ${frappeRoot} ${evidence}: it predates frappe v16.50.0, and the mirror and the token mapping target ≥ 16.50 — move the pin (\`nix flake update frappe\`); per-token checks are skipped for it`,
 	);
 }
 
@@ -370,7 +504,10 @@ if (predatesMirror.length) {
 // the first anyone heard of it was `bench build` failing on a path the
 // postcss plugin had rebased into /tmp. `~pkg` imports and `/node_modules/`
 // paths are not frappe source (they resolve at build time), so they are skipped.
-for (const file of fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss"))) {
+// A frappe older than the mirror lacks files the mirror imports because it has not
+// got them YET (espresso_components, common/utilities): that is the pin, reported
+// once above, not "removed upstream".
+for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss")) : []) {
 	const text = fs.readFileSync(path.join(scssRoot, file), "utf-8");
 	for (const m of text.matchAll(/^\s*@import\s+"(frappe\/[^"]+)"/gm)) {
 		const spec = m[1];
@@ -398,7 +535,7 @@ for (const file of fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.sc
 auditSpriteReferences(appRoot, frappeRoot, warn);
 // A pre-16.50 frappe is already reported once above; per-class findings would
 // only repeat that cause, for classes its own desk still styled.
-if (predatesMirror.length === 0) auditLegacyEmitters(frappeRoot, warn);
+if (predatesMirror.length === 0 && hasEspressoV2) auditLegacyEmitters(frappeRoot, warn);
 
 if (failures) {
 	console.log(`[audit] ${failures} finding(s)${strict ? "" : " (warn-only)"}`);

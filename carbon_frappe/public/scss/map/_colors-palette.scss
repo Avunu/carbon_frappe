@@ -1,11 +1,16 @@
 // Raw palette remap: frappe/espresso color ramps (--<family>-50..950) snapped
-// to Carbon (@carbon/colors) scales. Espresso's semantic layer
-// (--surface-*/--ink-*/--outline-*) references these ramps, so this single
-// remap cascades through the semantic and legacy alias layers for BOTH desk
-// and frappe-ui. Ramps run light->dark in both frappe modes (no inversion);
-// the dark block uses values tuned so espresso's inverted semantic slots land
-// on Carbon g100 tokens. Exact-token slots are then pinned in
-// _colors-semantic.scss / _colors-legacy.scss.
+// to Carbon (@carbon/colors) scales. This is the PRIMARY color mechanism.
+// Frappe v16.50 declares its whole semantic layer (--surface-*/--ink-*/
+// --outline-*) as var() aliases onto these ramps (css/espresso/colors.css) and
+// its legacy names (--bg-red, --text-on-blue, ...) as aliases onto that layer
+// (css/espresso/legacy.css), so this one remap reaches every status fill, tag,
+// alert and tint in the desk and website in both themes. Only the neutral ROLES
+// that need an exact Carbon token are pinned on top (_colors-semantic.scss,
+// _colors-legacy.scss). frappe-ui SPAs get the same result by a different route:
+// their semantic names are resolved literals, so _colors-semantic-spa.scss
+// re-declares them as aliases onto this ramp.
+// Ramps run light->dark in both frappe modes (no inversion); the dark block uses
+// values tuned so espresso's inverted semantic slots land on Carbon g100 tokens.
 @use "sass:map";
 @use "@carbon/colors" as c;
 
@@ -78,6 +83,9 @@ $light-ramps: (
 		900: c.$orange-90,
 		950: c.$orange-100,
 	),
+	// Carbon has no yellow TAG, so there is no <c>-20 / <c>-70 pairing to copy.
+	// Yellow-50 text on the yellow-20 tint is 2.4:1; the step that is text on the
+	// tint (frappe's `ink-<c>-8`, ramp 700) is yellow-70, which clears AA (5.5:1).
 	"amber": (
 		50: c.$yellow-10,
 		100: c.$yellow-20,
@@ -85,11 +93,11 @@ $light-ramps: (
 		300: c.$yellow-30,
 		400: c.$yellow-30,
 		500: c.$yellow-30, // support-warning
-		600: c.$yellow-40,
-		700: c.$yellow-50,
-		800: c.$yellow-60,
-		900: c.$yellow-70,
-		950: c.$yellow-80,
+		600: c.$yellow-50,
+		700: c.$yellow-70,
+		800: c.$yellow-70,
+		900: c.$yellow-80,
+		950: c.$yellow-90,
 	),
 	"yellow": (
 		50: c.$yellow-10,
@@ -98,11 +106,11 @@ $light-ramps: (
 		300: c.$yellow-30,
 		400: c.$yellow-30,
 		500: c.$yellow-30, // support-warning
-		600: c.$yellow-40,
-		700: c.$yellow-50,
-		800: c.$yellow-60,
-		900: c.$yellow-70,
-		950: c.$yellow-80,
+		600: c.$yellow-50,
+		700: c.$yellow-70,
+		800: c.$yellow-70,
+		900: c.$yellow-80,
+		950: c.$yellow-90,
 	),
 	"teal": (
 		50: c.$teal-10,
@@ -172,8 +180,8 @@ $light-ramps: (
 );
 
 // Dark (g100). Espresso's dark semantics invert ramp usage (surface-<c>-1 =
-// <c>-950, ink-<c>-8 = <c>-300), so: low steps stay light (text on dark),
-// high steps go deep (subtle backgrounds). Anchors: 300 = dark support tone
+// <c>-950, ink-<c>-8 = <c>-200), so: low steps stay light (text on dark),
+// high steps go deep (subtle backgrounds). Anchors: 200/300 = dark support tone
 // (Carbon <c>-30), 500 = dark interactive (<c>-50), 900/950 = dark subtle
 // backgrounds (<c>-80/90).
 $dark-color-steps: (

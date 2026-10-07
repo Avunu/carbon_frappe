@@ -46,6 +46,134 @@ interface ManyProbe {
 	cellsInFirstRow: number;
 }
 
+/** One column's width as the model, the <colgroup> and the DOM each report it. */
+interface ColumnWidth {
+	id: string;
+	/** `visible_columns[n][1]` — frappe's own width for the column */
+	model: number;
+	/** the <col> the engine wrote, in px; `null` when it left the width to the layout */
+	col: number | null;
+	/** the header cell's rendered width */
+	th: number;
+	/** the first body row's frappe cell, which has to fill its <td> */
+	cell: number;
+}
+
+/** `widths` — every visible column, plus the one frappe computes it from. */
+interface WidthsProbe {
+	rows: ColumnWidth[];
+	/** columns whose three widths disagree */
+	mismatched: ColumnWidth[];
+	/** `grid.get_column_width(df) === visible_columns[n][1]` for every column */
+	modelIsFrappes: boolean;
+	/** how many `.column-limit-reached` elements the grid wrapper holds */
+	limitReached: number;
+}
+
+/** `dfWidth` — `df.width`, set by hand, before and after the grid is rebuilt. */
+interface DfWidthProbe {
+	/** `df.width = 222` */
+	exact: number;
+	/** `df.width = "700px"` — a docfield width is a CSS length — clamped to 600 */
+	clampedHigh: number;
+	/** `df.width = 20`, clamped to 60 */
+	clampedLow: number;
+	/** the same column's content box in the first body row, for the exact case */
+	cell: number;
+}
+
+/** Where a header's resize handle is, and how wide its column is before the drag. */
+interface HandleStart {
+	x: number;
+	y: number;
+	before: number;
+}
+
+/** `resize` — one real drag on a header handle, and what frappe was told. */
+interface ResizeProbe {
+	before: number;
+	after: number;
+	/** frappe's own cells inside the resized column, header and first body row */
+	headCell: number;
+	bodyCell: number;
+	/** every `frappe.model.user_settings.update` call, in order */
+	saved: Array<{ doctype: string; widths: Record<string, number | undefined> }>;
+	dfWidth: number | string | null;
+	modelWidth: number | null;
+	/** the engine's handle count on this header row, and frappe's own (hidden) ones */
+	handles: number;
+	frappeHandlesShown: number;
+	/** gutters get no handle: they have nowhere to save a width */
+	gutterHandles: number;
+}
+
+/** `roundTrip` — user settings read back into a rebuilt grid. */
+interface RoundTripProbe {
+	/** the saved GridView width of the column that was dragged, and its th after a rebuild */
+	saved: number | null;
+	rebuilt: number;
+	/** legacy `columns` spans (3, 4) and a px `width` (90), as three header widths */
+	legacy: number[];
+	legacyColumns: string[];
+}
+
+/** `configure` — the Configure Columns dialog: its inputs, a clamp, and Update. */
+interface ConfigureProbe {
+	inputs: number[];
+	/** what 700 and 30 typed into the first two inputs became */
+	clamped: number[];
+	saved: Array<number | undefined>;
+	rebuilt: number[];
+}
+
+/** `labels` — frappe's own label mechanism, driven against the moved buttons. */
+interface LabelProbe {
+	one: { del: string; dup: string };
+	two: { del: string; dup: string };
+	/** after `set_button_label` on the icon-only Download button */
+	download: {
+		label: string;
+		glyph: boolean;
+		spinner: boolean;
+		hiddenLabel: boolean;
+		title: string | null;
+	};
+}
+
+/** `pager` — more rows than one page, and the controls that page through them. */
+interface PagerProbe {
+	rows: number;
+	pages: string;
+	buttons: { first: boolean; prev: boolean; next: boolean; last: boolean };
+	espresso: boolean;
+	visible: boolean;
+	inFooter: boolean;
+	page1: number;
+	page1First: string | null;
+}
+
+/** `paged` — page two, and select-all across a page change. */
+interface PagedProbe {
+	rows: number;
+	firstIdx: string | null;
+	sparse: boolean;
+	selectAllOnTwo: boolean;
+	checkedOnTwo: number;
+	selected: number;
+	selectAllBackOnOne: boolean;
+	selectAllBackOnTwo: boolean;
+}
+
+/** `fill` — a short grid: every column but the last exact, the last takes the spare. */
+interface FillProbe {
+	container: number;
+	table: number;
+	sum: number;
+	others: Array<{ id: string; model: number; th: number }>;
+	last: { id: string; model: number; th: number };
+	overflows: boolean;
+}
+
 /** `api` — the inherited Grid/GridRow surface, one flag per call. */
 interface ApiProbe {
 	get_field: boolean;
@@ -157,6 +285,8 @@ interface ClosedProbe {
 interface ModalProbe {
 	modalClass: boolean;
 	fixed: boolean;
+	/** the form, not its backdrop, is what sits at the form's own centre */
+	onTop: boolean;
 	frozen: number;
 	afterFrozen: number;
 	afterCount: number;
@@ -362,6 +492,277 @@ try {
 		many.cellsInFirstRow === many.headers,
 		`${many.cellsInFirstRow} vs ${many.headers}`,
 	);
+
+	// --- column widths: frappe's pixel model, rendered by the engine -----------
+	// frappe 16.50 sizes columns in px itself (`get_column_width`: a saved or
+	// docfield `width`, else a legacy `columns` span, else a fieldtype default,
+	// clamped to 60-600). The grid renders those numbers; it must not compute
+	// its own, and a column the engine resizes has to take its cell with it.
+	const widths = await page.eval<WidthsProbe>(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const w = grid.wrapper;
+    const cols = [...w.find('colgroup col')];
+    const ids = [...w.find('thead tr.grid-row th')].map((th) => th.dataset.colId);
+    const row = w.find('tbody tr.grid-row')[0];
+    const rows = grid.visible_columns.map(([df, model]) => {
+      const col = cols[ids.indexOf(df.fieldname)];
+      const th = w.find('thead th[data-col-id="' + df.fieldname + '"]')[0];
+      const cell = row.querySelector('td[data-col-id="' + df.fieldname + '"] .grid-static-col');
+      return {
+        id: df.fieldname,
+        model,
+        col: col && col.style.width ? parseFloat(col.style.width) : null,
+        th: Math.round(th.getBoundingClientRect().width),
+        cell: Math.round(cell.getBoundingClientRect().width),
+      };
+    });
+    return {
+      rows,
+      mismatched: rows.filter((r) => r.th !== r.model || r.cell !== r.model || (r.col !== null && r.col !== r.model)),
+      modelIsFrappes: grid.visible_columns.every(([df, m]) => grid.get_column_width(df) === m),
+      limitReached: w.find('.column-limit-reached').length,
+    };
+  })()`);
+	ok(
+		"every column is exactly the width frappe's get_column_width gives it (model, <col>, <th>, cell)",
+		widths.rows.length > 10 && widths.modelIsFrappes && widths.mismatched.length === 0,
+		JSON.stringify(widths.mismatched.slice(0, 3)),
+	);
+
+	// `df.width` is the docfield's own pixel width ("150px" on Sales Order Item's
+	// item_code); the per-user setting writes a number into the same slot.
+	const dfWidth = await page.eval<DfWidthProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const df = grid.fields_map.qty;
+    const had = Object.prototype.hasOwnProperty.call(df, 'width');
+    const old = df.width;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const th = () => Math.round(grid.wrapper.find('thead th[data-col-id="qty"]')[0].getBoundingClientRect().width);
+    const measure = async (value) => { df.width = value; grid.reset_grid(); await sleep(900); return th(); };
+    const exact = await measure(222);
+    const cell = Math.round(grid.wrapper.find('tbody tr.grid-row')[0]
+      .querySelector('td[data-col-id="qty"] .grid-static-col').getBoundingClientRect().width);
+    const clampedHigh = await measure('700px');
+    const clampedLow = await measure(20);
+    if (had) df.width = old; else delete df.width;
+    grid.reset_grid();
+    await sleep(900);
+    return { exact, clampedHigh, clampedLow, cell };
+  })()`);
+	ok(
+		"df.width drives the column: honoured exactly, and held to 60-600",
+		dfWidth.exact === 222 && dfWidth.cell === 222 && dfWidth.clampedHigh === 600 && dfWidth.clampedLow === 60,
+		JSON.stringify(dfWidth),
+	);
+
+	// A header drag: the ENGINE's handle (frappe's own is hidden and unwired),
+	// reported through onColumnResize and handed to frappe's save_column_width.
+	// `user_settings.update` is the network leaf, so it is stubbed — the test
+	// reads what frappe would have stored without writing the user's settings.
+	const start = await page.eval<HandleStart>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    window.__saved = [];
+    window.__origUpdate = frappe.model.user_settings.update;
+    window.__origSettings = frappe.model.user_settings['Sales Order'];
+    window.__origWidths = Object.fromEntries(grid.docfields.map((d) => [d.fieldname, d.width]));
+    frappe.model.user_settings.update = (doctype, settings) => {
+      window.__saved.push({ doctype, settings: JSON.parse(JSON.stringify(settings)) });
+      frappe.model.user_settings[doctype] = settings;
+      return Promise.resolve({ message: settings });
+    };
+    const th = grid.wrapper.find('thead th[data-col-id="qty"]')[0];
+    th.scrollIntoView({ block: 'center', inline: 'center' });
+    await new Promise((r) => setTimeout(r, 400));
+    const r = th.querySelector('.cf-table__resize-handle').getBoundingClientRect();
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), before: Math.round(th.getBoundingClientRect().width) };
+  })()`);
+	await page.drag(start.x, start.y, start.x + 50, start.y, 8);
+	await new Promise((r) => setTimeout(r, 600));
+	const resize = await page.eval<ResizeProbe>(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const w = grid.wrapper;
+    const th = w.find('thead th[data-col-id="qty"]')[0];
+    const saved = window.__saved.map((s) => ({
+      doctype: s.doctype,
+      widths: Object.fromEntries((s.settings.GridView['Sales Order Item'] || []).map((c) => [c.fieldname, c.width])),
+    }));
+    const vc = grid.visible_columns.find(([df]) => df.fieldname === 'qty');
+    return {
+      before: ${start.before},
+      after: Math.round(th.getBoundingClientRect().width),
+      // frappe sized these inline at the width the column had when the row was
+      // built; they have to follow the <colgroup>, not stay behind at that width
+      headCell: Math.round(th.querySelector('.grid-static-col').getBoundingClientRect().width),
+      bodyCell: Math.round(w.find('tbody tr.grid-row')[0]
+        .querySelector('td[data-col-id="qty"] .grid-static-col').getBoundingClientRect().width),
+      saved,
+      dfWidth: grid.fields_map.qty.width === undefined ? null : grid.fields_map.qty.width,
+      modelWidth: vc ? vc[1] : null,
+      handles: w.find('thead tr.grid-row .cf-table__resize-handle').length,
+      frappeHandlesShown: [...w.find('.grid-col-resize-handle')].filter((h) => getComputedStyle(h).display !== 'none').length,
+      gutterHandles: ['_expand', '_check', '_index', '_menu']
+        .reduce((n, id) => n + w.find('thead th[data-col-id="' + id + '"] .cf-table__resize-handle').length, 0),
+    };
+  })()`);
+	ok(
+		"dragging a header handle resizes the column to follow the pointer",
+		resize.after === resize.before + 50,
+		`${resize.before} -> ${resize.after}`,
+	);
+	ok(
+		"a resized column's cells widen with it (frappe's inline cell width does not hold them back)",
+		resize.headCell === resize.after && resize.bodyCell === resize.after,
+		JSON.stringify({ th: resize.after, head: resize.headCell, body: resize.bodyCell }),
+	);
+	ok(
+		"the drag is persisted once, through frappe's save_column_width, as a GridView width",
+		resize.saved.length === 1 &&
+			resize.saved[0]?.doctype === "Sales Order" &&
+			resize.saved[0].widths["qty"] === resize.after &&
+			resize.dfWidth === resize.after &&
+			resize.modelWidth === resize.after,
+		JSON.stringify(resize),
+	);
+	ok(
+		"every column is saved with a width, and only data columns get a handle",
+		Object.values(resize.saved[0]?.widths ?? {}).every((v) => typeof v === "number" && v >= 60 && v <= 600) &&
+			resize.handles === widths.rows.length &&
+			resize.gutterHandles === 0,
+		JSON.stringify({ h: resize.handles, cols: widths.rows.length, g: resize.gutterHandles }),
+	);
+	ok(
+		"frappe's own resize handle is hidden",
+		resize.frappeHandlesShown === 0,
+		String(resize.frappeHandlesShown),
+	);
+
+	// The stored layout, read back: the dragged width, then settings an older
+	// frappe wrote (`columns` spans) next to a px `width` and a sticky column.
+	const roundTrip = await page.eval<RoundTripProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const th = (id) => Math.round(grid.wrapper.find('thead th[data-col-id="' + id + '"]')[0].getBoundingClientRect().width);
+    const last = window.__saved[window.__saved.length - 1].settings;
+    const mine = last.GridView['Sales Order Item'].find((c) => c.fieldname === 'qty');
+    grid.reset_grid();
+    await sleep(900);
+    const rebuilt = th('qty');
+    frappe.model.user_settings['Sales Order'] = { GridView: { 'Sales Order Item': [
+      { fieldname: 'item_code', columns: 3, sticky: 1 },
+      { fieldname: 'qty', columns: 4 },
+      { fieldname: 'rate', width: 90 },
+    ] } };
+    grid.reset_grid();
+    await sleep(900);
+    const headers = [...grid.wrapper.find('thead tr.grid-row th')].filter((n) => !n.dataset.colId.startsWith('_'));
+    return {
+      saved: mine ? mine.width : null,
+      rebuilt,
+      legacy: headers.map((n) => Math.round(n.getBoundingClientRect().width)),
+      legacyColumns: headers.map((n) => n.dataset.colId),
+    };
+  })()`);
+	ok(
+		"a saved width comes back after a rebuild",
+		roundTrip.saved === resize.after && roundTrip.rebuilt === resize.after,
+		JSON.stringify(roundTrip),
+	);
+	ok(
+		"legacy `columns` spans still resolve (3 -> 140, 4 -> 200) beside a px width",
+		roundTrip.legacyColumns.join() === "item_code,qty,rate" &&
+			roundTrip.legacy[0] === 140 &&
+			roundTrip.legacy[1] === 200 &&
+			(roundTrip.legacy[2] ?? 0) >= 90,
+		JSON.stringify(roundTrip),
+	);
+
+	// `df.sticky` still draws the column where it belongs: frappe writes
+	// `position: sticky; left: Npx` on the cell, and the engine pins the <td>, so
+	// the nested cell has to stay out of the way.
+	const sticky = await page.eval<{
+		position: string;
+		offset: number;
+		header: [number, number];
+		body: [number, number];
+	}>(
+		`(() => {
+    const w = cur_frm.fields_dict.items.grid.wrapper;
+    const cell = w.find('tbody tr.grid-row')[0].querySelector('td[data-col-id="item_code"] .grid-static-col');
+    const td = cell.closest('td');
+    const head = w.find('thead th[data-col-id="item_code"] .grid-static-col')[0];
+    const box = (n) => { const r = n.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.width)]; };
+    return {
+      position: getComputedStyle(cell).position,
+      offset: Math.round(cell.getBoundingClientRect().x - td.getBoundingClientRect().x),
+      header: box(head),
+      body: box(cell),
+    };
+  })()`,
+	);
+	ok(
+		"a sticky column stays in its cell (no inline left offset applied)",
+		sticky.position === "static" &&
+			sticky.offset === 0 &&
+			sticky.header[0] === sticky.body[0] &&
+			sticky.header[1] === sticky.body[1],
+		JSON.stringify(sticky),
+	);
+
+	// Configure Columns writes `width`, 60-600 (frappe clamps what is typed), and
+	// Update rebuilds the grid from it.
+	const configure = await page.eval<ConfigureProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const hr = grid.header_row;
+    hr.configure_dialog_for_columns_selector();
+    await sleep(600);
+    const dialog = hr.grid_settings_dialog;
+    const $in = $(dialog.$wrapper).find('.column-width');
+    const inputs = [...$in].map((i) => parseInt(i.value));
+    const type = (i, v) => { $in[i].value = v; $($in[i]).trigger('change'); };
+    type(0, 700);
+    type(1, 30);
+    const clamped = [parseInt($in[0].value), parseInt($in[1].value)];
+    dialog.get_primary_btn().click();
+    await sleep(1500);
+    const th = (id) => Math.round(grid.wrapper.find('thead th[data-col-id="' + id + '"]')[0].getBoundingClientRect().width);
+    const last = window.__saved[window.__saved.length - 1].settings;
+    return {
+      inputs,
+      clamped,
+      saved: last.GridView['Sales Order Item'].map((c) => c.width),
+      rebuilt: [th('item_code'), th('qty')],
+    };
+  })()`);
+	ok(
+		"Configure Columns shows the current px widths",
+		configure.inputs.join() === "140,200,90",
+		JSON.stringify(configure.inputs),
+	);
+	ok(
+		"Configure Columns: widths are held to 60-600, saved, and applied by Update",
+		configure.clamped.join() === "600,60" &&
+			configure.saved.join() === "600,60,90" &&
+			configure.rebuilt.join() === "600,60",
+		JSON.stringify(configure),
+	);
+
+	// Put the stub and the settings back, then rebuild the 16-column grid the
+	// rest of the suite measures.
+	await page.eval(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    frappe.model.user_settings.update = window.__origUpdate;
+    if (window.__origSettings === undefined) delete frappe.model.user_settings['Sales Order'];
+    else frappe.model.user_settings['Sales Order'] = window.__origSettings;
+    for (const df of grid.docfields) {
+      if (window.__origWidths[df.fieldname] === undefined) delete df.width;
+      else df.width = window.__origWidths[df.fieldname];
+      delete df.sticky;
+    }
+    grid.reset_grid();
+    await new Promise((r) => setTimeout(r, 900));
+    return true;
+  })()`);
 
 	// inherited Grid API surface
 	const api = await page.eval<ApiProbe>(`(() => {
@@ -659,6 +1060,11 @@ try {
       const opened = {
         modalClass: grid.wrapper.hasClass('cf-grid--modal-form'),
         fixed: getComputedStyle(formEl).position === 'fixed',
+        onTop: (() => {
+          const r = formEl.getBoundingClientRect();
+          const hit = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + 30));
+          return !!(hit && formEl.contains(hit));
+        })(),
         frozen: document.querySelectorAll('#freeze').length,
       };
       rows[1].toggle_view(true);
@@ -671,8 +1077,8 @@ try {
     }, 1200));
   })()`);
 	ok(
-		"Open in dialog restores the centered modal",
-		modal.modalClass && modal.fixed && modal.frozen === 1,
+		"Open in dialog restores the centered modal, above its own backdrop",
+		modal.modalClass && modal.fixed && modal.onTop && modal.frozen === 1,
 		JSON.stringify(modal),
 	);
 	ok(
@@ -842,6 +1248,54 @@ try {
 		JSON.stringify(batch),
 	);
 
+	// frappe 16.50's grid buttons are espresso buttons; their label lives in a
+	// `.es-button__label` span that `Grid#set_button_label` rewrites in place. The
+	// toolbar moves those buttons (and turns two into icon-only actions) without
+	// replacing what is inside them, or the counts below would stop updating.
+	const labels = await page.eval<LabelProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const label = (b) => b.find('.es-button__label').text();
+    const checks = grid.wrapper.find('tbody.rows .grid-row-check');
+    checks.eq(0).click();
+    await sleep(500);
+    const one = { del: label(grid.remove_rows_button), dup: label(grid.duplicate_rows_button) };
+    checks.eq(1).click();
+    await sleep(500);
+    const two = { del: label(grid.remove_rows_button), dup: label(grid.duplicate_rows_button) };
+    const dl = grid.wrapper.find('.grid-download')[0];
+    grid.set_button_label($(dl), 'Export');
+    const node = dl.querySelector('.es-button__label');
+    const download = {
+      label: node ? node.textContent : '',
+      glyph: !!dl.querySelector(':scope > svg'),
+      spinner: !!dl.querySelector('.es-spinner'),
+      hiddenLabel: !!node && node.classList.contains('cds--visually-hidden'),
+      title: dl.getAttribute('title'),
+    };
+    grid.set_button_label($(dl), 'Download');
+    grid.clear_selection();
+    await sleep(500);
+    return { one, two, download };
+  })()`);
+	ok(
+		"Delete / Duplicate labels follow the selection count (set_button_label)",
+		labels.one.del === "Delete row" &&
+			labels.one.dup === "Duplicate row" &&
+			labels.two.del === "Delete 2 rows" &&
+			labels.two.dup === "Duplicate 2 rows",
+		JSON.stringify(labels),
+	);
+	ok(
+		"an icon-only toolbar action keeps its es-button label node, which set_button_label still reaches",
+		labels.download.label === "Export" &&
+			labels.download.glyph &&
+			labels.download.spinner &&
+			labels.download.hiddenLabel &&
+			!!labels.download.title,
+		JSON.stringify(labels.download),
+	);
+
 	// The magnifier reveals frappe's per-column filter row at ANY row count —
 	// upstream it only appears past `rows_threshold_for_grid_search` (20).
 	const search = await page.eval<SearchProbe>(`(() => {
@@ -862,6 +1316,100 @@ try {
 		search.rows < 20 && search.before === 0 && search.after === 1 && search.inputs > 0,
 		JSON.stringify(search),
 	);
+
+	// --- pagination (more than grid_page_length rows) -------------------------
+	// frappe's pager is three es-buttons around a page number, re-`.html()`d into
+	// `.grid-pagination` on every change; the toolbar moves that element below
+	// the table. 16.50 also re-syncs the header's select-all with the page shown
+	// (`update_select_all_checkbox`).
+	const pager = await page.eval<PagerProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    window.__itemsBefore = cur_frm.doc.items.length;
+    for (let i = 0; i < 110; i++) cur_frm.add_child('items', { qty: i + 1 });
+    cur_frm.refresh_field('items');
+    await new Promise((r) => setTimeout(r, 2500));
+    const w = grid.wrapper;
+    const node = (s) => w.find(s)[0];
+    const shown = (n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    const names = ['.first-page', '.prev-page', '.next-page', '.last-page'];
+    const rows = w.find('tbody.rows tr.grid-row');
+    return {
+      rows: grid.data.length,
+      pages: w.find('.total-page-number').text().trim(),
+      buttons: { first: !!node('.first-page'), prev: !!node('.prev-page'), next: !!node('.next-page'), last: !!node('.last-page') },
+      espresso: names.every((s) => node(s) && node(s).classList.contains('es-button')),
+      visible: names.every((s) => node(s) && shown(node(s))),
+      inFooter: !!node('.cf-table__footer .grid-pagination'),
+      page1: rows.length,
+      page1First: rows.first().attr('data-idx') || null,
+    };
+  })()`);
+	ok(
+		"more rows than one page: First / Previous / Next / Last render as visible es-buttons below the table",
+		pager.rows > 100 &&
+			pager.pages === String(Math.ceil(pager.rows / 50)) &&
+			pager.buttons.first &&
+			pager.buttons.prev &&
+			pager.buttons.next &&
+			pager.buttons.last &&
+			pager.espresso &&
+			pager.visible &&
+			pager.inFooter,
+		JSON.stringify(pager),
+	);
+	ok(
+		"page one renders 50 rows",
+		pager.page1 === 50 && pager.page1First === "1",
+		JSON.stringify({ n: pager.page1, first: pager.page1First }),
+	);
+	await page.screenshot(SHOT + "/bench-grid-pager.png");
+
+	const paged = await page.eval<PagedProbe>(`(async () => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const w = grid.wrapper;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rowsHere = () => w.find('tbody.rows tr.grid-row');
+    const headerCheck = () => w.find('.grid-heading-row .grid-row-check');
+    w.find('.next-page')[0].click();
+    await sleep(900);
+    const first = rowsHere().first().attr('data-idx') || null;
+    const rows = rowsHere().length;
+    const sparse = !grid.grid_rows[0] && grid.grid_rows.filter(Boolean).length === rows;
+    headerCheck()[0].click();
+    await sleep(600);
+    const checkedOnTwo = w.find('tbody.rows .grid-row-check:checked').length;
+    const selected = grid.get_selected_children().length;
+    const selectAllOnTwo = headerCheck().prop('checked');
+    w.find('.prev-page')[0].click();
+    await sleep(900);
+    const selectAllBackOnOne = headerCheck().prop('checked');
+    w.find('.next-page')[0].click();
+    await sleep(900);
+    const selectAllBackOnTwo = headerCheck().prop('checked');
+    grid.clear_selection();
+    await sleep(400);
+    return { rows, firstIdx: first, sparse, selectAllOnTwo, checkedOnTwo, selected, selectAllBackOnOne, selectAllBackOnTwo };
+  })()`);
+	ok(
+		"Next page renders rows 51-100, and grid_rows stays sparse outside the page",
+		paged.rows === 50 && paged.firstIdx === "51" && paged.sparse,
+		JSON.stringify(paged),
+	);
+	ok(
+		"select-all checks the page shown, and the header checkbox follows the page (update_select_all_checkbox)",
+		paged.selectAllOnTwo &&
+			paged.checkedOnTwo === 50 &&
+			paged.selected === 50 &&
+			!paged.selectAllBackOnOne &&
+			paged.selectAllBackOnTwo,
+		JSON.stringify(paged),
+	);
+	await page.eval(`(async () => {
+    cur_frm.doc.items = cur_frm.doc.items.slice(0, window.__itemsBefore);
+    cur_frm.refresh_field('items');
+    await new Promise((r) => setTimeout(r, 1500));
+    return true;
+  })()`);
 
 	// --- switching documents ------------------------------------------------
 	// `FrappeForm#switch_doc` nulls every grid's `visible_columns` and
@@ -926,6 +1474,38 @@ try {
 		switched.visibleColumns > 0 && switched.errorsAfter === switched.errorsBefore,
 		switched.errors.slice(0, 2).join(" | "),
 	);
+
+	// A short grid: the last data column takes the spare width and the others
+	// are exactly what frappe says (frappe's `.grid-data-last`), instead of the
+	// browser stretching every column in proportion.
+	const fill = await page.eval<FillProbe>(`(() => {
+    const grid = cur_frm.fields_dict.email_ids.grid;
+    const w = grid.wrapper;
+    const scroll = grid.carbon_table.renderer.scroll;
+    const th = (id) => Math.round(w.find('thead th[data-col-id="' + id + '"]')[0].getBoundingClientRect().width);
+    const entry = ([df, model]) => ({ id: df.fieldname, model, th: th(df.fieldname) });
+    const vc = grid.visible_columns;
+    const sum = [...w.find('thead tr.grid-row th')]
+      .reduce((n, h) => n + Math.round(h.getBoundingClientRect().width), 0);
+    return {
+      container: Math.round(scroll.clientWidth),
+      table: Math.round(w.find('table')[0].getBoundingClientRect().width),
+      sum,
+      others: vc.slice(0, -1).map(entry),
+      last: entry(vc[vc.length - 1]),
+      overflows: scroll.scrollWidth > scroll.clientWidth,
+    };
+  })()`);
+	ok(
+		"a short grid fills its container through the last column; the others keep their width",
+		!fill.overflows &&
+			Math.abs(fill.table - fill.container) <= 1 &&
+			Math.abs(fill.sum - fill.container) <= 1 &&
+			fill.others.length > 0 &&
+			fill.others.every((c) => c.th === c.model) &&
+			fill.last.th > fill.last.model,
+		JSON.stringify(fill),
+	);
 	await page.eval(`(async () => {
     await frappe.set_route('List', 'Contact');
     for (const n of ${JSON.stringify([seeded.a, seeded.b])}) await frappe.db.delete_doc('Contact', n);
@@ -933,6 +1513,14 @@ try {
   })()`);
 
 	await page.screenshot(SHOT + "/bench-grid.png");
+	// `consoleErrors()` is the Log domain only; an exception thrown inside a
+	// promise (a column that cannot be sized, say) is `Runtime.exceptionThrown`
+	// and never reaches it — which is how a grid that did not render at all
+	// used to pass as "no console errors".
+	const thrown = page.events
+		.filter((e) => e.method === "Runtime.exceptionThrown")
+		.map((e) => JSON.stringify(e.params).slice(0, 300));
+	ok("no uncaught exceptions or unhandled rejections", thrown.length === 0, thrown.slice(0, 2).join(" | "));
 	const errs = page.consoleErrors();
 	ok("no console errors", errs.length === 0, errs.slice(0, 4).join(" | "));
 } catch (e) {

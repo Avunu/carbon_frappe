@@ -131,6 +131,8 @@ interface RangeProbe {
 	bounds: Bounds | null;
 	highlighted: number;
 	focusRings: number;
+	/** where each ring is, for the failure message */
+	ringNodes: string[];
 	inRange: number;
 }
 
@@ -313,6 +315,55 @@ interface PasteProbe {
 	bounds: Bounds | null;
 	toast: string;
 	dataValue?: unknown;
+}
+
+/** `workflow` — bulk workflow actions refresh when the selection changes. */
+interface WorkflowProbe {
+	afterCheck: number;
+	afterUncheck: number;
+	items: number;
+}
+
+/** `windowed` — a standalone 600-row table: what print and export read against the DOM window. */
+interface WindowedProbe {
+	rows: number;
+	dom: number;
+	visible: number;
+	order: number;
+}
+
+/** `sidePanel` — the Link-cell preview wiring and the contract its handler reads. */
+interface SidePanelProbe {
+	wired: boolean;
+	handled: boolean;
+	opened: string[] | null;
+	required: string | null;
+}
+
+/** `menu` — the header menu on a report column. */
+interface ColumnMenuProbe {
+	labels: string[];
+	x: number;
+	y: number;
+}
+
+/** `sorted` — what sorting through the menu does to the columns and the view order. */
+interface SortedProbe {
+	fieldname: string | null;
+	order: string | null;
+	sortedColumns: number;
+	/** the sort key of the first and last row in view order */
+	first: string;
+	last: string;
+	afterReset: number;
+}
+
+/** `addColumn` — the dialog behind the header menu's "Add Column". */
+interface AddColumnProbe {
+	title: string | null;
+	fields: string[];
+	options: number;
+	before: string | null;
 }
 
 const BASE = process.env.CF_SITE_URL || "http://localhost:8794";
@@ -502,6 +553,244 @@ try {
 		JSON.stringify(dm),
 	);
 
+	// --- bulk workflow actions refresh when the selection changes -------------
+	// 16.50 moved the refresh from the actions menu's `show.bs.dropdown` (the hook
+	// is gone from `setup_events`) onto the selection: `onCheckRow` calls
+	// `debounced_toggle_workflow_actions()` (report_view.js:323-331). The
+	// replaced `setup_datatable` has to repeat it or the bulk workflow actions
+	// never update.
+	const workflow = await page.eval<WorkflowProbe>(`(() => {
+    const l = cur_list;
+    window.__wf = 0;
+    l.debounced_toggle_workflow_actions = () => { window.__wf++; };
+    l.datatable.rowmanager.checkAll(false);
+    const base = window.__wf;
+    const box = document.querySelector('tbody .dt-checkbox');
+    box.click();
+    const afterCheck = window.__wf - base;
+    box.click();
+    const afterUncheck = window.__wf - base - afterCheck;
+    delete l.debounced_toggle_workflow_actions;
+    return { afterCheck, afterUncheck, items: l.get_checked_items().length };
+  })()`);
+	ok(
+		"ticking a row refreshes the bulk workflow actions; unticking the last one does not",
+		workflow.afterCheck === 1 && workflow.afterUncheck === 0 && workflow.items === 0,
+		JSON.stringify(workflow),
+	);
+
+	// --- inline filters: the comparison hint and the live count ----------------
+	// `setup_inline_filter_observer()` (report_view.js:410, 423-433) is the other
+	// call the replaced `setup_datatable` used to drop: it puts the `>5 / 5:10`
+	// hint beside every inline filter and keeps the record count in step.
+	const hints = await page.eval<{ filters: number; icons: number }>(`(() => ({
+    filters: document.querySelectorAll('thead .dt-filter').length,
+    icons: document.querySelectorAll('thead .dt-filter + .comparison-help-icon').length,
+  }))()`);
+	ok(
+		"every inline filter carries frappe's comparison hint",
+		hints.filters > 0 && hints.icons === hints.filters,
+		JSON.stringify(hints),
+	);
+
+	// --- print and export read every row the table shows ----------------------
+	// `bodyRenderer.visibleRowIndices` is "the rows passed to renderRows"
+	// (frappe-datatable body-renderer.js:17) — all of them, whatever the viewport
+	// shows. Report View's Print intersects `rowViewOrder` with it
+	// (report_view.js:1611-1614). The engine renders a window of ~30 rows past
+	// its virtualization threshold; reading that made a long report print one
+	// screenful.
+	const windowed = await page.eval<WindowedProbe>(`(() => {
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:0;top:0;width:900px;height:500px;visibility:hidden';
+    document.body.appendChild(host);
+    const dt = new window.DataTable(host, {
+      columns: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+      data: Array.from({ length: 600 }, (_, i) => [String(i), 'v' + i]),
+    });
+    const res = {
+      rows: dt.datamanager.rowCount,
+      dom: host.querySelectorAll('tbody tr.dt-row').length,
+      visible: dt.bodyRenderer.visibleRowIndices.length,
+      order: dt.datamanager.rowViewOrder.length,
+    };
+    dt.destroy();
+    host.remove();
+    return res;
+  })()`);
+	ok(
+		"visibleRowIndices covers every row of a windowed table",
+		windowed.rows === 600 && windowed.visible === 600 && windowed.order === 600 && windowed.dom < 600,
+		JSON.stringify(windowed),
+	);
+
+	// --- Link cells preview in the side panel ---------------------------------
+	// `setup_link_side_panel()` (report_view.js:410-421) delegates
+	// `a[data-doctype][data-name]` clicks to `frappe.ui.handle_link_cell_click`,
+	// which finds the column from the nearest `.dt-cell[data-col-index]` and
+	// `datatable.getColumn()` (link_side_panel.js:16-40). A Link anchor is planted
+	// in a cell and the column made a Link, with the panel's bundle stubbed: what
+	// is under test is the wiring and that the engine gives the handler what it
+	// reads.
+	const sidePanel = await page.eval<SidePanelProbe>(`(() => {
+    const l = cur_list;
+    const dt = l.datatable;
+    const events = $._data(l.$datatable_wrapper[0], 'events');
+    const wired = !!(events && events.click && events.click.some((h) => h.namespace === 'side-panel'));
+    const at = dt.standardColumnCount;
+    const td = document.querySelector('tbody .dt-cell[data-col-index="' + at + '"]');
+    const content = td.querySelector('.dt-cell__content') || td;
+    const original = content.innerHTML;
+    content.innerHTML = '<a data-doctype="User" data-name="Administrator" href="#">x</a>';
+    const column = dt.getColumn(at);
+    const saved = { type: column.docfield.fieldtype, require: frappe.require, panel: frappe.ui.get_side_panel };
+    column.docfield.fieldtype = 'Link';
+    const res = { wired, handled: false, opened: null, required: null };
+    frappe.require = (name) => { res.required = name; return Promise.resolve(); };
+    frappe.ui.get_side_panel = () => ({ open: (doctype, name) => { res.opened = [doctype, name]; } });
+    const evt = { which: 1, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
+      currentTarget: content.firstChild, preventDefault() {}, stopPropagation() {} };
+    res.handled = frappe.ui.handle_link_cell_click(evt, dt) === true;
+    return new Promise((done) => setTimeout(() => {
+      frappe.require = saved.require;
+      frappe.ui.get_side_panel = saved.panel;
+      column.docfield.fieldtype = saved.type;
+      content.innerHTML = original;
+      done(res);
+    }, 100));
+  })()`);
+	ok("Report View wires the Link-cell side panel", sidePanel.wired);
+	ok(
+		"the side-panel handler finds its column through .dt-cell[data-col-index] and getColumn()",
+		sidePanel.handled &&
+			sidePanel.required === "side_panel.bundle.js" &&
+			sidePanel.opened?.join("/") === "User/Administrator",
+		JSON.stringify(sidePanel),
+	);
+
+	// --- the column header menu: Add Column, and Sort -------------------------
+	// frappe-datatable's `dt-dropdown` — and the `headerDropdown` Report View
+	// adds to it ("Add Column", report_view.js:335-405) — as a Carbon overflow
+	// menu on every data column's header.
+	const clickAt = async (x: number, y: number): Promise<void> => {
+		await page.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+		await page.send("Input.dispatchMouseEvent", {
+			type: "mousePressed",
+			x,
+			y,
+			button: "left",
+			clickCount: 1,
+		});
+		await page.send("Input.dispatchMouseEvent", {
+			type: "mouseReleased",
+			x,
+			y,
+			button: "left",
+			clickCount: 1,
+		});
+	};
+	const centreOf = (selector: string): string =>
+		`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`;
+	const openMenu = async (): Promise<ColumnMenuProbe> => {
+		const at = await page.eval<number>(`cur_list.datatable.standardColumnCount`);
+		await page.eval(
+			`document.querySelector('thead th[data-col-index="${at}"]').scrollIntoView({ block: 'nearest', inline: 'nearest' })`,
+		);
+		const point = await page.eval<{ x: number; y: number }>(
+			centreOf(`thead th[data-col-index="${at}"] .cf-dt-menu__toggle`),
+		);
+		await clickAt(point.x, point.y);
+		await page.waitFor(`!!document.querySelector('.cf-dt-menu:not([hidden]) button')`, { timeout: 5000 });
+		const labels = await page.eval<string[]>(
+			`[...document.querySelectorAll('.cf-dt-menu:not([hidden]) .cds--overflow-menu-options__option-content')].map((n) => n.textContent.trim())`,
+		);
+		return { labels, ...point };
+	};
+	const pickItem = async (label: string): Promise<void> => {
+		const point = await page.eval<{ x: number; y: number }>(`(() => {
+      const item = [...document.querySelectorAll('.cf-dt-menu:not([hidden]) button')].find((b) => b.textContent.trim() === ${JSON.stringify(label)});
+      const r = item.getBoundingClientRect();
+      return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()`);
+		await clickAt(point.x, point.y);
+		await new Promise((r) => setTimeout(r, 400));
+	};
+
+	const menu = await openMenu();
+	ok(
+		"the header menu offers frappe-datatable's items and Report View's Add Column",
+		["Sort Ascending", "Sort Descending", "Reset sorting", "Remove column", "Freeze", "Add Column"].every(
+			(l) => menu.labels.includes(l),
+		),
+		JSON.stringify(menu.labels),
+	);
+	ok(
+		"the standard checkbox and serial-number columns have no header menu",
+		(await page.eval<number>(
+			`document.querySelectorAll('thead th[data-col-index="0"] .cf-dt-menu__toggle, thead th[data-col-index="1"] .cf-dt-menu__toggle').length`,
+		)) === 0,
+	);
+
+	await pickItem("Add Column");
+	await page.waitFor(`!!window.cur_dialog && cur_dialog.display`, { timeout: 8000 });
+	const addColumn = await page.eval<AddColumnProbe>(`(() => {
+    const d = cur_dialog;
+    const probe = {
+      title: d.title || null,
+      // frappe's FieldGroup puts a Section Break (__section_1) in front of a first field that is not one
+      fields: d.fields.map((f) => f.fieldname).filter((n) => !n.startsWith('__')),
+      options: (d.fields_dict.column.df.options || []).length,
+      before: d.fields_dict.insert_before ? d.fields_dict.insert_before.df.label : null,
+    };
+    d.hide();
+    return probe;
+  })()`);
+	ok(
+		"Add Column opens frappe's dialog, offering the report's columns",
+		addColumn.title === "Add Column" &&
+			addColumn.fields.join() === "column,insert_before" &&
+			addColumn.options > 0 &&
+			(addColumn.before ?? "").startsWith("Insert Column Before"),
+		JSON.stringify(addColumn),
+	);
+	await new Promise((r) => setTimeout(r, 400));
+
+	// Sorting through the menu must land on `columns[].sortOrder`: "Export all
+	// rows" turns the first sorted column into an `order_by` by reading exactly
+	// this (report_view.js:1795-1818), so without it the export loses the sort.
+	await openMenu();
+	await pickItem("Sort Descending");
+	const sorted = await page.eval<SortedProbe>(`(() => {
+    const dt = cur_list.datatable;
+    // the lookup report_view.js:1795-1802 makes
+    const col = dt.datamanager.getColumns().find((c) => c.sortOrder && c.sortOrder !== 'none' && c.docfield && c.docfield.fieldname);
+    const order = dt.datamanager.rowViewOrder;
+    const key = (rowIndex) => String(dt.datamanager.getCell(col.colIndex, rowIndex).content);
+    return {
+      fieldname: col ? col.docfield.fieldname : null,
+      order: col ? col.sortOrder : null,
+      sortedColumns: dt.datamanager.getColumns().filter((c) => c.sortOrder && c.sortOrder !== 'none').length,
+      first: key(order[0]),
+      last: key(order[order.length - 1]),
+      afterReset: 0,
+    };
+  })()`);
+	await openMenu();
+	await pickItem("Reset sorting");
+	sorted.afterReset = await page.eval<number>(
+		`cur_list.datatable.datamanager.getColumns().filter((c) => c.sortOrder && c.sortOrder !== 'none').length`,
+	);
+	ok(
+		"sorting through the menu writes the column's sortOrder, which is what export reads",
+		sorted.fieldname !== null &&
+			sorted.order === "desc" &&
+			sorted.sortedColumns === 1 &&
+			sorted.first >= sorted.last,
+		JSON.stringify(sorted),
+	);
+	ok("resetting the sort clears it", sorted.afterReset === 0, String(sorted.afterReset));
+
 	// Carbon lg rows are 48px; a collapsed row height is the classic symptom of
 	// frappe-datatable's stylesheet winning over Carbon's cell padding.
 	const rowGeo = await page.eval<RowGeoProbe>(`(() => {
@@ -577,6 +866,7 @@ try {
     return { bounds: b,
       highlighted: document.querySelectorAll('.dt-cell--highlight').length,
       focusRings: document.querySelectorAll('.dt-cell--focus').length,
+      ringNodes: [...document.querySelectorAll('.dt-cell--focus')].map((n) => n.tagName + ':' + n.dataset.colIndex + ',' + n.dataset.rowIndex + ':' + (n.closest('thead') ? 'thead' : n.closest('tbody') ? 'tbody' : 'other')),
       inRange: dt.cellmanager.getCellsInRange().length };
   })()`);
 	ok(
@@ -587,7 +877,7 @@ try {
 	ok(
 		"the range is painted and exactly one cell keeps the ring",
 		range.highlighted >= 3 && range.focusRings === 1,
-		JSON.stringify({ h: range.highlighted, f: range.focusRings, n: range.inRange }),
+		JSON.stringify({ h: range.highlighted, f: range.focusRings, n: range.inRange, rings: range.ringNodes }),
 	);
 
 	const copied = await page.eval<CopiedProbe>(`(() => {

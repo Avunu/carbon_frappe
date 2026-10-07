@@ -4,13 +4,9 @@
 // more. `Object.assign` rather than a typed assignment on purpose: the real
 // `Frappe` type is the whole desk, and a test wants to say which three
 // members exist, not pretend the other thousand do.
-import type { FrappeDesktopIconRecord } from "frappe-types";
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATETIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}:\d{2}$/;
-
-export const routes = new Map<string, string>();
 
 Object.assign(globalThis, {
 	window: globalThis,
@@ -23,9 +19,6 @@ Object.assign(globalThis, {
 	// the system number format is `#,###.##`
 	strip_number_groups: (v: string) => v.replace(/,/g, ""),
 	frappe: {
-		utils: {
-			get_route_for_icon: (icon: FrappeDesktopIconRecord) => routes.get(icon.label),
-		},
 		datetime: {
 			validate: (d: string) => ISO_DATE.test(d) || ISO_DATETIME.test(d) || ISO_TIME.test(d),
 			// user format dd-mm-yyyy, the way frappe's `user_to_str` would render it

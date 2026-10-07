@@ -2,6 +2,12 @@
 // var(--cds-shadow) and var(--cds-focus) flip with the theme, so one
 // theme-agnostic block covers light and dark — it also overrides frappe's
 // dark-mode 3px focus ring (Carbon is 2px in all themes).
+//
+// The whole `--focus-*` family stays pinned although frappe reads only a few of
+// the names directly: its utility classes (`.focus-<color>`, `.focus-outline-<color>`,
+// common/utilities.scss, imported by the desk and website bundles) interpolate
+// the colour into `var(--focus-#{$color})`, so a grep for the literal name misses
+// the consumer. frappe-ui's focus-ring utilities read the same names.
 @use "@carbon/motion";
 
 :root,
@@ -21,8 +27,6 @@
 	--elevation-status: 0 0 0 1.5px var(--cds-layer-01); // avatar status ring sits on a card
 
 	--shadow-xs: none;
-	--custom-shadow-sm: 0 2px 6px var(--cds-shadow);
-	--drop-shadow: 0 2px 6px var(--cds-shadow);
 	--shadow-inset: none;
 
 	// common/css_variables.scss aliases — Carbon tiles/buttons are flat

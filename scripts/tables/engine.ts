@@ -68,6 +68,29 @@ interface ResizeState {
 	handles: number;
 }
 
+/** The centre of a header's resize handle, in viewport px. */
+interface HandleBox {
+	x: number;
+	y: number;
+}
+
+/** The `onColumnResize` payloads collected so far, and the width they left behind. */
+interface ResizeEvents {
+	events: Array<{ columnId: string; width: number }>;
+	size: number;
+	col: string;
+}
+
+/** A three-column table narrower than its container, one column set to `fill`. */
+interface FillState {
+	container: number;
+	table: number;
+	ths: number[];
+	/** the fill column's `<col>` width: empty, because the layout decides it */
+	spareCol: string;
+	sizes: number[];
+}
+
 /** Whether a re-render reused the same row and cell nodes. */
 interface IdentityState {
 	sameRow: boolean;
@@ -281,6 +304,151 @@ try {
 		JSON.stringify(resized),
 	);
 	ok("resize handles rendered", resized.handles > 0, `handles=${resized.handles}`);
+
+	// --- onColumnResize: one event per drag, carrying the settled width.
+	// The List view and the child-table Grid both persist what the user chose
+	// from this event, so it has to fire exactly once per gesture, after the drag
+	// has finished, with the width the table settled on.
+	await page.eval(`(() => {
+    window.__rz = [];
+    window.demo.table.on('onColumnResize', (e) => window.__rz.push(e));
+    // A programmatic width is not a user gesture and must stay silent.
+    window.demo.table.setColumnSize('first', 300);
+    return true;
+  })()`);
+	await settle(`document.querySelectorAll('colgroup col')[1].style.width === '300px'`);
+	const handleBox = async (id: string): Promise<HandleBox> =>
+		page.eval<HandleBox>(`(() => {
+      const th = document.querySelector('th[data-col-id="${id}"]');
+      th.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const r = th.querySelector('.cf-table__resize-handle').getBoundingClientRect();
+      return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()`);
+	const rzState = (): Promise<ResizeEvents> =>
+		page.eval<ResizeEvents>(`(() => ({
+      events: window.__rz,
+      size: window.demo.table.getColumnSize('first'),
+      col: document.querySelectorAll('colgroup col')[1].style.width,
+    }))()`);
+
+	const quiet = await rzState();
+	ok(
+		"a programmatic setColumnSize emits no onColumnResize",
+		quiet.events.length === 0,
+		JSON.stringify(quiet),
+	);
+
+	let box = await handleBox("first");
+	await page.drag(box.x, box.y, box.x + 60, box.y, 8);
+	const dragged = await rzState();
+	ok(
+		"dragging a handle emits one onColumnResize with the settled width",
+		dragged.events.length === 1 &&
+			dragged.events[0]?.columnId === "first" &&
+			dragged.events[0].width === 360 &&
+			dragged.size === 360 &&
+			dragged.col === "360px",
+		JSON.stringify(dragged),
+	);
+
+	box = await handleBox("first");
+	await page.drag(box.x, box.y, box.x, box.y, 1);
+	const clicked = await rzState();
+	ok(
+		"a click on the handle (no movement) emits nothing",
+		clicked.events.length === 1,
+		JSON.stringify(clicked.events),
+	);
+
+	// Dragged past the floor: TanStack clamps to `minSize`, and the event carries
+	// the clamped width, not the pointer's.
+	box = await handleBox("first");
+	await page.drag(box.x, box.y, box.x - 2000, box.y, 8);
+	const floored = await rzState();
+	ok(
+		"the emitted width honours the column's minSize",
+		floored.events.length === 2 && floored.events[1]?.width === 30 && floored.size === 30,
+		JSON.stringify(floored),
+	);
+
+	// Double-click puts the column back at its spec size and announces that too,
+	// so a consumer that persisted the drag can persist the reset.
+	await page.eval(`(() => {
+    const h = document.querySelector('th[data-col-id="first"] .cf-table__resize-handle');
+    h.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    return true;
+  })()`);
+	const reset = await rzState();
+	ok(
+		"double-clicking the handle resets to the spec width and emits it",
+		reset.events.length === 3 && reset.events[2]?.width === 140 && reset.size === 140,
+		JSON.stringify(reset),
+	);
+	await page.eval(`(window.demo.table.setColumnSize('first', 320), true)`);
+	await settle(`document.querySelectorAll('colgroup col')[1].style.width === '320px'`);
+
+	// --- a `fill` column takes the spare width; every other column stays exact.
+	// A fixed-layout table narrower than its container hands the surplus to ALL
+	// columns in proportion, so a column renders wider than its width says and a
+	// drag on one handle moves its edge further than the pointer.
+	await page.eval(`(() => {
+    const t = window.demo.table;
+    window.__cols = t.columnSpecs;
+    t.setColumns(t.columnSpecs.slice(0, 3).map((c, i) => (i === 2 ? Object.assign({}, c, { fill: true }) : c)));
+    // forget the dragged and programmatic widths above: back to the spec sizes
+    t.resetColumnSizes();
+    t.render();
+    window.__rz.length = 0;
+    return true;
+  })()`);
+	await settle(`document.querySelectorAll('colgroup col').length === 3`);
+	const measureFill = (): Promise<FillState> =>
+		page.eval<FillState>(`(() => {
+      const w = (n) => Math.round(n.getBoundingClientRect().width);
+      const ths = [...document.querySelectorAll('.cf-table__header-row th')].map(w);
+      const cols = [...document.querySelectorAll('colgroup col')];
+      return {
+        container: document.querySelector('.cf-table__scroll').clientWidth,
+        table: w(document.querySelector('.cf-table__table')),
+        ths,
+        spareCol: cols[2].style.width,
+        sizes: window.demo.table.table.getVisibleLeafColumns().map((c) => c.getSize()),
+      };
+    })()`);
+	const filled = await measureFill();
+	// The fixture page has no table reset, so the browser's default 2px
+	// `border-spacing` comes off every cell: "the rest of the container" is the
+	// container less 300px of columns and a few px of spacing.
+	const spare = filled.container - 300;
+	ok(
+		"a fill column takes the spare width and the others keep exactly theirs",
+		filled.table === filled.container &&
+			filled.ths[0] === 160 &&
+			filled.ths[1] === 140 &&
+			(filled.ths[2] ?? 0) <= spare &&
+			(filled.ths[2] ?? 0) >= spare - 12 &&
+			filled.spareCol === "",
+		JSON.stringify(filled),
+	);
+	box = await handleBox("last");
+	await page.drag(box.x, box.y, box.x + 40, box.y, 6);
+	const grown = await measureFill();
+	const fillEvents = await page.eval<Array<{ columnId: string; width: number }>>(`window.__rz`);
+	// A drag measured from the column's `size` (160) would have to cross the whole
+	// 1100px difference before anything moved; measured from what is drawn, the
+	// handle follows the pointer from the first pixel.
+	ok(
+		"a drag on the fill column starts from the width it is drawn at",
+		fillEvents.length === 1 &&
+			fillEvents[0]?.columnId === "last" &&
+			fillEvents[0].width === (filled.ths[2] ?? 0) + 40 &&
+			grown.sizes[2] === fillEvents[0].width,
+		JSON.stringify({ events: fillEvents, filled: filled.ths, grown }),
+	);
+	await page.eval(
+		`(() => { window.demo.table.setColumns(window.__cols); window.demo.table.render(); return true; })()`,
+	);
+	await settle(`document.querySelectorAll('colgroup col').length === 13`);
 
 	// --- node identity preservation (the whole reason for keyed rendering)
 	const identity = await page.eval<IdentityState>(`(() => {

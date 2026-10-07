@@ -18,8 +18,8 @@
 //
 // Two things Carbon leaves to the product:
 //
-// 1. Overflow. Carbon's header has no priority+ behaviour, and a Workspace
-//    Sidebar carries 3-13 top-level rows (Recruitment has 13) while ~630px is
+// 1. Overflow. Carbon's header has no priority+ behaviour, and a module sidebar
+//    carries 3-13 top-level rows (Recruitment has 13) while ~630px is
 //    what remains at the `lg` breakpoint after the name and the utilities. So
 //    the bar is measured: every top-level `li` is sized once per render, and
 //    `layout()` keeps the longest prefix that fits beside a trailing "More"
@@ -28,18 +28,19 @@
 //    Below `lg` Carbon hides the whole nav (`.cds--header__nav { display: none }`)
 //    and the left sidebar carries every link, so `layout()` simply skips.
 //
-// 2. The current page. `aria-current="page"` is set by frappe's own rule
-//    (sidebar.js:424-433, mirrored in model.ts) on every route change; a
-//    collapsed sub-menu whose child is current gets
-//    `cds--header__menu-item--current` on its title, as HeaderMenu.tsx:238-246
-//    does.
+// 2. The current page. `aria-current="page"` goes on the link whose href is the
+//    one the sidebar lit (`.active-sidebar`, written by `find_active_item()`,
+//    sidebar.js:547-575; read by `activeHref()` in model.ts), so the header never
+//    has a second opinion about which row is current; a collapsed sub-menu whose
+//    child is current gets `cds--header__menu-item--current` on its title, as
+//    HeaderMenu.tsx:238-246 does.
 //
 // Sub-menu titles are `href="#"`. frappe's body-level click router returns
 // early for that href WITHOUT preventDefault (router.js:52), so the title
 // handler here prevents it itself — it runs first, being bound deeper.
 import { chevronDown16 } from "../../generated/shell-icons.ts";
 import { esc, isHTMLElement } from "./dom.ts";
-import { isCurrentHref } from "./model.ts";
+import { activeHref } from "./model.ts";
 import type { ShellItem, ShellLeaf, ShellModel } from "./model.ts";
 
 export interface ShellNav {
@@ -47,7 +48,7 @@ export interface ShellNav {
 	el: HTMLElement;
 	/** Rebuild the bar from the model. Re-measures; call `layout()` after. */
 	render(model: ShellModel): void;
-	/** Apply `aria-current` / `--current` from `location.pathname`. */
+	/** Apply `aria-current` / `--current` from the sidebar's `.active-sidebar` row. */
 	markCurrent(): void;
 	/**
 	 * Fit the bar to the space between the name and the global bar.
@@ -152,9 +153,10 @@ export function mountNav(header: HTMLElement): ShellNav {
 	}
 
 	function markCurrent(): void {
+		const active = activeHref();
 		for (const a of el.querySelectorAll<HTMLElement>("a[data-cf-href]")) {
 			const href = a.getAttribute("href") || "";
-			if (isCurrentHref(href)) a.setAttribute("aria-current", "page");
+			if (active !== null && href === active) a.setAttribute("aria-current", "page");
 			else a.removeAttribute("aria-current");
 		}
 		for (const li of submenus()) {

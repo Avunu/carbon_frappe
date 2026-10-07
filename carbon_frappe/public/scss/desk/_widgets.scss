@@ -72,7 +72,7 @@
 		padding-top: 0;
 
 		.number {
-			font-size: var(--text-6xl); // heading-05, 32px
+			font-size: var(--text-7xl); // heading-05, 32px
 			line-height: 40px;
 			font-weight: var(--font-weight-regular);
 			color: var(--cds-text-primary);
@@ -135,16 +135,45 @@
 // tag colors (<c>-20 background / <c>-70 text) via the ramp remap; enforce the
 // tag silhouette (24px pill)
 // Carbon tag, md: 24px tall, 0 8px padding, 12px label — and a 16px radius at
-// every size (sm 18 / md 24 / lg 32). Not --border-radius-full: at 24px the two
+// every size (sm 18 / md 24 / lg 32). Not --radius-full: at 24px the two
 // render identically, but 16px is the spec value and the token would follow a
 // height change somewhere else.
+//
+// The same tag is Espresso's `.es-badge` (css/espresso/components/badge.css),
+// which frappe 16.50 uses for the page head's status pill (page.html:24, set
+// by Page.set_indicator) and `frappe.ui.badge` for new markup. Its themes
+// (`data-theme="blue|green|amber|red|violet"`, and the legacy indicator names
+// through badge-legacy-colors.css) read the same <c>-2 / <c>-8 tint-and-text
+// pairs the ramp remap puts on Carbon's tag colours, so only the silhouette
+// is restated here: espresso's sizes are sm 16 / md 20 / lg 24px with 6px of
+// inline padding (8px at lg) and a 13px label at lg. Carbon's are sm 18 / md 24 /
+// lg 32, all with 8px of padding and a 12px label.
 .indicator-pill,
-.indicator-pill-right {
+.indicator-pill-right,
+.es-badge {
 	border-radius: 16px;
 	height: 24px;
 	padding: 0 8px;
 	font-size: var(--text-tiny); // 12px
 	align-items: center;
+}
+
+.es-badge {
+	line-height: 16px;
+	letter-spacing: 0.32px;
+	font-weight: var(--font-weight-regular);
+
+	&[data-size="sm"] {
+		height: 18px;
+		padding-inline: 8px;
+	}
+
+	&[data-size="lg"] {
+		height: 32px;
+		padding-inline: 8px;
+		font-size: var(--text-tiny);
+		letter-spacing: 0.32px;
+	}
 }
 
 // bootstrap .alert banners -> Carbon inline notification: square with a

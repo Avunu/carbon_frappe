@@ -6,7 +6,7 @@
 // This one goes through the same door an edited cell does: the report view's
 // `getEditor(...)` hands back an editor whose `setValue` is
 // `frappe.db.set_value` plus its own `this.data` bookkeeping
-// (report_view.js:712-754), and `commitValue` (./editing.ts) writes
+// (report_view.js:692-734), and `commitValue` (./editing.ts) writes
 // optimistically and reverts on rejection. So a pasted Link the server refuses
 // snaps back exactly like a typed one.
 //
@@ -61,7 +61,7 @@ export function parseClipboard(text: string): string[][] {
 
 /**
  * Fieldtypes a paste never writes: their control is a dialog (Text Editor,
- * report_view.js:781), an upload, a rich editor, or not a value at all.
+ * report_view.js:761), an upload, a rich editor, or not a value at all.
  */
 const REFUSED = new Set<string>([
 	"Table",
@@ -200,7 +200,7 @@ export function coerceForPaste(df: DocField, text: string): DataTableCellValue |
  * The control is mounted into an off-DOM `.dt-cell > .dt-cell__edit` — the
  * shape `getEditor` callers walk back up (`parent.closest('.dt-cell')`), so a
  * report script's editor still resolves its cell. Nothing is rendered, and
- * `set_value`'s `df.change → set_focus()` (report_view.js:701) focuses an
+ * `set_value`'s `df.change → set_focus()` (report_view.js:681) focuses an
  * element that is not being rendered, which the DOM makes a no-op, so the
  * grid keeps keyboard focus.
  *

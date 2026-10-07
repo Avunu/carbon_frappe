@@ -12,17 +12,22 @@
 //     toggle_reqd/display/editable, get_visible_columns, the whole Configure
 //     Columns dialog, and GridRowForm.
 //
-//   replaced here — make() (a <tr> instead of two nested divs), setup_columns()
-//     (no Bootstrap 12-column cap), and show_form()/hide_form(), which turn
-//     frappe's centered pseudo-modal into a Carbon expandable row.
+//   replaced here — make() (a <tr> instead of two nested divs) and
+//     show_form()/hide_form(), which turn frappe's centered pseudo-modal into a
+//     Carbon expandable row.
 //
-// `make_column` is deliberately NOT overridden. It builds a
-// `div.col.grid-static-col[data-fieldname][data-fieldtype]` carrying
+// `make_column` and `setup_columns` are deliberately NOT overridden. They build
+// a `div.col.grid-static-col[data-fieldname][data-fieldtype]` carrying
 // `.field-area` / `.static-area`, the awesomplete-repositioning focus handler,
 // and the click-to-edit binding — all of which we want unchanged. The engine
 // simply moves that div into the <td> it positions, so `grid_row.columns[f]`
 // still points at the exact element frappe built and every
 // `.grid-static-col[...]` selector still matches.
+//
+// What those cells carry that does NOT apply here is their sizing: frappe 16.50
+// writes `flex: 1 0 Npx; width: Npx` inline (grid_row.js:910, 970), the width
+// the engine's <colgroup> owns. `_carbon-table.scss` makes the cell fill its
+// <td> regardless, so a column the engine has resized is as wide as its header.
 import GridRow from "frappe/public/js/frappe/form/grid_row";
 import GridRowForm from "frappe/public/js/frappe/form/grid_row_form";
 import { ensureChildRow, expandButton, syncExpandState } from "./expand.ts";
@@ -41,11 +46,11 @@ import type { JQueryRegion } from "frappe-types";
 export interface CarbonGridRowEngine extends CarbonGridEngine {
 	/**
 	 * Expand exactly one row, or none — `null` collapses everything
-	 * (engine/table.js:328). It returns the table for chaining; nothing here
+	 * (`CarbonTable#setExpandedRow`). It returns the table for chaining; nothing here
 	 * chains, so the contract is stated as `void`.
 	 */
 	setExpandedRow(rowId: string | null | undefined): void;
-	/** Synchronous re-render (engine/table.js:357). */
+	/** Synchronous re-render (`CarbonTable#render`). */
 	render(): void;
 }
 
@@ -148,7 +153,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		});
 
 		// `Grid#meta` is OPTIONAL — a grid whose docfield names no child DocType
-		// never gets one (grid.js:31) — but frappe's own make() dereferences it
+		// never gets one (grid.js:61) — but frappe's own make() dereferences it
 		// here unguarded (grid_row.js:44), so a template-bearing grid without
 		// meta already throws upstream. Preserving that behaviour means keeping
 		// the throw; all this does is give it a message instead of a bare
@@ -166,23 +171,6 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		}
 		if (!render_row) return;
 		this.set_data();
-	}
-
-	/**
-	 * Inherit the whole column build, then undo the overflow hack.
-	 *
-	 * `super.setup_columns()` ends by setting `.column-limit-reached` on
-	 * `.form-grid-container` whenever the column spans total more than 10 — the
-	 * behaviour this project exists to remove. Because CarbonGrid hands out real
-	 * pixel widths the total is effectively always over 10, so the class would
-	 * latch on permanently and its stylesheet (common/grid.scss:765-846) would
-	 * re-impose a `display: grid` layout on top of our table.
-	 */
-	override setup_columns(): void {
-		super.setup_columns();
-		if (this.grid.wrapper) {
-			this.grid.wrapper.find(".form-grid-container").removeClass("column-limit-reached");
-		}
 	}
 
 	/**
@@ -212,14 +200,14 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		super.set_row_index();
 		// `idx` is declared `number` on a ChildDoc, but a grid with no `frm`
 		// takes its rows straight from `df.data` and only gets an `idx` when
-		// grid.js:1058 pushes one — which is the runtime possibility this guard
+		// grid.js:1211 pushes one — which is the runtime possibility this guard
 		// was written for. Widening the local is how it stays expressible; a
 		// `number !== undefined` comparison on the declared type is a TS2367.
 		const idx: number | undefined = this.doc && this.doc.idx;
 		if (this.doc && idx !== undefined && this.form_row) {
 			// jQuery routes a non-string through `empty().append(value)`, which
 			// text-nodes it — frappe-types declares the `html(value: number)`
-			// overload for this exact upstream call (grid_row.js:75-79).
+			// overload for this exact upstream call (grid_row.js:73-80).
 			$(this.form_row).find(".grid-form-row-index").html(idx);
 		}
 	}
@@ -250,7 +238,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 	 * `_menu` column content — the `⋮` overflow menu.
 	 *
 	 * It reuses frappe's own trailing cell when there is one so that
-	 * `open_form_button.parent().focus()` (grid_row.js:1533, and the global
+	 * `open_form_button.parent().focus()` (grid_row.js:1438, and the global
 	 * `$(document).on("escape")` handler) still lands somewhere real. When
 	 * `df.in_place_edit` suppresses that cell, we make our own.
 	 */
@@ -286,14 +274,14 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 	 * The parameter is OPTIONAL, which is what keeps the override assignable to
 	 * frappe's two-argument declaration — and it has to be, because frappe
 	 * re-enters this method two-arg when a different row closes this one
-	 * (grid_row.js:1460).
+	 * (grid_row.js:1367, 1460).
 	 *
 	 * Only the REQUEST is recorded here, and only when this call could open the
 	 * row. How the row is actually displayed is latched in `show_form()` and
 	 * read back in `hide_form()`, because the two have to agree about the freeze
 	 * count and a close can arrive from somewhere that knows nothing about the
 	 * mode: `super.toggle_view(true)` on a DIFFERENT row closes this one by
-	 * calling `this.toggle_view(false)` (grid_row.js:1452). Resetting the flag
+	 * calling `this.toggle_view(false)` (grid_row.js:1367). Resetting the flag
 	 * there left `hide_form()` thinking an open modal was inline, so it added a
 	 * counterweight freeze that super's unfreeze then only half-removed — and
 	 * the backdrop stayed up over the whole desk.
@@ -324,7 +312,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 	 *      <tr>, and Carbon keeps the parent row visible above the panel.
 	 *   3. `frappe.dom.freeze()` raises a modal backdrop. Inline needs none —
 	 *      but `hide_form()` unconditionally unfreezes, so the count has to be
-	 *      balanced rather than skipped (frappe.dom.freeze_count, dom.js:172).
+	 *      balanced rather than skipped (frappe.dom.freeze_count, dom.js:172-180).
 	 */
 	override show_form(): void {
 		const host = this.ensure_form_host();
@@ -345,7 +333,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// (2) the parent row stays visible — Carbon's expandable row shows the
 		// summary above the panel, and `.grid-row-open` now sits on a node the
 		// user can actually see, which is also where frappe expects it
-		// (`$('.grid-row-open').data('grid_row')` — layout.js:712,
+		// (`$('.grid-row-open').data('grid_row')` — layout.js:714,
 		// ui/keyboard.js:335).
 		this.wrapper.show();
 
@@ -362,9 +350,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// super toggles these through `this.wrapper.find(...)`, which no longer
 		// contains the form. Re-apply against the host it actually lives in.
 		const cannot_add_rows = this.grid.cannot_add_rows || (this.grid.df && this.grid.df.cannot_add_rows);
-		$(host)
-			.find(".grid-insert-row-below, .grid-insert-row, .grid-duplicate-row, .grid-append-row")
-			.toggle(!cannot_add_rows);
+		$(host).find(".grid-insert-row-below, .grid-insert-row, .grid-duplicate-row").toggle(!cannot_add_rows);
 		$(host)
 			.find(".grid-delete-row")
 			.toggle(!(this.grid.df && this.grid.df.cannot_delete_rows));
@@ -381,7 +367,7 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// Counterweight to super's unconditional `frappe.dom.unfreeze()`. In
 		// modal mode super's own freeze from show_form() is still standing and
 		// this one would be one too many.
-		if (!modal) frappe.dom.freeze("", "dark grid-form");
+		if (!modal) frappe.dom.freeze("", "grid-form");
 
 		super.hide_form();
 
@@ -411,15 +397,5 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 				? this.open_form_button
 				: this.open_form_button.parent();
 		}
-	}
-
-	/** The cell element for a fieldname, for the engine to place. */
-	get_column_node(fieldname: string): HTMLElement | null {
-		const $col = this.columns[fieldname];
-		// `.length` already answers "is there an element", so `?? null` only
-		// restates the `null` the same guard returns — it collapses jQuery's
-		// unavoidable `HTMLElement | undefined` onto this method's one "no
-		// cell" answer rather than inventing a second one.
-		return $col && $col.length ? ($col.get(0) ?? null) : null;
 	}
 }

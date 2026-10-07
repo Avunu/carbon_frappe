@@ -189,3 +189,37 @@
 .hover {
 	border-radius: 0;
 }
+
+// The dock (frappe 16.50, ui/sidebar/dock.js, scss/desk/dock.scss): the module switcher inside an
+// app, a pinned 56px column beside the sidebar or a floating tray at the window's edge. It stays
+// frappe's — the header carries no module switcher, and says so (desk/_ui-shell.scss) — but its
+// geometry is hard-coded literals (12px tiles, an 18px tray) that token squaring cannot reach, and
+// its tile fills are rgba overlays "stated per theme". Square it, and give it the sidebar's own
+// hover, selection and focus: $layer-hover, $background-selected with a 3px $border-interactive
+// bar (as the collapsed rail does above), and the 2px $focus ring.
+:root,
+[data-theme="dark"],
+.dark {
+	--dock-tile-hover: var(--cds-layer-hover-01);
+	--dock-tile-active: var(--cds-background-selected);
+	--dock-rule: var(--carbon-border-subtle);
+}
+
+.dock,
+.dock .dock-logo .shell-header,
+.dock .dock-logo .header-logo .icon-container,
+.dock .dock-item,
+.dock .dock-item .icon-container {
+	border-radius: 0;
+}
+
+.dock .dock-item {
+	&.active {
+		box-shadow: inset 3px 0 0 0 var(--cds-border-interactive);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+	}
+}

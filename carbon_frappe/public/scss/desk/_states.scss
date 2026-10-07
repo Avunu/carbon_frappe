@@ -70,10 +70,14 @@
 // "Truncation should not be used on page headers, titles, labels, error
 // messages, or validation messages." frappe applies its truncate mixin broadly,
 // including to sidebar/section labels and control labels.
+//
+// (The page heading is the same policy and used to be `.page-title .title-text`
+// here; frappe 16.50 has no such element — the title is the trail's last crumb,
+// whose label espresso truncates with a (0,3,0) rule — so it is handled beside
+// the heading's other rules, desk/_page-head.scss.)
 .control-label,
 .form-message,
-.section-head > .h6,
-.page-title .title-text {
+.section-head > .h6 {
 	text-overflow: clip;
 	overflow: visible;
 	white-space: normal;

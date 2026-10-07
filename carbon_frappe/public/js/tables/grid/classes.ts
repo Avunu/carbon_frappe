@@ -7,9 +7,9 @@
 //
 // Load-bearing examples:
 //   .grid-row[data-name]          form/controls/table.js paste handler
-//   .grid-row-open                layout.js:712, ui/keyboard.js:335, grid.js:8
+//   .grid-row-open                layout.js:714, ui/keyboard.js:335, grid.js:38
 //                                 — all do `$(".grid-row-open").data("grid_row")`
-//   [data-idx]                    grid.js:1068 `$("[data-idx=N]").data("grid_row")`
+//   [data-idx]                    grid.js:1220 `$("[data-idx=N]").data("grid_row")`
 //   .grid-static-col[data-fieldtype]  desk/_numerics.scss selects on both
 //   .sortable-handle              the Sortable.js drag handle
 //   .rows                         the element Sortable is bound to
@@ -59,7 +59,7 @@ export function gridProfile(): TableClassProfile {
 		// built, which the engine nests inside this cell. Adding the class to
 		// the cell as well produced two nested `.grid-static-col`s, and frappe
 		// sizes that class with `height: 43px` and `padding: 6px 8px !important`
-		// (common/grid.scss:174) — so the <th> ended up shorter than its row,
+		// (common/grid.scss:91, 195-197) — so the <th> ended up shorter than its row,
 		// leaving the <thead> background showing above and below it as a grey
 		// band. Body cells never had the class, which is why only the header
 		// looked wrong.

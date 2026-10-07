@@ -13,12 +13,18 @@
 	.modal-header {
 		border-bottom: none;
 		padding: 16px;
-	}
 
-	.modal-title {
-		font-size: var(--text-2xl);
-		font-weight: var(--font-weight-regular);
-		color: var(--cds-text-primary);
+		// Under `.modal-header` on purpose: frappe sizes the title with
+		// `.modal .modal-header .modal-title` (common/modal.scss:48-53), a notch
+		// above a bare `.modal .modal-title`, so the heading-03 that used to be
+		// written beside this block never applied and every dialog title stayed
+		// at frappe's 16px.
+		.modal-title {
+			font-size: var(--text-3xl); // heading-03
+			line-height: 28px;
+			font-weight: var(--font-weight-regular);
+			color: var(--cds-text-primary);
+		}
 	}
 
 	.modal-body {
@@ -29,18 +35,34 @@
 		border-top: none;
 		padding: 16px;
 
-		// Carbon modal signature: with exactly two actions, buttons go
-		// full-bleed edge-to-edge (secondary left, primary right)
-		&:has(.btn:nth-last-child(2):first-child) {
+		// Carbon modal signature: the footer's actions go full-bleed, edge to edge
+		// (secondary left, primary right), each 48px with the label at the start.
+		//
+		// The footer is frappe's `dom.js` template (:355-382): an empty
+		// `.custom-actions` and a `.standard-actions` holding two es-buttons,
+		// `.btn-modal-secondary` and `.btn-modal-primary`, each `.hide` until a
+		// dialog gives it a label. A dialog that adds custom actions fills the first
+		// and keeps the ordinary padded layout; the flush one is for the common case
+		// of nothing but the standard pair. `:not(.hide)` so the unused secondary
+		// does not take half the row.
+		//
+		// The selector this replaces, `:has(.btn:nth-last-child(2):first-child)`,
+		// matched Bootstrap buttons. The footer's buttons are es-buttons now, and
+		// frappe's own `.standard-actions button:not(:last-child)` margin and its
+		// `.modal-footer > * { margin: 0 }` are why this spells margin out.
+		&:has(> .custom-actions:empty) {
 			padding: 0;
 			gap: 0;
 
-			.btn {
+			.standard-actions {
+				display: flex;
+				flex: 1;
+			}
+
+			.standard-actions > .es-button:not(.hide) {
 				flex: 1;
 				margin: 0;
-				border-radius: 0;
 				height: 48px;
-				text-align: start;
 				justify-content: flex-start;
 				padding: 0 16px;
 			}
@@ -107,6 +129,145 @@
 	box-shadow: 0 2px 6px var(--cds-shadow);
 }
 
+// ---- Espresso menu -> Carbon menu ------------------------------------------
+// The page head's Menu and Actions, the view switcher, group-by and every
+// `frappe.ui.Dropdown` in 16.50 are `.es-menu` panels portaled to <body>
+// (components/dropdown.js, css/espresso/components/menu.css), not Bootstrap
+// `.dropdown-menu`s — those survive only as hidden item stores
+// (page.html:46-49) and in markup that kept them, which the Dropdown menus
+// block above still styles.
+//
+// Carbon's overflow menu: a $layer panel, flush rows 32px tall with a 16px
+// inset and $text-secondary labels that go to $text-primary on a
+// $layer-hover row, a $border-subtle rule between groups, the one menu shadow
+// (above). Espresso's is a rounded panel with 6px of padding around 28px rows
+// whose own hover chip is inset from the edges.
+//
+// Rows highlight through `data-highlighted`, not :hover, so that pointer and
+// keyboard cannot light two rows (menu.css:39-42) — the highlight is what is
+// styled here.
+.es-menu {
+	background: var(--cds-layer-01);
+
+	.es-menu__group {
+		padding: 0;
+		gap: 0;
+	}
+
+	.es-menu__group + .es-menu__group {
+		border-top-color: var(--carbon-border-subtle);
+	}
+
+	.es-menu__group-label {
+		padding: 8px 16px;
+		color: var(--cds-text-secondary);
+	}
+
+	.es-menu__item {
+		padding: 7px 16px; // + an 18px line = Carbon's 32px row
+		border-radius: 0;
+		line-height: 18px;
+		color: var(--cds-text-secondary);
+
+		&:hover {
+			color: var(--cds-text-primary);
+		}
+
+		> svg {
+			color: var(--cds-icon-secondary);
+		}
+
+		&[data-highlighted] {
+			background: var(--cds-layer-hover-01);
+			color: var(--cds-text-primary);
+		}
+
+		// a submenu row whose panel is open stays lit
+		&[data-state="open"] {
+			background: var(--cds-layer-hover-01);
+		}
+
+		// the app-marked current choice is a selected row
+		&[data-state="checked"] {
+			background: var(--cds-layer-selected-01);
+			color: var(--cds-text-primary);
+
+			&[data-highlighted] {
+				background: var(--cds-layer-selected-hover-01);
+			}
+		}
+
+		&[data-disabled],
+		&:disabled {
+			color: var(--cds-text-disabled);
+
+			> svg {
+				color: var(--cds-icon-disabled);
+			}
+		}
+
+		// destructive rows are Carbon's danger menu item: error-coloured text,
+		// the error fill with on-colour text while highlighted
+		&[data-theme="red"],
+		&[data-theme="red"] > svg {
+			color: var(--cds-text-error);
+		}
+
+		&[data-theme="red"][data-highlighted] {
+			background: var(--cds-support-error);
+
+			&,
+			> svg {
+				color: var(--cds-text-on-color);
+			}
+		}
+	}
+
+	.es-menu__description,
+	.es-menu__shortcut,
+	.es-menu__shortcut kbd,
+	.es-menu__chevron {
+		color: var(--cds-text-secondary);
+	}
+}
+
+// ---- Espresso tooltip -> Carbon tooltip ------------------------------------
+// frappe names its icon-only buttons with `frappe.ui.tooltip` (the page head's
+// Menu, the dialog's Close, ...). Carbon's tooltip is the inverse surface —
+// $background-inverse with $text-inverse — square, with a caret toward the
+// trigger; espresso's is $surface-gray-10 on a rounded bubble, and its caret is
+// drawn in the same colour from a border, so that is pointed at the same token.
+.es-tooltip {
+	background: var(--cds-background-inverse);
+	color: var(--cds-text-inverse);
+	border-radius: 0;
+	box-shadow: 0 2px 6px var(--cds-shadow);
+	padding: 4px 16px;
+	font-size: var(--text-base);
+	line-height: 18px;
+
+	kbd,
+	.es-tooltip__shortcut {
+		color: var(--cds-text-inverse);
+	}
+
+	&[data-side="top"] .es-tooltip__arrow {
+		border-top-color: var(--cds-background-inverse);
+	}
+
+	&[data-side="bottom"] .es-tooltip__arrow {
+		border-bottom-color: var(--cds-background-inverse);
+	}
+
+	&[data-side="left"] .es-tooltip__arrow {
+		border-left-color: var(--cds-background-inverse);
+	}
+
+	&[data-side="right"] .es-tooltip__arrow {
+		border-right-color: var(--cds-background-inverse);
+	}
+}
+
 // ---- Toasts / desk alerts -> Carbon toast notification ----------------------
 // $layer panel with a 3px inline-start support-color bar
 .es-toast,
@@ -154,22 +315,30 @@
 	}
 }
 
-// es-tab-buttons -> Carbon content switcher: bordered box, selected segment
-// inverts to $layer-selected-inverse
+// es-tab-buttons -> Carbon content switcher: one bordered box of flush segments,
+// the selected one inverted to $layer-selected-inverse. frappe's group is a rail
+// with a gap around raised `.es-pill`s (css/espresso/components/tab_buttons.css),
+// so the rail is flattened and the pill squared here.
+//
+// The selected-pill selector is written to beat frappe's own
+// `.es-pill:not([data-variant])[data-state="active"]` (0,3,0) on SPECIFICITY, not
+// on source order: the earlier `button[data-state="active"]` form was (0,2,1), lost
+// to it, and left a light raised pill with a shadow in the notification tabs.
 .es-tab-buttons {
+	gap: 0;
+	padding: 0;
 	border: 1px solid var(--carbon-border-subtle);
 	border-radius: 0;
 	background: transparent;
 
-	.es-tab-btn,
-	button {
+	.es-pill {
 		border-radius: 0;
+	}
 
-		&[data-state="active"],
-		&.active {
-			background-color: var(--cds-layer-selected-inverse);
-			color: var(--cds-text-inverse);
-		}
+	.es-pill:not([data-variant])[data-state="active"] {
+		background-color: var(--cds-layer-selected-inverse);
+		box-shadow: none;
+		color: var(--cds-text-inverse);
 	}
 }
 

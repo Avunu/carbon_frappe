@@ -1,31 +1,37 @@
 // CarbonGrid — frappe's child-table Grid, rendered by the Carbon table engine.
 //
-// WHAT CHANGES: the layout model. frappe lays a grid out on a Bootstrap
-// 12-column grid, sizing each field with `col-xs-{1..12}` and refusing to go
-// past a total span of 10 (grid.js:1357-1380), beyond which it latches
-// `.column-limit-reached` and swaps in a hand-rolled horizontal-scroll hack with
-// a px map duplicated in JS and SCSS. Here, columns get real pixel widths owned
-// by TanStack's column-sizing feature, the table scrolls horizontally the way
-// any table does, and `df.sticky` becomes real column pinning. There is no cap.
+// WHAT CHANGES: who lays the columns out. frappe 16.50 sizes every column in
+// pixels itself (`Grid#get_column_width`, grid.js:1526-1538: a user's saved
+// `df.width`, else a legacy `columns` span, else a fieldtype default, clamped to
+// 60-600) and writes them inline on each cell as `flex: 1 0 Npx; width: Npx`
+// (grid_row.js:910, 970), inside a `display: flex` row that scrolls sideways.
+// Here the same widths seed TanStack's column-sizing feature, which owns them
+// from then on: they live in a <colgroup>, the table scrolls horizontally the
+// way any table does, and a header drag is the ENGINE's (`onColumnResize`),
+// handed back to frappe's own `save_column_width` so it is persisted exactly
+// where frappe persists it. (`df.sticky` is declared to the engine as column
+// pinning, which is inert on a child table; see the README's "Known limits".)
 //
-// WHAT DOES NOT CHANGE: everything else. This subclasses frappe's Grid and
-// overrides only the four methods that produce or size DOM
-// (`make`, `make_head`, `render_result_rows`, `setup_visible_columns`) plus
-// `reset_grid`, which has to reach the engine. `refresh()` in particular is
-// INHERITED — it finds `.rows` (the profile puts that class on our <tbody>),
+// WHAT DOES NOT CHANGE: everything else, and in particular the width model.
+// This subclasses frappe's Grid and overrides only the three methods that
+// produce DOM (`make`, `make_head`, `render_result_rows`) plus
+// `_teardown_column_layout`, which has to reach the engine. `setup_visible_columns`,
+// `get_column_width` and `setup_user_defined_columns` are INHERITED, so a width
+// frappe computes is a width this grid renders. `refresh()` in particular is
+// INHERITED too — it finds `.rows` (the profile puts that class on our <tbody>),
 // `.grid-empty` and `.form-grid-container` exactly where it expects them, and
 // `make_sortable()` binds Sortable to the same element it always did.
 //
 // The ~60 `.grid.*` members app code calls (70 `update_docfield_property`,
 // 51 `get_field`, 44 `refresh`, 35 `grid_rows`, ...) are therefore inherited
 // implementations operating on new DOM, not reimplementations.
-import Grid from "frappe/public/js/frappe/form/grid";
-import CarbonTable from "../engine/table.ts";
+import Grid, { GRID_MAX_COLUMN_WIDTH, GRID_MIN_COLUMN_WIDTH } from "frappe/public/js/frappe/form/grid";
+import CarbonTable, { isColumnResize } from "../engine/table.ts";
 import { gridProfile } from "./classes.ts";
 import { ensureChildRow } from "./expand.ts";
 import CarbonGridRow from "./grid_row.ts";
 import GridToolbar, { mountFooter } from "./toolbar.ts";
-import type { CarbonColumnSpec, CarbonTableOptions } from "../engine/table.ts";
+import type { CarbonColumnResize, CarbonColumnSpec, CarbonTableOptions } from "../engine/table.ts";
 import type { Form, GridChildDoc, GridDataRow, GridDocField } from "frappe-types";
 
 /**
@@ -47,25 +53,6 @@ type GridRowData = GridChildDoc;
  * `undefined` arm is jQuery's — `.get(0)` on a handle frappe may not have filled.
  */
 type GridNodeContent = HTMLElement | "" | undefined;
-
-/**
- * frappe's own Bootstrap-span -> pixel table (grid_row.js:970-983), reused so a
- * DocType that has always declared `columns: 3` keeps the width it had.
- */
-const SPAN_PX: Record<number, number> = {
-	1: 60,
-	2: 100,
-	3: 140,
-	4: 200,
-	5: 250,
-	6: 300,
-	7: 350,
-	8: 400,
-	9: 450,
-	10: 500,
-	11: 550,
-	12: 600,
-};
 
 /**
  * `{ frm }` when there is one, `{}` when there is not.
@@ -142,6 +129,31 @@ export default class CarbonGrid extends Grid {
 		this.form_grid.empty();
 		this.carbon_table = new CarbonTable(this.form_grid.get(0), this.engine_options());
 		this.observe_panel_width();
+		this.close_dropdowns_on_scroll();
+	}
+
+	/**
+	 * Close an open Link dropdown when the table scrolls sideways.
+	 *
+	 * frappe 16.50 does this on `.form-grid`'s own scroll (grid.js:182-192): a
+	 * Link cell's dropdown is re-parented to `.grid-field` and absolutely
+	 * positioned (grid_row.js:1003-1030), so it would otherwise stay where it was
+	 * while its cell moved away. `.form-grid` is the engine's mount point now and
+	 * never scrolls; the engine's scroll box does, and `scroll` does not bubble, so
+	 * the listener has to be on that box.
+	 */
+	close_dropdowns_on_scroll(): void {
+		const scroll = this.carbon_table && this.carbon_table.renderer.scroll;
+		if (!scroll) return;
+		scroll.addEventListener("scroll", () => {
+			if (scroll.scrollLeft === 0) return;
+			for (const row of this.grid_rows || []) {
+				if (!row) continue;
+				for (const field of row.on_grid_fields) {
+					if (field.df.fieldtype === "Link" && field.awesomplete) field.awesomplete.close();
+				}
+			}
+		});
 	}
 
 	/**
@@ -181,6 +193,16 @@ export default class CarbonGrid extends Grid {
 			profile: gridProfile(),
 			sortable: false, // row order is the child table's `idx`, dragged not sorted
 			resizable: true,
+			// frappe persists a dragged width through `save_column_width`, which
+			// stock frappe's own handle calls on mouseup (grid.js:548-633). That
+			// handle is not running here (see `make_head`), so the engine's drag
+			// reports its settled width and this hands it over.
+			events: {
+				onColumnResize: (...args) => {
+					const [detail] = args;
+					if (isColumnResize(detail)) this.persist_column_width(detail);
+				},
+			},
 			// The filter row is always BUILT (CarbonGridRow#show_search_row);
 			// the toolbar's magnifier owns whether it is SHOWN.
 			inlineFilters: true,
@@ -231,78 +253,24 @@ export default class CarbonGrid extends Grid {
 	}
 
 	/**
-	 * Pixel widths instead of Bootstrap spans, and no redistribution loop.
+	 * Persist a column width the engine settled on, the way frappe's own drag does.
 	 *
-	 * Mirrors frappe's inclusion predicate exactly (hidden / in_list_view /
-	 * permlevel / layout fields) and keeps the Link-formatter inheritance, so
-	 * which columns appear is unchanged — only how wide they are.
+	 * `save_column_width` (grid.js:597-633) is what stock frappe's mouseup handler
+	 * calls: it records `df.width` and `visible_columns[n][1]` (so rows built later
+	 * start at the new width), re-derives the sticky offsets, and writes the whole
+	 * layout to the per-user `GridView` setting (the same record Configure Columns
+	 * writes, which is also what `setup_user_defined_columns` reads back). It does
+	 * nothing without a `frm`, so a grid in a dialog or Web Form keeps the width
+	 * for the session only, exactly as stock frappe does.
+	 *
+	 * Only a column this grid is showing is a candidate: the gutters are not
+	 * resizable, but the guard is what keeps an unknown id from ever reaching the
+	 * saved layout.
 	 */
-	override setup_visible_columns(): void {
-		if (this.visible_columns && this.visible_columns.length > 0) return;
-
-		this.user_defined_columns = [];
-		this.setup_user_defined_columns();
-		const fields =
-			this.user_defined_columns && this.user_defined_columns.length > 0
-				? this.user_defined_columns
-				: this.editable_fields || this.docfields;
-
-		this.visible_columns = [];
-		// `for…in` over an array, as upstream: the keys arrive as strings, so
-		// the index has to be converted back before it can address the array.
-		// `for…in` only yields keys the array actually has, so the miss branch
-		// is unreachable — it is what `noUncheckedIndexedAccess` asks for.
-		for (const ci in fields) {
-			const _df = fields[Number(ci)];
-			if (!_df) continue;
-			const df =
-				this.user_defined_columns && this.user_defined_columns.length > 0
-					? _df
-					: this.fields_map[_df.fieldname];
-
-			if (
-				df &&
-				!df.hidden &&
-				(this.editable_fields || df.in_list_view) &&
-				// `df.permlevel` is optional. Passing `undefined` to
-				// `get_perm` reached `this.perm[undefined]` and came back
-				// `null`, so an absent permlevel already excluded the column;
-				// the explicit test says that instead of relying on it.
-				((this.frm && df.permlevel !== undefined && this.frm.get_perm(df.permlevel, "read")) || !this.frm) &&
-				!frappe.model.layout_fields.includes(df.fieldtype)
-			) {
-				// attach formatter on refresh (frappe does the same)
-				if (df.fieldtype == "Link" && !df.formatter && df.parent && frappe.meta.docfield_map[df.parent]) {
-					// Read the parent's map into a local first: TypeScript only
-					// carries a truthiness narrowing through an element access
-					// whose key is a literal, and `df.parent` is a plain
-					// `string`, so the guard above does not reach the lookup.
-					const parent_map = frappe.meta.docfield_map[df.parent];
-					const docfield = parent_map && parent_map[df.fieldname];
-					if (docfield && docfield.formatter) df.formatter = docfield.formatter;
-				}
-				this.visible_columns.push([df, this.column_width_for(df)]);
-			}
-		}
-	}
-
-	/**
-	 * A `columns` value of 1-12 is a legacy Bootstrap span and is translated
-	 * through frappe's own px table; anything larger is already a pixel width
-	 * (which is what Configure Columns now writes). This is what lets existing
-	 * DocTypes and existing GridView user settings keep their widths.
-	 */
-	column_width_for(df: GridDocField): number {
-		let value = df.columns || df.colsize;
-		if (!value) {
-			this.update_default_colsize(df);
-			value = df.colsize;
-		}
-		// `update_default_colsize` ends in an unconditional `df.colsize = colsize`
-		// (grid.js:1383-1395), so `value` is a number on every path that gets
-		// here; 140 is the same fallback an unrecognised span already takes.
-		if (value === undefined) return 140;
-		return value <= 12 ? SPAN_PX[value] || 140 : value;
+	persist_column_width({ columnId, width }: CarbonColumnResize): void {
+		const shown = (this.visible_columns || []).some(([df]) => df.fieldname === columnId);
+		if (!shown) return;
+		this.save_column_width(columnId, this.clamp_column_width(width));
 	}
 
 	/**
@@ -310,6 +278,14 @@ export default class CarbonGrid extends Grid {
 	 * Configure Columns dialog, the per-fieldtype search inputs and the
 	 * `grid.filter` wiring — but they are never appended anywhere. The engine
 	 * pulls their column nodes into <thead> instead.
+	 *
+	 * Upstream's `make_head` ends with `setup_column_resize()` (grid.js:545), the
+	 * drag handler behind each header's `.grid-col-resize-handle`. It is skipped
+	 * on purpose, not forgotten: it resizes the cell's inline `width`, which in a
+	 * table is the engine's <colgroup>'s business, so it would drag a handle that
+	 * moves nothing. The engine draws its own handle on the <th> and reports the
+	 * drag as `onColumnResize` (see `engine_options`); the stale one is hidden in
+	 * `_carbon-table.scss`.
 	 */
 	override make_head(): void {
 		if (this.prevent_build) return;
@@ -365,8 +341,8 @@ export default class CarbonGrid extends Grid {
 
 	/**
 	 * Carbon's batch-action bar is driven by the same debounced hook every
-	 * checkbox change already funnels through (grid.js:362), so there is no new
-	 * selection plumbing — only a second consumer of the existing signal.
+	 * checkbox change already funnels through (grid.js:327, 474), so there is no
+	 * new selection plumbing — only a second consumer of the existing signal.
 	 */
 	override refresh_remove_rows_button(): void {
 		super.refresh_remove_rows_button();
@@ -376,10 +352,10 @@ export default class CarbonGrid extends Grid {
 	/**
 	 * The batch bar's Cancel action: drop the whole selection.
 	 *
-	 * The tail mirrors what `setup_check`'s click handler does (grid.js:236-262)
+	 * The tail mirrors what `setup_check`'s click handler does (grid.js:263-337)
 	 * — unchecking boxes with `.prop()` fires no click, so without it the
 	 * "Add row" button stays hidden (it is hidden while anything is selected)
-	 * and the Delete/Edit/Duplicate labels keep their stale counts.
+	 * and the Delete/Edit/Duplicate buttons stay shown.
 	 */
 	clear_selection(): void {
 		this.wrapper.find(".grid-row-check:checked").prop("checked", false);
@@ -419,17 +395,24 @@ export default class CarbonGrid extends Grid {
 	 * `visible_columns`, rebuilt first if it is unset.
 	 *
 	 * frappe builds it lazily and only ever through a row: `GridRow#setup_columns`
-	 * calls `setup_visible_columns()` (grid_row.js:729), and the header row is
-	 * always rendered before the body (grid.js:523 → 534), so upstream can read
+	 * calls `setup_visible_columns()` (grid_row.js:722), and the header row is
+	 * always rendered before the body (grid.js:680 → 691), so upstream can read
 	 * the field unguarded from a body row. `FrappeForm#switch_doc` breaks that
 	 * order: it sets `visible_columns = null` on every grid and immediately
-	 * re-renders the body through `go_to_page(1, true)` (form.js:537-539),
-	 * before `refresh()` rebuilds the head. Upstream survives because the rows
-	 * being refreshed rebuild the columns, and a grid with no rows reads
-	 * nothing. This grid reads the field directly to derive the engine's
-	 * columns, so the rebuild has to be here — otherwise a child table that was
-	 * empty on the previous document throws mid-`refresh()` and the form never
-	 * switches (the header keeps the old title, the fields keep the old values).
+	 * re-renders the body through `go_to_page(1, true)` (form.js:580-585),
+	 * which ends in `render_result_rows`, before `refresh()` rebuilds the head.
+	 * Upstream survives because the rows being refreshed rebuild the columns,
+	 * and a grid with no rows reads nothing. This grid reads the field directly
+	 * to derive the engine's columns BEFORE any row exists, so the rebuild has
+	 * to be here — otherwise a child table that was empty on the previous
+	 * document dies with "TypeError: this.visible_columns is not iterable"
+	 * mid-`refresh()` and the form never switches (the header keeps the old
+	 * title, the fields keep the old values).
+	 *
+	 * Note the timing still matches stock: at this instant `frm.doc` is the OLD
+	 * document (`switch_doc` swaps `docname` last), so the freshly built column
+	 * set uses the old doc's permlevel visibility — exactly when stock's first
+	 * row render builds its `columns_list` too.
 	 */
 	visible_columns_or_build(): Array<[GridDocField, number]> {
 		this.setup_visible_columns();
@@ -440,25 +423,6 @@ export default class CarbonGrid extends Grid {
 
 	/** Engine column specs derived from `visible_columns`, plus the gutters. */
 	build_engine_columns(): CarbonColumnSpec<GridRowData>[] {
-		// `FrappeForm.switch_doc` (form.js) nulls `visible_columns` and then,
-		// still inside the same synchronous call, asks `grid_pagination` to
-		// `go_to_page(1, true)` — which ends here, in `render_result_rows`,
-		// while `visible_columns` is still `null`. Stock frappe is safe: its
-		// `GridRow.setup_columns()` (grid_row.js:729) calls
-		// `setup_visible_columns()` itself before reading the list, so every
-		// fresh row re-derives it lazily. This adapter rebuilds the engine
-		// columns before the rows exist, so iterate against the null and the
-		// whole form switch dies with
-		// "TypeError: this.visible_columns is not iterable" — and the form
-		// keeps showing the PREVIOUS document. Call the same lazy rebuild
-		// here so the re-render always has real columns to walk. Note the
-		// timing still matches stock: at this instant `frm.doc` is the OLD
-		// document (switch_doc swaps `docname` last), so the freshly built
-		// column set uses the old doc's permlevel visibility — exactly when
-		// stock's first row render builds its `columns_list` too.
-		if (!this.visible_columns || !this.visible_columns.length) {
-			this.setup_visible_columns();
-		}
 		const node_of = (
 			rowOriginal: GridRowData,
 			pick: (r: CarbonGridRow) => GridNodeContent,
@@ -474,7 +438,12 @@ export default class CarbonGrid extends Grid {
 				// always appears first and to the left of the selection icon").
 				id: "_expand",
 				label: "",
-				size: 32,
+				// Carbon's expand column at the md row size (`td.cds--table-expand`:
+				// 2.5rem, of which 0.5rem is leading padding, and the 16px chevron
+				// button's own padding takes the rest). Any narrower and the glyph is
+				// squeezed to fit what is left. The columns' widths are exact now, so
+				// this number is what is drawn; it used to be stretched past it.
+				size: 40,
 				pinned: "start",
 				sortable: false,
 				filterable: false,
@@ -499,16 +468,26 @@ export default class CarbonGrid extends Grid {
 				pinned: "start",
 				sortable: false,
 				filterable: false,
+				// A gutter, like the three around it: frappe gives the row number a
+				// fixed column and only DATA columns a resize handle (grid_row.js:1068-1070),
+				// and a width dragged here would have nowhere to be saved.
+				resizable: false,
 				align: "center",
 				cell: (ctx) => node_of(ctx.row.original, (r) => (r.row_index ? r.row_index.get(0) : "")),
 			},
 		];
 
-		for (const [df, width] of this.visible_columns_or_build()) {
+		const visible = this.visible_columns_or_build();
+		visible.forEach(([df, width], i) => {
 			columns.push({
 				id: df.fieldname,
 				label: __(df.label, null, df.parent),
+				// `width` is frappe's own, already clamped, pixel width for the column
+				// (`get_column_width`); the drag is held to the same 60-600 range
+				// `clamp_column_width` enforces on what gets saved.
 				size: width,
+				minSize: GRID_MIN_COLUMN_WIDTH,
+				maxSize: GRID_MAX_COLUMN_WIDTH,
 				align: ["Int", "Currency", "Float", "Percent"].includes(df.fieldtype)
 					? "right"
 					: df.fieldtype === "Check"
@@ -517,6 +496,11 @@ export default class CarbonGrid extends Grid {
 				sortable: false,
 				filterable: true,
 				pinned: df.sticky ? "start" : undefined,
+				// frappe's `.grid-data-last` (grid_row.js:766-768): the last data
+				// column takes whatever width the others leave, so a short grid
+				// fills its container without any one column being stretched past
+				// the width it was given.
+				fill: i === visible.length - 1,
 				meta: { df },
 				cell: (ctx) =>
 					node_of(ctx.row.original, (r) => {
@@ -524,7 +508,7 @@ export default class CarbonGrid extends Grid {
 						return $col && $col.length ? $col.get(0) : "";
 					}),
 			});
-		}
+		});
 
 		columns.push({
 			id: "_menu",
@@ -565,7 +549,7 @@ export default class CarbonGrid extends Grid {
 			if (!d) break;
 			// `Grid#data` is declared with `name` and `idx` REQUIRED, which is
 			// true of a form-bound grid but not of a frm-less one: its rows come
-			// from `df.data` as bare literals, and frappe's own grid.js:1058
+			// from `df.data` as bare literals, and frappe's own grid.js:1211
 			// pushes `{ idx, __islocal, ...defaults }` with no `name` at all.
 			// That is exactly why these two backfills exist. Reading the same
 			// object through frappe-types' `GridDataRow` — the shape whose
@@ -582,7 +566,7 @@ export default class CarbonGrid extends Grid {
 				grid_row = new CarbonGridRow({
 					// `$rows` is optional on the base signature —
 					// `GridPagination#go_to_page` calls this with no argument
-					// (grid_pagination.js:153) — while `GridRowOptions#parent`
+					// (grid_pagination.js:167) — while `GridRowOptions#parent`
 					// is required. Nothing here ever reads it: frappe's only
 					// read is `this.wrapper.appendTo(this.parent)` in
 					// `GridRow#make` (grid_row.js:53), and CarbonGridRow
@@ -616,10 +600,28 @@ export default class CarbonGrid extends Grid {
 		}
 	}
 
-	override reset_grid(): void {
+	/**
+	 * Throw the cached column layout away, without pulling nodes out from under the
+	 * engine.
+	 *
+	 * Upstream (grid.js:500-504) also does
+	 * `$(".grid-body .grid-row").remove()`. Those are this table's own <tr>s now,
+	 * and removing them behind the renderer would leave it holding detached nodes
+	 * it believes are in the table. The engine is handed an empty data set instead
+	 * and releases them itself. `reset_grid()` (Configure Columns) and
+	 * `set_column_disp()` (a script hiding a column) both go through here, so
+	 * overriding this one covers both.
+	 *
+	 * The next layout is rebuilt from `visible_columns`, i.e. from the user's saved
+	 * widths, so a width dragged under the old layout is forgotten rather than left
+	 * to outrank the new one (`resetColumnSizes`).
+	 */
+	override _teardown_column_layout(): void {
 		this.visible_columns = [];
 		this.grid_rows = [];
-		if (this.carbon_table) this.carbon_table.setData([]);
-		this.refresh();
+		if (this.carbon_table) {
+			this.carbon_table.setData([]);
+			this.carbon_table.resetColumnSizes();
+		}
 	}
 }

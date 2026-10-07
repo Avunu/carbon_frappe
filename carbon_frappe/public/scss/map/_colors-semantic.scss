@@ -1,197 +1,92 @@
-// Semantic pins: espresso/frappe-ui slots that must land on Carbon theme
-// tokens. frappe declares its ENTIRE semantic layer (--surface-*/--ink-*/
-// --outline-*) as literal hex in BOTH themes (espresso/_colors.scss) with zero
-// var() indirection, so the raw-ramp remap in _colors-palette.scss CANNOT reach
-// it. Every semantic slot must therefore be pinned here explicitly, or it keeps
-// frappe's espresso value (correct-ish in light by coincidence, wrong in dark).
+// Semantic pins: the espresso slots that must land on an exact Carbon ROLE.
 //
-// Two mechanisms:
-//   - NEUTRAL roles that map cleanly to a Carbon theme token use a single
-//     var(--cds-*) pin — it flips with data-theme automatically (one block).
-//   - Slots frappe OVERLOADS across themes (the --surface-gray-* / --ink-gray-*
-//     ladder is surfaces at low steps, text at high steps) and all CHROMATIC
-//     slots are pinned to explicit @carbon/colors steps in separate light/dark
-//     blocks, because their light and dark targets aren't a single theme token.
+// Frappe v16.50 declares its whole semantic layer (--surface-*, --ink-*,
+// --outline-*) as var() aliases onto the raw ramps (css/espresso/colors.css), and
+// the legacy names (--bg-color, --text-muted, --border-color, ...) as aliases onto
+// that layer (css/espresso/legacy.css). So the ramp remap in _colors-palette.scss
+// is the PRIMARY mechanism and already reaches every chromatic slot (status
+// fills, tags, alerts) and every legacy tint (--bg-red, --text-on-blue, ...) in
+// both themes.
+//
+// What the ramp cannot do is pick a Carbon ROLE. Light and dark share one ramp
+// index but want different roles at it (dark ink-gray-8 is Carbon's text-primary,
+// while the same ramp step is also dark surface-gray-9), and Carbon names its
+// neutrals by job (layer, text-secondary, border-subtle) rather than by step. So
+// the neutral roles below are pinned to var(--cds-*), which flips with data-theme
+// by itself and re-resolves inside `.cf-zone-g100` (the selector list carries it).
+// Everything else is left to the ramp on purpose: a chromatic pin here would
+// shadow the remap and drift from it.
+//
+// frappe-ui SPAs are the exception to "leave it to the ramp": see
+// _colors-semantic-spa.scss.
 @use "@carbon/colors" as c;
 
-// -- Theme-agnostic neutral role pins (auto-flip via --cds-*) ----------------
+// -- Theme-agnostic neutral roles (auto-flip via --cds-*) --------------------
 :root,
 [data-theme="light"],
 [data-theme="dark"],
 .dark,
 .cf-zone-g100 {
 	// UI Shell zone — see desk/_ui-shell.scss
-	// Surfaces -> Carbon layering model
+	// Surfaces follow Carbon's layering model: canvas on $background, content on
+	// $layer-01. Modal, popover and toast sit on $layer-01 in EVERY theme ($overlay
+	// and the drop shadow supply the separation, not a higher layer step), and g10's
+	// ladder alternates (layer-02 == $background), so pinning elevation-2 higher
+	// would paint a gray modal on a gray canvas.
 	--surface-base: var(--cds-background);
-	// name says white: under g10 $background is #f4f4f4, so this is layer-01
-	--surface-white: var(--cds-layer-01);
-	// a TEXT role (ink), not a surface — Carbon's on-color text is white in
-	// every theme, which var(--cds-background) stopped being under g10
-	--ink-white: var(--cds-text-on-color);
+	// frappe's `surface-gray-1` is the subtle step above the canvas, which is
+	// Carbon's layer-01 (white under g10, #262626 under g100)
 	--surface-gray-1: var(--cds-layer-01);
-	--surface-cards: var(--cds-layer-01);
-	--surface-modal: var(--cds-layer-01);
-	--surface-selected: var(--cds-layer-selected-01);
-	// NOTE: --surface-sidebar / --surface-menu-bar are theme-SPLIT below; Carbon
-	// puts the side nav on $layer-01 in g10 (white, lifted off the gray canvas)
-	// but on $background in g100 (the UI Shell tone). No single token does both.
+	--surface-elevation-1: var(--cds-layer-01);
+	--surface-elevation-2: var(--cds-layer-01);
+	// frappe's SELECTED surface (sidebar item, selected tab button)
+	--surface-elevation-3: var(--cds-layer-selected-01);
+	// NOTE: --surface-sidebar is theme-SPLIT below; Carbon puts the side nav on
+	// $layer-01 in g10 (white, lifted off the gray canvas) but on $background in
+	// g100 (the UI Shell tone). No single token does both.
 
-	// Ink -> Carbon text roles
+	// Ink -> Carbon text roles. frappe's `ink-base` is the text that sits on a
+	// strong fill (solid buttons, badges, toasts, tooltips); those fills are the
+	// inverse surface, so its Carbon role is text-inverse (white under g10, #161616
+	// under g100), not on-color text, which is white in both.
+	--ink-base: var(--cds-text-inverse);
 	--ink-gray-9: var(--cds-text-primary);
 	--ink-gray-8: var(--cds-text-primary);
 	--ink-gray-7: var(--cds-text-secondary);
 	--ink-gray-6: var(--cds-text-secondary);
 	--ink-gray-5: var(--cds-text-helper);
+	// ink-gray-4 is the muted step between helper and placeholder text, which no
+	// Carbon text token names; gray-50 holds it at #8d8d8d in both themes (the ramp
+	// would let it fall to #6f6f6f on g100).
+	--ink-gray-4: #{c.$gray-50};
 	--ink-gray-3: var(--cds-text-placeholder);
 	--ink-blue-link: var(--cds-link-primary);
 
 	// Outlines -> Carbon border roles. The subtle hairline goes through the
 	// --carbon-border-subtle alias (see map/_colors-legacy.scss) because
 	// Carbon's -00/-01 index inverts between g10 and g100. --outline-gray-3/-4
-	// and --dark-border-color are the STRONG border role (#8d8d8d / #6f6f6f),
-	// which is index-stable and stays on the Carbon token.
+	// are the STRONG border role (#8d8d8d / #6f6f6f), which is index-stable and
+	// stays on the Carbon token. --outline-base is a hairline rather than frappe's
+	// invisible page-colored ring, so a bordered element stays bounded.
+	--outline-base: var(--carbon-border-subtle);
 	--outline-gray-1: var(--carbon-border-subtle);
 	--outline-gray-2: var(--carbon-border-subtle);
 	--outline-gray-3: var(--cds-border-strong-01);
 	--outline-gray-4: var(--cds-border-strong-01);
-	--outline-gray-5: var(--carbon-border-subtle);
-	--outline-gray-modals: var(--carbon-border-subtle);
-	--outline-white: var(--carbon-border-subtle);
-	--dark-border-color: var(--cds-border-strong-01);
 	--outline-elevation-1: var(--carbon-border-subtle);
 	--outline-elevation-2: var(--carbon-border-subtle);
 }
 
-// -- Overloaded neutral ladder + chromatic status slots: light -------------
-// Frappe's --surface-gray-2..7 / --ink-gray-1/2/4 run monotonically (surfaces
-// at low steps, text tones at high steps); Carbon's light LAYER tokens
-// alternate, so these need explicit ramp steps rather than layer tokens.
+// -- Side nav: lifted off the canvas in g10, on the shell tone in g100 -------
 :root,
 [data-theme="light"] {
-	// Side nav lifts off the gray canvas (frappe: .body-sidebar reads
-	// --surface-menu-bar; see frappe/public/scss/desk/sidebar.scss)
+	// frappe's side nav reads --surface-sidebar (scss/desk/sidebar.scss)
 	--surface-sidebar: var(--cds-layer-01);
-	--surface-menu-bar: var(--cds-layer-01);
-
-	--surface-gray-2: #{c.$gray-10};
-	--surface-gray-3: #{c.$gray-20};
-	--surface-gray-4: #{c.$gray-30};
-	--surface-gray-5: #{c.$gray-70};
-	--surface-gray-6: #{c.$gray-80};
-	--surface-gray-7: #{c.$gray-100};
-	--ink-gray-1: #{c.$gray-20};
-	--ink-gray-2: #{c.$gray-30};
-	--ink-gray-4: #{c.$gray-50};
-
-	--surface-red-1: #{c.$red-10};
-	--surface-red-2: #{c.$red-20};
-	--surface-red-3: #{c.$red-30};
-	--surface-red-4: #{c.$red-40};
-	--surface-red-5: #{c.$red-60};
-	--surface-red-6: #{c.$red-70};
-	--surface-red-7: #{c.$red-80};
-	--ink-red-1: #{c.$red-70};
-	--ink-red-2: #{c.$red-60};
-	--ink-red-3: #{c.$red-60};
-	--ink-red-4: #{c.$red-70};
-	--outline-red-1: #{c.$red-30};
-	--outline-red-2: #{c.$red-40};
-	--outline-red-3: #{c.$red-60};
-	--surface-green-1: #{c.$green-10};
-	--surface-green-2: #{c.$green-20};
-	--surface-green-3: #{c.$green-60};
-	--ink-green-1: #{c.$green-70};
-	--ink-green-2: #{c.$green-60};
-	--ink-green-3: #{c.$green-60};
-	--outline-green-1: #{c.$green-30};
-	--outline-green-2: #{c.$green-40};
-	--surface-amber-1: #{c.$yellow-10};
-	--surface-amber-2: #{c.$yellow-20};
-	--surface-amber-3: #{c.$yellow-30};
-	--ink-amber-1: #{c.$yellow-70};
-	--ink-amber-2: #{c.$yellow-60};
-	--ink-amber-3: #{c.$yellow-60};
-	--outline-amber-1: #{c.$yellow-30};
-	--outline-amber-2: #{c.$yellow-40};
-	--surface-blue-1: #{c.$blue-10};
-	--surface-blue-2: #{c.$blue-20};
-	--surface-blue-3: #{c.$blue-60};
-	--ink-blue-1: #{c.$blue-70};
-	--ink-blue-2: #{c.$blue-60};
-	--ink-blue-3: #{c.$blue-60};
-	--outline-blue-1: #{c.$blue-30};
-	--surface-orange-1: #{c.$orange-10};
-	--outline-orange-1: #{c.$orange-30};
-	--surface-violet-1: #{c.$purple-10};
-	--ink-violet-1: #{c.$purple-60};
-	--surface-cyan-1: #{c.$cyan-10};
-	--ink-cyan-1: #{c.$cyan-60};
-	--surface-pink-1: #{c.$magenta-10};
-	--ink-pink-1: #{c.$magenta-60};
 }
 
-// -- Overloaded neutral ladder + chromatic status slots: dark (g100) --------
 [data-theme="dark"],
 .dark,
 .cf-zone-g100 {
 	// UI Shell zone — see desk/_ui-shell.scss
-	// Side nav shares the g100 UI Shell tone rather than lifting to layer-01
 	--surface-sidebar: var(--cds-background);
-	--surface-menu-bar: var(--cds-background);
-
-	--surface-gray-2: #{c.$gray-80};
-	--surface-gray-3: #{c.$gray-70};
-	--surface-gray-4: #{c.$gray-60};
-	--surface-gray-5: #{c.$gray-40};
-	--surface-gray-6: #{c.$gray-30};
-	--surface-gray-7: #{c.$gray-10};
-	--ink-gray-1: #{c.$gray-80};
-	--ink-gray-2: #{c.$gray-70};
-	--ink-gray-4: #{c.$gray-50};
-
-	--surface-red-1: #{c.$red-100};
-	--surface-red-2: #{c.$red-90};
-	--surface-red-3: #{c.$red-80};
-	--surface-red-4: #{c.$red-70};
-	--surface-red-5: #{c.$red-50};
-	--surface-red-6: #{c.$red-60};
-	--surface-red-7: #{c.$red-70};
-	--ink-red-1: #{c.$red-30};
-	--ink-red-2: #{c.$red-40};
-	--ink-red-3: #{c.$red-40};
-	--ink-red-4: #{c.$red-30};
-	--outline-red-1: #{c.$red-80};
-	--outline-red-2: #{c.$red-70};
-	--outline-red-3: #{c.$red-60};
-	--surface-green-1: #{c.$green-100};
-	--surface-green-2: #{c.$green-90};
-	--surface-green-3: #{c.$green-40};
-	--ink-green-1: #{c.$green-30};
-	--ink-green-2: #{c.$green-40};
-	--ink-green-3: #{c.$green-40};
-	--outline-green-1: #{c.$green-80};
-	--outline-green-2: #{c.$green-70};
-	--surface-amber-1: #{c.$yellow-100};
-	--surface-amber-2: #{c.$yellow-90};
-	--surface-amber-3: #{c.$yellow-30};
-	--ink-amber-1: #{c.$yellow-30};
-	--ink-amber-2: #{c.$yellow-40};
-	--ink-amber-3: #{c.$yellow-40};
-	--outline-amber-1: #{c.$yellow-80};
-	--outline-amber-2: #{c.$yellow-70};
-	--surface-blue-1: #{c.$blue-100};
-	--surface-blue-2: #{c.$blue-90};
-	--surface-blue-3: #{c.$blue-50};
-	--ink-blue-1: #{c.$blue-30};
-	--ink-blue-2: #{c.$blue-40};
-	--ink-blue-3: #{c.$blue-40};
-	--outline-blue-1: #{c.$blue-80};
-	--surface-orange-1: #{c.$orange-100};
-	--outline-orange-1: #{c.$orange-80};
-	--surface-violet-1: #{c.$purple-100};
-	--ink-violet-1: #{c.$purple-40};
-	--surface-cyan-1: #{c.$cyan-100};
-	--ink-cyan-1: #{c.$cyan-40};
-	--surface-pink-1: #{c.$magenta-100};
-	--ink-pink-1: #{c.$magenta-40};
 }
