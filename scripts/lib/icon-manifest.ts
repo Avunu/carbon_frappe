@@ -16,7 +16,17 @@
  *   scripts/audit-tokens.ts reads it to prove every emitter in the installed
  *   apps is either bridged or deliberately not (LEGACY_UNMAPPED), so a new
  *   `fa-foo` in an app, or a Carbon rename, fails `yarn audit:drift` instead of
- *   rendering as a blank box in production.
+ *   rendering as a blank box in production. Each legacy entry names the apps
+ *   that emit it, and the audit holds that list to what it finds: an entry no
+ *   scanned app emits any more, or an app emitting a class its entry does not
+ *   name, fails too, so the tables cannot gather dead mappings.
+ *
+ * Which apps that covers: CI clones frappe, erpnext and hrms at the revisions
+ * flake.lock pins, and the strict audit fails if any of those three is missing
+ * (a warn-only `bench build` on a frappe-only bench lists them as unverified). The
+ * entries for apps no input pins (print_designer, helpdesk, wiki, webshop) are
+ * verified only on a bench that has those apps installed; the audit prints
+ * which apps it scanned and which named apps it could not.
  *
  * Nothing from @carbon/icons ships at runtime; the generated output is committed.
  */
@@ -152,7 +162,7 @@ export const CHROME_GLYPHS: readonly GlyphSpec[] = [
 		icon: "chevron--right",
 		size: 16,
 		// Must equal CARBON.expandSvg in js/tables/engine/classes.ts; the unit test
-		// (test/unit/icon-manifest.test.ts) fails if the two drift apart.
+		// (test/unit/icons.test.ts) fails if the two drift apart.
 		attrs: { class: "cds--table-expand__svg" },
 		role: "the row-expand chevron (Carbon's `table-expand__svg`)",
 	},
@@ -178,7 +188,9 @@ export interface LegacyGlyph {
 	name: string;
 	/** `@carbon/icons` icon name (16px). */
 	icon: string;
-	/** Who emits it, so the next person can tell a live mapping from a dead one. */
+	/** The apps whose source emits the class; the audit holds this to what it scans. */
+	apps: readonly string[];
+	/** Where, so the next person can tell a live mapping from a dead one. */
 	emitters: string;
 }
 
@@ -187,82 +199,167 @@ export const LEGACY_GLYPHS: readonly LegacyGlyph[] = [
 		family: "fa",
 		name: "lock",
 		icon: "locked",
-		emitters: "frappe: core/doctype/file/file.py, utils/file_manager.py (private-file link)",
+		apps: ["frappe"],
+		emitters: "core/doctype/file/file.py, utils/file_manager.py, desk/form/activity.py (private-file link)",
 	},
 	{
 		family: "fa",
 		name: "spinner",
 		icon: "circle-dash",
-		emitters: "frappe: file_uploader/FileUploader.vue (upload button), with fa-spin",
+		apps: ["frappe"],
+		emitters:
+			"file_uploader/FileUploader.vue (upload button); lib/leaflet_control_locate (locating), with fa-spin",
+	},
+	{
+		family: "fa",
+		name: "map-marker",
+		icon: "location",
+		apps: ["frappe"],
+		emitters:
+			"lib/leaflet_control_locate/L.Control.Locate.js: the locate button of Geolocation fields and the Map view",
 	},
 	{
 		family: "fa",
 		name: "level-down",
 		icon: "arrow--down-right",
+		apps: ["hrms", "print_designer"],
 		emitters: "hrms: templates/node_card.html; print_designer: Barcode/Dynamic preview modals",
 	},
 	{
 		family: "fa",
 		name: "check-circle",
 		icon: "checkmark--filled",
-		emitters: "print_designer: AppBarcodeModal, AppImageModal",
+		apps: ["print_designer"],
+		emitters: "AppBarcodeModal, AppImageModal (selected state)",
 	},
-	{ family: "fa", name: "code", icon: "code", emitters: "print_designer: preview modals (jinja-toggle)" },
-	{ family: "fa", name: "tag", icon: "tag", emitters: "print_designer: AppDynamicPreviewModal" },
+	{
+		family: "fa",
+		name: "code",
+		icon: "code",
+		apps: ["print_designer"],
+		emitters: "preview modals (jinja-toggle)",
+	},
+	{ family: "fa", name: "tag", icon: "tag", apps: ["print_designer"], emitters: "AppDynamicPreviewModal" },
 	{
 		family: "fa",
 		name: "angle-double-right",
 		icon: "double-chevron--right",
-		emitters: "print_designer: AppDynamicPreviewModal",
+		apps: ["print_designer"],
+		emitters: "AppDynamicPreviewModal",
 	},
 	{
 		family: "fa",
 		name: "trash",
 		icon: "trash-can",
-		emitters: "print_designer: AppDynamicPreviewModal",
+		apps: ["print_designer"],
+		emitters: "AppDynamicPreviewModal",
 	},
-	{ family: "fa", name: "font", icon: "text--font", emitters: "print_designer: AppLayer, LayersPanel" },
-	{ family: "fa", name: "image", icon: "image", emitters: "print_designer: AppLayer, LayersPanel" },
-	{ family: "fa", name: "table", icon: "table", emitters: "print_designer: AppLayer, LayersPanel" },
+	{
+		family: "fa",
+		name: "font",
+		icon: "text--font",
+		apps: ["print_designer"],
+		emitters: "AppLayer, LayersPanel",
+	},
+	{ family: "fa", name: "image", icon: "image", apps: ["print_designer"], emitters: "AppLayer, LayersPanel" },
+	{ family: "fa", name: "table", icon: "table", apps: ["print_designer"], emitters: "AppLayer, LayersPanel" },
 	{
 		family: "fa",
 		name: "square-o",
 		icon: "square--outline",
-		emitters: "print_designer: AppLayer, LayersPanel",
+		apps: ["print_designer"],
+		emitters: "AppLayer, LayersPanel",
 	},
-	{ family: "fa", name: "columns", icon: "column", emitters: "print_designer: AppTableContextMenu" },
-	{ family: "fa", name: "file-o", icon: "document", emitters: "print_designer: LayersPanel" },
+	{
+		family: "fa",
+		name: "columns",
+		icon: "column",
+		apps: ["print_designer"],
+		emitters: "AppTableContextMenu",
+	},
+	{ family: "fa", name: "file-o", icon: "document", apps: ["print_designer"], emitters: "LayersPanel" },
 	{
 		family: "octicon",
 		name: "file-directory",
 		icon: "folder",
-		emitters: "helpdesk, wiki: hooks.py app_icon, config/desktop.py",
+		apps: ["helpdesk", "wiki"],
+		emitters: "hooks.py app_icon, config/desktop.py",
 	},
 ];
+
+/**
+ * FontAwesome modifiers the generated stylesheet implements itself. They draw
+ * no glyph, so they are neither bridged nor skipped: the stylesheet is their
+ * answer, and test/unit/icons.test.ts holds it to a rule for each.
+ */
+export const LEGACY_MODIFIERS: readonly string[] = ["fa-fw", "fa-fixed-width", "fa-spin"];
+
+/** A legacy class found in an installed app that is deliberately not bridged. */
+export interface UnmappedLegacyClass {
+	/** The apps whose source emits the class; the audit holds this to what it scans. */
+	apps: readonly string[];
+	/** Why it needs no glyph. */
+	reason: string;
+}
 
 /**
  * Legacy class names found in the installed apps that are deliberately NOT
  * bridged, each with the reason. `audit-tokens.ts` fails on any emitter that is
  * in neither this table nor LEGACY_GLYPHS, so a new one is a decision, not an
- * accident. Reasons were checked against frappe v16.50.0's source.
+ * accident. Reasons were checked against frappe v16.50.0's source. Only what an
+ * app's script, template or Python emits belongs here: a class that only a
+ * stylesheet names (frappe's report.scss `.fa-sort`) is not an emitter.
  */
-export const LEGACY_UNMAPPED: Readonly<Record<string, string>> = {
-	"fa-windows": "Social Login Key provider icon: website login page only; a brand mark",
-	"fa-github": "Social Login Key provider icon: website login page only; a brand mark",
-	"fa-google": "Social Login Key provider icon: website login page only; a brand mark",
-	"fa-facebook": "Social Login Key provider icon: website login page only; a brand mark",
-	"fa-cloud": "Social Login Key provider icon: website login page only",
-	"fa-key": "Social Login Key provider icon: website login page only",
-	"fa-user": "webshop: shopping_cart.js renders on website pages, which this desk bundle never reaches",
-	"fa-close": "webshop: product_page.js renders on website pages, which this desk bundle never reaches",
-	"fa-check": "webshop: product_page.js renders on website pages, which this desk bundle never reaches",
-	"fa-th": "hooks.py `app_icon`: no consumer in frappe v16.50 (desk icons come from Desktop Icon records)",
-	"fa-star": "erpnext config/projects.py module config: no consumer in frappe v16.50",
-	"fa-list": "erpnext config/projects.py module config: no consumer in frappe v16.50",
-	"fa-cube": "print_designer MainStore.js: inside a comment",
-	"fa-sort": "frappe's report.scss styles a `.fa-sort` that nothing emits",
-	"fa-fw": "a modifier, implemented by the generated stylesheet itself",
-	"fa-fixed-width": "a webshop typo for fa-fw, implemented by the generated stylesheet itself",
-	"fa-spin": "a modifier, implemented by the generated stylesheet itself",
-	"octicon-plus": "frappe's kanban.scss styles an `.octicon-plus` that nothing emits",
+export const LEGACY_UNMAPPED: Readonly<Record<string, UnmappedLegacyClass>> = {
+	"fa-windows": {
+		apps: ["frappe"],
+		reason: "Social Login Key provider icon: website login page only; a brand mark",
+	},
+	"fa-github": {
+		apps: ["frappe"],
+		reason: "Social Login Key provider icon: website login page only; a brand mark",
+	},
+	"fa-google": {
+		apps: ["frappe"],
+		reason: "Social Login Key provider icon: website login page only; a brand mark",
+	},
+	"fa-facebook": {
+		apps: ["frappe"],
+		reason: "Social Login Key provider icon: website login page only; a brand mark",
+	},
+	"fa-cloud": { apps: ["frappe"], reason: "Social Login Key provider icon: website login page only" },
+	"fa-key": { apps: ["frappe"], reason: "Social Login Key provider icon: website login page only" },
+	"fa-location-arrow": {
+		apps: ["frappe"],
+		reason: "lib/leaflet_control_locate: named only in a comment; the control's default is fa-map-marker",
+	},
+	"fa-circle": {
+		apps: ["frappe"],
+		reason: "lib/leaflet_easy_button: named only in a usage comment, and frappe never calls L.easyButton",
+	},
+	"fa-user": {
+		apps: ["webshop"],
+		reason: "shopping_cart.js renders on website pages, which this desk bundle never reaches",
+	},
+	"fa-close": {
+		apps: ["webshop"],
+		reason: "product_page.js renders on website pages, which this desk bundle never reaches",
+	},
+	"fa-check": {
+		apps: ["webshop"],
+		reason: "product_page.js renders on website pages, which this desk bundle never reaches",
+	},
+	"fa-th": {
+		apps: ["erpnext"],
+		reason: "hooks.py `app_icon`: no consumer in frappe v16.50 (desk icons come from Desktop Icon records)",
+	},
+	"fa-star": {
+		apps: ["erpnext"],
+		reason: "config/projects.py module config: no consumer in frappe v16.50",
+	},
+	"fa-list": {
+		apps: ["erpnext"],
+		reason: "config/projects.py module config: no consumer in frappe v16.50",
+	},
+	"fa-cube": { apps: ["print_designer"], reason: "MainStore.js: inside a comment" },
 };

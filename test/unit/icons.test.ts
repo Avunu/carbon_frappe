@@ -6,6 +6,7 @@ import { auditGeneratedIcons } from "../../scripts/lib/audit-icons.ts";
 import {
 	CHROME_GLYPHS,
 	LEGACY_GLYPHS,
+	LEGACY_MODIFIERS,
 	LEGACY_UNMAPPED,
 	SHELL_GLYPHS,
 } from "../../scripts/lib/icon-manifest.ts";
@@ -33,8 +34,8 @@ describe("svgDataUri", () => {
 
 describe("legacyStylesheet", () => {
 	const glyphs = [
-		{ family: "fa", name: "lock", icon: "locked", emitters: "x" },
-		{ family: "octicon", name: "file-directory", icon: "folder", emitters: "y" },
+		{ family: "fa", name: "lock", icon: "locked", apps: ["frappe"], emitters: "x" },
+		{ family: "octicon", name: "file-directory", icon: "folder", apps: ["wiki"], emitters: "y" },
 	] as const;
 	const css = legacyStylesheet({
 		generator: "scripts/generate-icons.ts",
@@ -44,8 +45,29 @@ describe("legacyStylesheet", () => {
 	});
 
 	it("gives the shared box only to classes that have a mask, so an unmapped class draws nothing", () => {
-		assert.match(css, /\.fa-lock,\n\.octicon-file-directory \{\n\tdisplay: inline-block;/);
-		assert.doesNotMatch(css, /^\.fa \{|^\.octicon \{|^\.fa,/m);
+		assert.match(
+			css,
+			/\.fa-lock::before,\n\.octicon-file-directory::before \{\n\tcontent: "";\n\tdisplay: inline-block;/,
+		);
+		assert.doesNotMatch(css, /^\.fa \{|^\.octicon \{|^\.fa,|^\.fa::before/m);
+	});
+	it("paints in ::before, so the element's own display and padding cannot collapse the glyph", () => {
+		// print_designer toggles `.icon-show { display: unset }` (inline: no box to
+		// paint) and pads `.fa-font` as spacing beside its label.
+		const rule = /\.fa-lock::before,[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+		assert.match(rule, /inline-size: 1em;/);
+		assert.match(rule, /box-sizing: content-box;/);
+		assert.match(rule, /mask: var\(--cf-legacy-icon\)/);
+		// the element itself only carries the glyph, as an inherited custom property
+		const host = /\n\.fa-lock \{([^}]*)\}/.exec(css)?.[1] ?? "";
+		assert.deepEqual(
+			host
+				.split("\n")
+				.map((l) => l.trim())
+				.filter((l) => l && !l.startsWith("//"))
+				.map((l) => l.split(":")[0]),
+			["--cf-legacy-icon"],
+		);
 	});
 	it("sets one mask per class from the rendered glyph", () => {
 		assert.match(css, /\.fa-lock \{\n\t\/\/ locked\n\t--cf-legacy-icon: url\("data:image\/svg\+xml,%3Csvg /);
@@ -54,9 +76,24 @@ describe("legacyStylesheet", () => {
 	it("states which @carbon/icons it was drawn from", () => {
 		assert.match(css, /@carbon\/icons 9\.9\.9 glyphs/);
 	});
-	it("implements the modifiers the bridged classes are used with", () => {
-		assert.match(css, /\.fa-fw,\n\.fa-fixed-width \{/);
-		assert.match(css, /\.fa-spin \{\n\tanimation: cf-legacy-icon-spin/);
+	it("implements every modifier the manifest leaves to it, on the glyph", () => {
+		assert.match(css, /\.fa-fw::before,\n\.fa-fixed-width::before \{/);
+		// an inline <i> ignores transform, so the spin must turn the pseudo-element
+		assert.match(css, /\.fa-spin::before \{\n\tanimation: cf-legacy-icon-spin/);
+		for (const modifier of LEGACY_MODIFIERS) assert.match(css, new RegExp(`\\.${modifier}::before[,\\s{]`));
+	});
+	it("holds the spinner still under reduced motion", () => {
+		assert.match(
+			css,
+			/@media \(prefers-reduced-motion: reduce\) \{\n\t\.fa-spin::before \{\n\t\tanimation: none;/,
+		);
+	});
+	it("paints every glyph in CanvasText under forced colours, where an author background becomes Canvas", () => {
+		const block = /@media \(forced-colors: active\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+		assert.match(
+			block,
+			/\.fa-lock::before,\n\t\.octicon-file-directory::before \{\n\t\tbackground-color: CanvasText;/,
+		);
 	});
 });
 
@@ -84,9 +121,18 @@ describe("icon manifest", () => {
 		assert.equal(new Set(classes).size, classes.length);
 		for (const name of classes) assert.ok(!(name in LEGACY_UNMAPPED), `${name} is bridged AND skipped`);
 	});
-	it("gives every skipped class a reason", () => {
-		for (const [name, why] of Object.entries(LEGACY_UNMAPPED)) {
-			assert.ok(why.length > 10, `${name} needs a reason`);
+	it("gives every skipped class a reason, and every entry the apps that emit it", () => {
+		for (const [name, { apps, reason }] of Object.entries(LEGACY_UNMAPPED)) {
+			assert.ok(reason.length > 10, `${name} needs a reason`);
+			assert.ok(apps.length > 0, `${name} needs its emitting apps`);
+		}
+		for (const glyph of LEGACY_GLYPHS)
+			assert.ok(glyph.apps.length > 0, `${legacyClassName(glyph)} needs apps`);
+	});
+	it("leaves the modifiers to the stylesheet, not to either table", () => {
+		const bridged = new Set(LEGACY_GLYPHS.map(legacyClassName));
+		for (const modifier of LEGACY_MODIFIERS) {
+			assert.ok(!bridged.has(modifier) && !(modifier in LEGACY_UNMAPPED), `${modifier} is listed twice`);
 		}
 	});
 	it("pre-classes the expand chevron with the class the engine's CSS targets", () => {
@@ -96,7 +142,8 @@ describe("icon manifest", () => {
 });
 
 describe("committed generated icons", () => {
-	it("match the manifest and the installed @carbon/icons (run `yarn codegen` if this fails)", () => {
+	// needs @carbon/icons installed: it regenerates the files and compares them
+	it("are what the manifest and the installed @carbon/icons generate (run `yarn codegen` if this fails)", () => {
 		const findings: string[] = [];
 		auditGeneratedIcons(appRoot, (message) => findings.push(message));
 		assert.deepEqual(findings, []);

@@ -13,9 +13,11 @@ import {
 	diffSemanticAliases,
 	isSemanticName,
 	literalSemanticNames,
+	missingFrappeImports,
 	pinnedCustomProps,
 	readCustomProps,
 	semanticAliasesByTheme,
+	splitMirrorGaps,
 	stripComments,
 } from "../../scripts/lib/audit-tokens.ts";
 
@@ -140,6 +142,68 @@ describe("diffMirror", () => {
 		assert.deepEqual(diffMirror(frappeDesk, ours, { bundle: "desk", frappeEntryDir: "frappe/public/scss" }), [
 			"frappe/public/css/fonts/inter/inter",
 		]);
+	});
+});
+
+describe("splitMirrorGaps", () => {
+	it("routes what 16.50 removed to the one pin finding, and what frappe added to a finding each", () => {
+		assert.deepEqual(
+			splitMirrorGaps([
+				"frappe/public/css/fonts/fontawesome/font-awesome.min",
+				"frappe/public/scss/octicons/octicons",
+				"frappe/public/js/lib/leaflet/leaflet",
+				"frappe/public/scss/desk/new_thing",
+			]),
+			{
+				added: ["frappe/public/scss/desk/new_thing"],
+				predatesMirror: [
+					"frappe/public/css/fonts/fontawesome/font-awesome.min",
+					"frappe/public/scss/octicons/octicons",
+					"frappe/public/js/lib/leaflet/leaflet",
+				],
+			},
+		);
+	});
+});
+
+describe("missingFrappeImports", () => {
+	const files = new Set([
+		"frappe/public/scss/desk/_index.scss",
+		"frappe/public/scss/common/_utilities.scss",
+		"frappe/public/scss/login.bundle.scss",
+		"node_modules/plyr/dist/plyr.css",
+		"node_modules/highlight.js/styles/tomorrow.css",
+	]);
+	const isFile = (p: string): boolean => files.has(p);
+
+	it("resolves frappe paths the way sass does: extension, `_partial`, `_index`", () => {
+		const ours = `
+			@import "frappe/public/scss/desk/index";
+			@import "frappe/public/scss/common/utilities";
+			@import "frappe/public/scss/login.bundle";
+		`;
+		assert.deepEqual(missingFrappeImports(ours, isFile), []);
+	});
+	it("reports a frappe file that is gone", () => {
+		assert.deepEqual(missingFrappeImports('@import "frappe/public/scss/octicons/octicons";', isFile), [
+			"frappe/public/scss/octicons/octicons",
+		]);
+	});
+	it("checks `~pkg` and frappe/public/node_modules imports in frappe's own node_modules", () => {
+		const ours = `
+			@import "~plyr/dist/plyr";
+			@import "frappe/public/node_modules/highlight.js/styles/tomorrow.css";
+			@import "~frappe-charts/dist/frappe-charts.min";
+		`;
+		assert.deepEqual(missingFrappeImports(ours, isFile), ["frappe-charts/dist/frappe-charts.min"]);
+	});
+	it("ignores our own partials and commented-out imports", () => {
+		const ours = `
+			@import "./carbon/themes";
+			// @import "frappe/public/scss/gone";
+			/* @import "~gone/too"; */
+		`;
+		assert.deepEqual(missingFrappeImports(ours, isFile), []);
 	});
 });
 

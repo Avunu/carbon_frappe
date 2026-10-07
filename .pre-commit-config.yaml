@@ -88,12 +88,21 @@ repos:
         pass_filenames: false
         files: ^(package\.json|flake\.nix|flake\.lock)$
 
+      # The documentation site publishes docs/README.md; README.md is the one
+      # that is edited. Copy it over: `cp README.md docs/README.md`.
+      - id: docs-readme
+        name: docs/README.md is README.md
+        language: system
+        entry: diff -u README.md docs/README.md
+        pass_filenames: false
+        files: ^(docs/)?README\.md$
+
       - id: unit-tests
         name: node --test
         language: system
         entry: yarn -s test:unit
         pass_filenames: false
-        files: ^(carbon_frappe/public/js/|test/unit/)
+        files: ^(carbon_frappe/public/js/|scripts/|test/unit/|flake\.lock$)
 
       - id: committed
         name: committed (conventional commit)

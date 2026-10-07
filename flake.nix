@@ -37,7 +37,7 @@
   # Outputs:
   #   devShells.<system>.default — devenv: MariaDB, Redis, web, worker, socketio…
   #   packages.<system>.default  — a built bench with this app's assets compiled in
-  #   apps.<system>.relock       — regenerate nix/uv.lock + nix/node-offline-hashes.json
+  #   apps.<system>.relock       — regenerate nix/uv.lock + nix/node-locks/
   outputs =
     { frappe-nix, ... }@inputs:
     frappe-nix.lib.mkFlake { inherit inputs; } (
@@ -61,6 +61,12 @@
             frappe-nix = {
               enable = true;
               siteName = "carbon.localhost";
+
+              # docs-site/ is the documentation website (carbon-theme.avunu.net),
+              # built and published by docs-publish.yml with npm. It is not part
+              # of the app, so the bench neither installs nor builds it, and
+              # `nix run .#relock` writes no fallback yarn.lock for it.
+              nodeNestedFrontendExcludes = [ "carbon_frappe/docs-site" ];
 
               app = {
                 enable = true;

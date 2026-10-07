@@ -11,20 +11,25 @@
  *  3. Shadow mirrors: the frappe SCSS entry files our shadow bundles
  *     recompile must still exist; the import list of each of frappe's four
  *     bundles (desk, website, login, email) is diffed against our mirror
- *     (catches new imports we should add), and every `frappe/...` file our
- *     bundles import must still exist (catches imports frappe REMOVED — the
- *     octicons/FontAwesome/leaflet break).
+ *     (catches new imports we should add), and every file our bundles import
+ *     from frappe — its source, or a package in its node_modules — must still
+ *     exist (catches imports frappe REMOVED — the octicons/FontAwesome/leaflet
+ *     break).
  *  4. Mapping premises: the g10 light theme, the semantic role pins and the
  *     ramp-primary colour mechanism, bare `--radius`, the g100 zone.
  *  5. JS hooks: the frappe runtime shapes the theme monkey-patches.
  *  6. Carbon class names: every `cds--*` class the theme's SCSS or JS emits or
  *     targets still exists in @carbon/styles (catches Carbon renames).
  *  7. Generated icons: js/generated/{shell-icons,icons}.ts and
- *     scss/generated/_legacy-icons.scss match scripts/lib/icon-manifest.ts and
- *     the installed @carbon/icons.
+ *     scss/generated/_legacy-icons.scss are what scripts/lib/icon-manifest.ts
+ *     and the installed @carbon/icons generate (rebuilt in memory, compared
+ *     formatting aside).
  *  8. Sprite references: the frappe sprite icons the theme still names exist.
  *  9. Legacy icon classes: every `fa-*` / `octicon-*` an installed app emits is
- *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts).
+ *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts), and
+ *     every entry there still has the emitters it names. Under --strict, every
+ *     app flake.lock pins must be installed next to frappe for this check to
+ *     pass; warn-only lists an absent one as unverified.
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -32,7 +37,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { auditGeneratedIcons, auditLegacyEmitters, auditSpriteReferences } from "./lib/audit-icons.ts";
+import {
+	auditGeneratedIcons,
+	auditLegacyEmitters,
+	auditSpriteReferences,
+	pinnedFrappeApps,
+} from "./lib/audit-icons.ts";
 import {
 	RAMP_CHAIN_PROBES,
 	SEMANTIC_ROLE_PINS,
@@ -42,9 +52,11 @@ import {
 	diffSemanticAliases,
 	isSemanticName,
 	literalSemanticNames,
+	missingFrappeImports,
 	pinnedCustomProps,
 	readCustomProps,
 	semanticAliasesByTheme,
+	splitMirrorGaps,
 } from "./lib/audit-tokens.ts";
 
 const require = createRequire(import.meta.url);
@@ -425,7 +437,11 @@ if (hasEspressoV2) {
 		}
 	})();
 	if (!isSassCompiler(sassModule)) {
-		console.log("[audit] sass is not installed — skipping the semantic ramp-alias comparison (check 4c)");
+		// sass is a pinned devDependency, so in --strict a missing one is a broken
+		// install, not a reason to pass without the comparison.
+		const message = "sass is not installed — cannot compare the semantic ramp aliases (check 4c)";
+		if (strict) warn(message);
+		else console.log(`[audit] ${message}, skipping`);
 	} else {
 		const compiled = sassModule.compileString(
 			'@import "semantic-ramp"; :root { @include semantic-light(false); } [data-theme="dark"] { @include semantic-dark(false); }',
@@ -457,13 +473,6 @@ for (const m of mirrored) {
 	}
 }
 
-/**
- * What frappe v16.50.0 stopped importing into its desk bundle — octicons
- * (#39836), leaflet's stylesheets, now lazy-loaded (#39421), and FontAwesome
- * (#40571). Our mirror follows 16.50, so a frappe that still imports these
- * PREDATES the mirror: the cause is the pin, not N missing imports.
- */
-const REMOVED_IN_16_50 = /\/(?:fontawesome|octicons)\/|\/lib\/leaflet/;
 const predatesMirror: string[] = [];
 // Each of the four shadow bundles against the frappe bundle it replaces. Desk and
 // website list frappe's imports themselves, so Carbon's layers can sit between
@@ -480,9 +489,10 @@ for (const bundle of ["desk", "website", "login", "email"]) {
 		fs.readFileSync(path.join(scssRoot, `${bundle}.bundle.scss`), "utf-8"),
 		{ bundle, frappeEntryDir: "frappe/public/scss", omit: /\/fonts\/inter\// },
 	);
-	for (const imp of missing) {
-		if (REMOVED_IN_16_50.test(imp)) predatesMirror.push(imp);
-		else warn(`frappe ${bundle}.bundle.scss imports "${imp}" — not present in our ${bundle} mirror`);
+	const gaps = splitMirrorGaps(missing);
+	predatesMirror.push(...gaps.predatesMirror);
+	for (const imp of gaps.added) {
+		warn(`frappe ${bundle}.bundle.scss imports "${imp}" — not present in our ${bundle} mirror`);
 	}
 }
 // One finding for "this frappe is older than the mirror", however many ways it shows.
@@ -504,32 +514,23 @@ if (predatesMirror.length || !hasEspressoV2) {
 // Check 3's diff only ever asked "what did frappe add"; frappe deleting a file
 // (octicons #39836, FontAwesome #40571) left our mirror importing nothing, and
 // the first anyone heard of it was `bench build` failing on a path the
-// postcss plugin had rebased into /tmp. `~pkg` imports and `/node_modules/`
-// paths are not frappe source (they resolve at build time), so they are skipped.
+// postcss plugin had rebased into /tmp. The packages we import through frappe
+// (`~plyr`, `~frappe-charts`, highlight.js) are checked in frappe's own
+// node_modules, which is where its sass pipeline finds them.
 // A frappe older than the mirror lacks files the mirror imports because it has not
 // got them YET (espresso_components, common/utilities): that is the pin, reported
 // once above, not "removed upstream".
+const isFrappeFile = (fromFrappeRoot: string): boolean => {
+	const abs = path.join(frappeRoot, fromFrappeRoot);
+	return fs.existsSync(abs) && fs.statSync(abs).isFile();
+};
 for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss")) : []) {
-	const text = fs.readFileSync(path.join(scssRoot, file), "utf-8");
-	for (const m of text.matchAll(/^\s*@import\s+"(frappe\/[^"]+)"/gm)) {
-		const spec = m[1];
-		if (spec === undefined || spec.includes("/node_modules/")) continue;
-		const abs = path.join(frappeRoot, spec);
-		const dir = path.dirname(abs);
-		const base = path.basename(abs);
-		const candidates = [
-			abs,
-			`${abs}.scss`,
-			`${abs}.css`,
-			path.join(dir, `_${base}.scss`),
-			path.join(abs, "_index.scss"),
-			path.join(abs, "index.scss"),
-		];
-		if (!candidates.some((c) => fs.existsSync(c) && fs.statSync(c).isFile())) {
-			warn(
-				`${file} imports "${spec}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`,
-			);
-		}
+	for (const imp of missingFrappeImports(fs.readFileSync(path.join(scssRoot, file), "utf-8"), isFrappeFile)) {
+		warn(
+			imp.startsWith("frappe/") && !imp.startsWith("frappe/public/node_modules/")
+				? `${file} imports "${imp}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`
+				: `${file} imports "${imp}", which frappe's node_modules does not have — frappe dropped the package, or its node_modules is not installed (\`yarn --cwd ${frappeRoot} install\`); the bundle will not compile`,
+		);
 	}
 }
 
@@ -537,7 +538,13 @@ for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.ends
 auditSpriteReferences(appRoot, frappeRoot, warn);
 // A pre-16.50 frappe is already reported once above; per-class findings would
 // only repeat that cause, for classes its own desk still styled.
-if (predatesMirror.length === 0 && hasEspressoV2) auditLegacyEmitters(frappeRoot, warn);
+if (predatesMirror.length === 0 && hasEspressoV2) {
+	const flakeLock: unknown = JSON.parse(fs.readFileSync(path.join(appRoot, "flake.lock"), "utf-8"));
+	// Every app flake.lock pins is present only where CI or nix built the bench;
+	// the theme installs on a frappe-only bench too, so a `bench build` there
+	// lists them as unverified rather than counting their absence as drift.
+	auditLegacyEmitters(frappeRoot, strict ? pinnedFrappeApps(flakeLock) : [], warn);
+}
 
 if (failures) {
 	console.log(`[audit] ${failures} finding(s)${strict ? "" : " (warn-only)"}`);
