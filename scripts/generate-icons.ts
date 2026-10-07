@@ -32,17 +32,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatFiles } from "./lib/format.ts";
-import {
-	CHROME_GLYPHS,
-	LEGACY_GLYPHS,
-	LEGACY_UNMAPPED,
-	SHELL_GLYPHS,
-	type GlyphSpec,
-} from "./lib/icon-manifest.ts";
-import { glyphModule, legacyClassName, legacyStylesheet, loadCarbonIcons } from "./lib/icons.ts";
+import { CHROME_GLYPHS, LEGACY_GLYPHS, LEGACY_UNMAPPED, SHELL_GLYPHS } from "./lib/icon-manifest.ts";
+import { generatedIconFiles, legacyClassName, loadCarbonIcons } from "./lib/icons.ts";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const GENERATOR = "scripts/generate-icons.ts";
 
 function fail(message: string): never {
 	console.error(`[icons] ${message}`);
@@ -69,47 +62,14 @@ checkManifest();
 
 try {
 	const carbon = loadCarbonIcons();
-	const render = (spec: GlyphSpec): string => carbon.render(spec);
-
-	const jsDir = path.join(appRoot, "carbon_frappe", "public", "js", "generated");
-	const scssDir = path.join(appRoot, "carbon_frappe", "public", "scss", "generated");
-	fs.mkdirSync(jsDir, { recursive: true });
-	fs.mkdirSync(scssDir, { recursive: true });
-
-	const shell = path.join(jsDir, "shell-icons.ts");
-	const chrome = path.join(jsDir, "icons.ts");
-	const legacy = path.join(scssDir, "_legacy-icons.scss");
-
-	fs.writeFileSync(
-		shell,
-		glyphModule({
-			generator: GENERATOR,
-			version: carbon.version,
-			summary: "the UI Shell header inlines",
-			glyphs: SHELL_GLYPHS,
-			render,
-		}),
-	);
-	fs.writeFileSync(
-		chrome,
-		glyphModule({
-			generator: GENERATOR,
-			version: carbon.version,
-			summary: "the table and page chrome inline",
-			glyphs: CHROME_GLYPHS,
-			render,
-		}),
-	);
-	fs.writeFileSync(
-		legacy,
-		legacyStylesheet({
-			generator: GENERATOR,
-			version: carbon.version,
-			glyphs: LEGACY_GLYPHS,
-			render: (glyph) => carbon.render({ icon: glyph.icon, size: 16 }),
-		}),
-	);
-	formatFiles(shell, chrome, legacy);
+	const written: string[] = [];
+	for (const file of generatedIconFiles(carbon)) {
+		const abs = path.join(appRoot, file.path);
+		fs.mkdirSync(path.dirname(abs), { recursive: true });
+		fs.writeFileSync(abs, file.text);
+		written.push(abs);
+	}
+	formatFiles(...written);
 
 	console.log(
 		`[icons] ${SHELL_GLYPHS.length} shell + ${CHROME_GLYPHS.length} chrome glyphs, ` +

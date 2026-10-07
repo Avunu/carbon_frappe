@@ -127,13 +127,18 @@ jobs:
       # The audits and the standalone SCSS compile compare this theme against
       # frappe's source. The same tree nix pins, without nix: flake.lock names
       # the revision.
-      - name: Check out frappe at the pinned revision
+      # erpnext and hrms go next to it, as in a bench: the legacy icon-class
+      # audit (check 9) reads every app beside frappe, and fails when an app
+      # flake.lock pins is missing.
+      - name: Check out frappe, erpnext and hrms at the pinned revisions
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          rev="$(jq -r '.nodes.frappe.locked.rev' flake.lock)"
-          git clone --filter=blob:none --no-checkout https://github.com/frappe/frappe.git ../frappe
-          git -C ../frappe checkout --quiet "$rev"
+          for app in frappe erpnext hrms; do
+            rev="$(jq -r --arg app "$app" '.nodes[$app].locked.rev' flake.lock)"
+            git clone --quiet --filter=blob:none --no-checkout "https://github.com/frappe/$app.git" "../$app"
+            git -C "../$app" checkout --quiet "$rev"
+          done
           echo "FRAPPE_PATH=$(cd ../frappe && pwd)" >> "$GITHUB_ENV"
       # frappe's sass pipeline resolves `~frappe-charts` and friends from
       # frappe's OWN node_modules, which a bare checkout does not have.

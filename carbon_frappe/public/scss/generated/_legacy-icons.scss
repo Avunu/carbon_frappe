@@ -3,26 +3,31 @@
 // stopped shipping the FontAwesome (#40571) and octicons (#39836) stylesheets,
 // but its own code and installed apps still emit these classes, so on a stock
 // desk they render as nothing. Each class below is a CSS mask of a Carbon
-// glyph, so it takes the element's `color`. The list is scripts/lib/icon-manifest.ts's
-// LEGACY_GLYPHS; what is deliberately absent is its LEGACY_UNMAPPED.
+// glyph painted in ::before, as the icon font did, so it takes the element's
+// `color` and survives the element's own display and padding rules. The list
+// is scripts/lib/icon-manifest.ts's LEGACY_GLYPHS; what is deliberately absent
+// is its LEGACY_UNMAPPED.
 // Carbon icons are Apache-2.0: https://github.com/carbon-design-system/carbon/blob/main/LICENSE
 
-.fa-lock,
-.fa-spinner,
-.fa-level-down,
-.fa-check-circle,
-.fa-code,
-.fa-tag,
-.fa-angle-double-right,
-.fa-trash,
-.fa-font,
-.fa-image,
-.fa-table,
-.fa-square-o,
-.fa-columns,
-.fa-file-o,
-.octicon-file-directory {
+.fa-lock::before,
+.fa-spinner::before,
+.fa-map-marker::before,
+.fa-level-down::before,
+.fa-check-circle::before,
+.fa-code::before,
+.fa-tag::before,
+.fa-angle-double-right::before,
+.fa-trash::before,
+.fa-font::before,
+.fa-image::before,
+.fa-table::before,
+.fa-square-o::before,
+.fa-columns::before,
+.fa-file-o::before,
+.octicon-file-directory::before {
+	content: "";
 	display: inline-block;
+	box-sizing: content-box;
 	inline-size: 1em;
 	block-size: 1em;
 	vertical-align: -0.125em;
@@ -32,12 +37,13 @@
 }
 
 // FontAwesome's fixed-width modifier (and webshop's misspelling of it).
-.fa-fw,
-.fa-fixed-width {
+.fa-fw::before,
+.fa-fixed-width::before {
 	inline-size: 1.28571429em;
 }
 
-.fa-spin {
+// On the glyph, not the element: an inline <i> ignores transform.
+.fa-spin::before {
 	animation: cf-legacy-icon-spin 2s infinite linear;
 }
 
@@ -55,6 +61,11 @@
 .fa-spinner {
 	// circle-dash
 	--cf-legacy-icon: url("data:image/svg+xml,%3Csvg focusable='false' preserveAspectRatio='xMidYMid meet' xmlns='http://www.w3.org/2000/svg' fill='currentColor' aria-hidden='true' width='16' height='16' viewBox='0 0 32 32'%3E%3Cpath d='M7.7,4.7a14.7,14.7,0,0,0-3,3.1L6.3,9A13.26,13.26,0,0,1,8.9,6.3Z'%3E%3C/path%3E%3Cpath d='M4.6,12.3l-1.9-.6A12.51,12.51,0,0,0,2,16H4A11.48,11.48,0,0,1,4.6,12.3Z'%3E%3C/path%3E%3Cpath d='M2.7,20.4a14.4,14.4,0,0,0,2,3.9l1.6-1.2a12.89,12.89,0,0,1-1.7-3.3Z'%3E%3C/path%3E%3Cpath d='M7.8,27.3a14.4,14.4,0,0,0,3.9,2l.6-1.9A12.89,12.89,0,0,1,9,25.7Z'%3E%3C/path%3E%3Cpath d='M11.7,2.7l.6,1.9A11.48,11.48,0,0,1,16,4V2A12.51,12.51,0,0,0,11.7,2.7Z'%3E%3C/path%3E%3Cpath d='M24.2,27.3a15.18,15.18,0,0,0,3.1-3.1L25.7,23A11.53,11.53,0,0,1,23,25.7Z'%3E%3C/path%3E%3Cpath d='M27.4,19.7l1.9.6A15.47,15.47,0,0,0,30,16H28A11.48,11.48,0,0,1,27.4,19.7Z'%3E%3C/path%3E%3Cpath d='M29.2,11.6a14.4,14.4,0,0,0-2-3.9L25.6,8.9a12.89,12.89,0,0,1,1.7,3.3Z'%3E%3C/path%3E%3Cpath d='M24.1,4.6a14.4,14.4,0,0,0-3.9-2l-.6,1.9a12.89,12.89,0,0,1,3.3,1.7Z'%3E%3C/path%3E%3Cpath d='M20.3,29.3l-.6-1.9A11.48,11.48,0,0,1,16,28v2A21.42,21.42,0,0,0,20.3,29.3Z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.fa-map-marker {
+	// location
+	--cf-legacy-icon: url("data:image/svg+xml,%3Csvg focusable='false' preserveAspectRatio='xMidYMid meet' xmlns='http://www.w3.org/2000/svg' fill='currentColor' aria-hidden='true' width='16' height='16' viewBox='0 0 32 32'%3E%3Cpath d='M16,18a5,5,0,1,1,5-5A5.0057,5.0057,0,0,1,16,18Zm0-8a3,3,0,1,0,3,3A3.0033,3.0033,0,0,0,16,10Z'%3E%3C/path%3E%3Cpath d='M16,30,7.5645,20.0513c-.0479-.0571-.3482-.4515-.3482-.4515A10.8888,10.8888,0,0,1,5,13a11,11,0,0,1,22,0,10.8844,10.8844,0,0,1-2.2148,6.5973l-.0015.0025s-.3.3944-.3447.4474ZM8.8125,18.395c.001.0007.2334.3082.2866.3744L16,26.9079l6.91-8.15c.0439-.0552.2783-.3649.2788-.3657A8.901,8.901,0,0,0,25,13,9,9,0,1,0,7,13a8.9054,8.9054,0,0,0,1.8125,5.395Z'%3E%3C/path%3E%3C/svg%3E");
 }
 
 .fa-level-down {

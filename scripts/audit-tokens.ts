@@ -11,20 +11,24 @@
  *  3. Shadow mirrors: the frappe SCSS entry files our shadow bundles
  *     recompile must still exist; the import list of each of frappe's four
  *     bundles (desk, website, login, email) is diffed against our mirror
- *     (catches new imports we should add), and every `frappe/...` file our
- *     bundles import must still exist (catches imports frappe REMOVED — the
- *     octicons/FontAwesome/leaflet break).
+ *     (catches new imports we should add), and every file our bundles import
+ *     from frappe — its source, or a package in its node_modules — must still
+ *     exist (catches imports frappe REMOVED — the octicons/FontAwesome/leaflet
+ *     break).
  *  4. Mapping premises: the g10 light theme, the semantic role pins and the
  *     ramp-primary colour mechanism, bare `--radius`, the g100 zone.
  *  5. JS hooks: the frappe runtime shapes the theme monkey-patches.
  *  6. Carbon class names: every `cds--*` class the theme's SCSS or JS emits or
  *     targets still exists in @carbon/styles (catches Carbon renames).
  *  7. Generated icons: js/generated/{shell-icons,icons}.ts and
- *     scss/generated/_legacy-icons.scss match scripts/lib/icon-manifest.ts and
- *     the installed @carbon/icons.
+ *     scss/generated/_legacy-icons.scss are what scripts/lib/icon-manifest.ts
+ *     and the installed @carbon/icons generate (rebuilt in memory, compared
+ *     formatting aside).
  *  8. Sprite references: the frappe sprite icons the theme still names exist.
  *  9. Legacy icon classes: every `fa-*` / `octicon-*` an installed app emits is
- *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts).
+ *     bridged to a Carbon glyph or deliberately skipped (icon-manifest.ts), and
+ *     every entry there still has the emitters it names. Every app flake.lock
+ *     pins must be installed next to frappe for this check to pass.
  *
  * Exit code: 0 in --warn-only, 1 in --strict when any check fails.
  */
@@ -32,7 +36,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { auditGeneratedIcons, auditLegacyEmitters, auditSpriteReferences } from "./lib/audit-icons.ts";
+import {
+	auditGeneratedIcons,
+	auditLegacyEmitters,
+	auditSpriteReferences,
+	pinnedFrappeApps,
+} from "./lib/audit-icons.ts";
 import {
 	RAMP_CHAIN_PROBES,
 	SEMANTIC_ROLE_PINS,
@@ -537,7 +546,10 @@ for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.ends
 auditSpriteReferences(appRoot, frappeRoot, warn);
 // A pre-16.50 frappe is already reported once above; per-class findings would
 // only repeat that cause, for classes its own desk still styled.
-if (predatesMirror.length === 0 && hasEspressoV2) auditLegacyEmitters(frappeRoot, warn);
+if (predatesMirror.length === 0 && hasEspressoV2) {
+	const flakeLock: unknown = JSON.parse(fs.readFileSync(path.join(appRoot, "flake.lock"), "utf-8"));
+	auditLegacyEmitters(frappeRoot, pinnedFrappeApps(flakeLock), warn);
+}
 
 if (failures) {
 	console.log(`[audit] ${failures} finding(s)${strict ? "" : " (warn-only)"}`);
