@@ -51,9 +51,11 @@ import {
 	diffSemanticAliases,
 	isSemanticName,
 	literalSemanticNames,
+	missingFrappeImports,
 	pinnedCustomProps,
 	readCustomProps,
 	semanticAliasesByTheme,
+	splitMirrorGaps,
 } from "./lib/audit-tokens.ts";
 
 const require = createRequire(import.meta.url);
@@ -434,7 +436,11 @@ if (hasEspressoV2) {
 		}
 	})();
 	if (!isSassCompiler(sassModule)) {
-		console.log("[audit] sass is not installed — skipping the semantic ramp-alias comparison (check 4c)");
+		// sass is a pinned devDependency, so in --strict a missing one is a broken
+		// install, not a reason to pass without the comparison.
+		const message = "sass is not installed — cannot compare the semantic ramp aliases (check 4c)";
+		if (strict) warn(message);
+		else console.log(`[audit] ${message}, skipping`);
 	} else {
 		const compiled = sassModule.compileString(
 			'@import "semantic-ramp"; :root { @include semantic-light(false); } [data-theme="dark"] { @include semantic-dark(false); }',
@@ -466,13 +472,6 @@ for (const m of mirrored) {
 	}
 }
 
-/**
- * What frappe v16.50.0 stopped importing into its desk bundle — octicons
- * (#39836), leaflet's stylesheets, now lazy-loaded (#39421), and FontAwesome
- * (#40571). Our mirror follows 16.50, so a frappe that still imports these
- * PREDATES the mirror: the cause is the pin, not N missing imports.
- */
-const REMOVED_IN_16_50 = /\/(?:fontawesome|octicons)\/|\/lib\/leaflet/;
 const predatesMirror: string[] = [];
 // Each of the four shadow bundles against the frappe bundle it replaces. Desk and
 // website list frappe's imports themselves, so Carbon's layers can sit between
@@ -489,9 +488,10 @@ for (const bundle of ["desk", "website", "login", "email"]) {
 		fs.readFileSync(path.join(scssRoot, `${bundle}.bundle.scss`), "utf-8"),
 		{ bundle, frappeEntryDir: "frappe/public/scss", omit: /\/fonts\/inter\// },
 	);
-	for (const imp of missing) {
-		if (REMOVED_IN_16_50.test(imp)) predatesMirror.push(imp);
-		else warn(`frappe ${bundle}.bundle.scss imports "${imp}" — not present in our ${bundle} mirror`);
+	const gaps = splitMirrorGaps(missing);
+	predatesMirror.push(...gaps.predatesMirror);
+	for (const imp of gaps.added) {
+		warn(`frappe ${bundle}.bundle.scss imports "${imp}" — not present in our ${bundle} mirror`);
 	}
 }
 // One finding for "this frappe is older than the mirror", however many ways it shows.
@@ -513,32 +513,23 @@ if (predatesMirror.length || !hasEspressoV2) {
 // Check 3's diff only ever asked "what did frappe add"; frappe deleting a file
 // (octicons #39836, FontAwesome #40571) left our mirror importing nothing, and
 // the first anyone heard of it was `bench build` failing on a path the
-// postcss plugin had rebased into /tmp. `~pkg` imports and `/node_modules/`
-// paths are not frappe source (they resolve at build time), so they are skipped.
+// postcss plugin had rebased into /tmp. The packages we import through frappe
+// (`~plyr`, `~frappe-charts`, highlight.js) are checked in frappe's own
+// node_modules, which is where its sass pipeline finds them.
 // A frappe older than the mirror lacks files the mirror imports because it has not
 // got them YET (espresso_components, common/utilities): that is the pin, reported
 // once above, not "removed upstream".
+const isFrappeFile = (fromFrappeRoot: string): boolean => {
+	const abs = path.join(frappeRoot, fromFrappeRoot);
+	return fs.existsSync(abs) && fs.statSync(abs).isFile();
+};
 for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss")) : []) {
-	const text = fs.readFileSync(path.join(scssRoot, file), "utf-8");
-	for (const m of text.matchAll(/^\s*@import\s+"(frappe\/[^"]+)"/gm)) {
-		const spec = m[1];
-		if (spec === undefined || spec.includes("/node_modules/")) continue;
-		const abs = path.join(frappeRoot, spec);
-		const dir = path.dirname(abs);
-		const base = path.basename(abs);
-		const candidates = [
-			abs,
-			`${abs}.scss`,
-			`${abs}.css`,
-			path.join(dir, `_${base}.scss`),
-			path.join(abs, "_index.scss"),
-			path.join(abs, "index.scss"),
-		];
-		if (!candidates.some((c) => fs.existsSync(c) && fs.statSync(c).isFile())) {
-			warn(
-				`${file} imports "${spec}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`,
-			);
-		}
+	for (const imp of missingFrappeImports(fs.readFileSync(path.join(scssRoot, file), "utf-8"), isFrappeFile)) {
+		warn(
+			imp.startsWith("frappe/") && !imp.startsWith("frappe/public/node_modules/")
+				? `${file} imports "${imp}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`
+				: `${file} imports "${imp}", which frappe's node_modules does not have — frappe dropped the package, or its node_modules is not installed (\`yarn --cwd ${frappeRoot} install\`); the bundle will not compile`,
+		);
 	}
 }
 

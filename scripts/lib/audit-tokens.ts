@@ -110,6 +110,70 @@ export function diffMirror(frappeBundle: string, ours: string, spec: MirrorSpec)
 }
 
 /**
+ * What frappe v16.50.0 stopped importing into its desk bundle — octicons
+ * (#39836), leaflet's stylesheets, now lazy-loaded (#39421), and FontAwesome
+ * (#40571). Our mirror follows 16.50, so a frappe that still imports these
+ * PREDATES the mirror: the cause is the pin, not N missing imports.
+ */
+export const REMOVED_IN_16_50 = /\/(?:fontawesome|octicons)\/|\/lib\/leaflet/;
+
+/**
+ * `diffMirror`'s findings, split into the imports frappe ADDED (each a finding)
+ * and the ones it still has only because it is older than the mirror (one
+ * finding about the pin, however many there are).
+ */
+export function splitMirrorGaps(missing: readonly string[]): { added: string[]; predatesMirror: string[] } {
+	const added: string[] = [];
+	const predatesMirror: string[] = [];
+	for (const imp of missing) (REMOVED_IN_16_50.test(imp) ? predatesMirror : added).push(imp);
+	return { added, predatesMirror };
+}
+
+/** The files sass would try for an `@import` target, extension dropped. */
+export function sassImportCandidates(target: string): string[] {
+	const dir = path.posix.dirname(target);
+	const base = path.posix.basename(target);
+	return [
+		target,
+		`${target}.scss`,
+		`${target}.css`,
+		path.posix.join(dir, `_${base}.scss`),
+		path.posix.join(target, "_index.scss"),
+		path.posix.join(target, "index.scss"),
+	];
+}
+
+/**
+ * Where one of our bundle's imports lives in a frappe checkout, from its root,
+ * or `undefined` for our own partials. `~pkg/…` resolves from frappe's
+ * node_modules (the sass pipeline compiling our bundles is frappe's), and so
+ * does `frappe/public/node_modules/…`, a symlink to it that only `bench build`
+ * creates.
+ */
+export function frappeImportTarget(imp: string): string | undefined {
+	if (imp.startsWith("carbon_frappe/")) return undefined;
+	if (imp.startsWith("frappe/public/node_modules/")) {
+		return `node_modules/${imp.slice("frappe/public/node_modules/".length)}`;
+	}
+	return imp.startsWith("frappe/") ? imp : `node_modules/${imp}`;
+}
+
+/**
+ * The imports a bundle of ours makes that a frappe checkout cannot satisfy:
+ * the reverse of `diffMirror`, which only asks what frappe added. `isFile`
+ * answers for a path from the checkout's root. Commented-out imports are not
+ * imports.
+ */
+export function missingFrappeImports(ours: string, isFile: (fromFrappeRoot: string) => boolean): string[] {
+	const missing: string[] = [];
+	for (const imp of bundleImports(ours, "carbon_frappe/public/scss")) {
+		const target = frappeImportTarget(imp);
+		if (target !== undefined && !sassImportCandidates(target).some(isFile)) missing.push(imp);
+	}
+	return missing;
+}
+
+/**
  * Whether the semantic layer is still a chain of aliases onto the ramps.
  *
  * Returns the semantic names frappe declares as something other than `var(…)`
