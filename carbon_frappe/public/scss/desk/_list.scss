@@ -214,6 +214,18 @@
 	}
 }
 
+// A standard filter's Link dropdown has to open over the table below it.
+// frappe gives `.awesomplete > ul` z-index 4 (common/awesomeplete.scss), which
+// is exactly the pinned sticky header cell's layer (desk/_carbon-table.scss) —
+// and the list pins its Subject column, so the ID header comes later in the DOM,
+// wins the tie, and paints over the open list. Lifting the whole filter bar to
+// its own layer puts every dropdown in it above the table's 3/4 while keeping
+// it under frappe's sticky .page-head (z-index 6, desk/page.scss).
+.page-form.list-page-form {
+	position: relative;
+	z-index: 5;
+}
+
 // list paging area. frappe 16.50 builds it from `frappe.ui.TabButtons` for the
 // page-size choice (base_list.js:388-411) and an `es-button` for Load More
 // (:413-423); the `.btn-group .btn` / `.btn-paging` markup this used to restyle
