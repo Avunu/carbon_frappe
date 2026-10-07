@@ -391,7 +391,7 @@ export default function installListView(): void {
 					this.$result.prepend(`
 						<div class="list-carbon-header">
 							<header class="level list-row-head text-muted">
-								<div class="level-left checkbox-actions cds--batch-actions" style="display:none">
+								<div class="level-left checkbox-actions" style="display:none">
 									<div class="level list-subject">
 										<span class="level-item select-like">
 											<input class="list-header-checkbox list-check-all" type="checkbox"
