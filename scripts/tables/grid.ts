@@ -197,6 +197,16 @@ interface AddedProbe {
 	trs: number;
 }
 
+/** `renamed` — the added row after it is renamed in place, as a save renames it. */
+interface RenamedProbe {
+	sameTr: boolean;
+	name: string;
+	rowId: string | undefined;
+	cells: number;
+	columns: number;
+	widest: number;
+}
+
 /** One click point across a cell: where it landed, and what it did. */
 interface ClickHit {
 	label: string;
@@ -812,6 +822,40 @@ try {
 		"grid.add_new_row() renders a new <tr>",
 		added.data === setup.dataLen + 1 && added.trs === added.data,
 		JSON.stringify(added),
+	);
+
+	// Saving renames every new row from `new-<doctype>-<hash>` to its real name
+	// on the SAME doc object (frappe.model.sync), and 16.50's identity matching
+	// keeps the same GridRow, so the engine sees a familiar <tr> under an
+	// unfamiliar id. It once built a second set of cells onto it, leaving the
+	// emptied first set in front: the row doubled in width and split the table.
+	const renamed = await page.eval<RenamedProbe>(`(() => {
+    const grid = cur_frm.fields_dict.items.grid;
+    const d = grid.data[grid.data.length - 1];
+    const tr = grid.grid_rows_by_docname[d.name].wrapper.get(0);
+    delete locals[d.doctype][d.name];
+    d.name = 'cf-renamed-' + Math.random().toString(36).slice(2, 8);
+    locals[d.doctype][d.name] = d;
+    grid.refresh();
+    return new Promise(res => setTimeout(() => {
+      const now = grid.grid_rows_by_docname[d.name].wrapper.get(0);
+      res({
+        sameTr: now === tr,
+        name: d.name,
+        rowId: now.dataset.rowId,
+        cells: now.children.length,
+        columns: grid.carbon_table.table.getVisibleLeafColumns().length,
+        widest: Math.max(...[...grid.wrapper.find('tbody tr.grid-row')].map((r) => r.children.length)),
+      });
+    }, 900));
+  })()`);
+	ok(
+		"a row renamed in place (as on save) keeps one cell per column",
+		renamed.sameTr &&
+			renamed.rowId === renamed.name &&
+			renamed.cells === renamed.columns &&
+			renamed.widest === renamed.columns,
+		JSON.stringify(renamed),
 	);
 
 	// --- click-to-edit anywhere in a cell -----------------------------------
