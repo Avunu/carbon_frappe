@@ -124,32 +124,15 @@
 		position: absolute;
 		inset-block: 0;
 		inset-inline-end: 0;
-		inline-size: 20px;
+		inline-size: 6px;
 		cursor: col-resize;
 		user-select: none;
 		touch-action: none;
 		z-index: 1;
 
-		&::after {
-			content: "";
-			position: absolute;
-			inset-block: 25%;
-			inset-inline-end: 4px;
-			inline-size: 2px;
-			border-radius: 1px;
-			background-color: var(--cds-border-strong-01);
-			opacity: 0.6;
-			transition: background-color 70ms, opacity 70ms;
-		}
-
-		&:hover::after,
-		&:active::after {
+		&:hover,
+		&:active {
 			background-color: var(--cds-border-interactive);
-			opacity: 1;
-		}
-
-		&:active::after {
-			inset-block: 0;
 		}
 	}
 
