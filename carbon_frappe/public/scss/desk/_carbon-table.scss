@@ -139,7 +139,9 @@
 			border-radius: 1px;
 			background-color: var(--cds-border-strong-01);
 			opacity: 0.6;
-			transition: background-color 70ms, opacity 70ms;
+			transition:
+				background-color 70ms,
+				opacity 70ms;
 		}
 
 		&:hover::after,
