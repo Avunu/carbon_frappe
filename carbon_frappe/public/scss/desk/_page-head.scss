@@ -242,6 +242,41 @@
 	white-space: normal;
 }
 
+// A tablet's head has room for the heading or for a form's actions, not both.
+// The title column is `flex: 1` on a zero basis, so the actions took what they
+// needed first and a long title wrapped in what was left: a word a line at 28px
+// beside a Work Order's seven buttons on a 1080px iPad. Two things change, from
+// where the shell mounts up to the xl breakpoint:
+//
+//  - the heading steps down to heading-03 (20/28), Carbon's own next size down;
+//  - the head wraps. On its content basis the title claims its one-line width,
+//    and when that does not fit beside the actions they drop to a row of their
+//    own under it, where the title has the full width to itself.
+//    `flex-nowrap` on the row is bootstrap's utility (page.html:3) and is
+//    `!important`, hence the same here.
+//
+// page_head_metrics.ts re-measures on any change in the head's size, so the rule
+// and the sticky tab offset follow the extra row.
+@media (768px <= width <= 1199px) {
+	.page-title .es-breadcrumbs li:last-child .es-breadcrumbs__item {
+		font-size: var(--text-4xl); // 20px
+		line-height: 28px;
+	}
+
+	.page-head .page-head-content {
+		flex-wrap: wrap !important;
+		row-gap: 8px;
+
+		.page-title {
+			flex: 1 1 auto;
+		}
+
+		.standard-items-section {
+			margin-inline-start: auto;
+		}
+	}
+}
+
 // A renameable document keeps its affordance: frappe puts `editable-title` on
 // .title-area when the doc can be renamed, and js/anatomy/editable_title.ts
 // binds frappe's own rename dialog to the heading.
