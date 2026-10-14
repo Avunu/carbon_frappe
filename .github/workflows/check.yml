@@ -95,8 +95,23 @@ jobs:
       - name: Semgrep (frappe/semgrep-rules)
         run: |
           git clone --depth 1 https://github.com/frappe/semgrep-rules.git /tmp/frappe-semgrep-rules
-          uv run --frozen --project tools semgrep scan --error --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness carbon_frappe
-          uv run --frozen --project tools semgrep scan --error --include='**/test_*.py' --config semgrep/test-correctness.yml carbon_frappe
+          # semgrep exits 1 on findings and 2 when it fails to run. The runner
+          # intermittently kills semgrep-core while it starts its worker domains
+          # ("failed to create domain backup thread", exit -11), so only a failure
+          # to run is retried; a finding fails on the first attempt.
+          scan() {
+            local attempt rc=0
+            for attempt in 1 2 3; do
+              rc=0
+              uv run --frozen --project tools semgrep scan --error "$@" carbon_frappe || rc=$?
+              if [ "$rc" -ne 2 ]; then return "$rc"; fi
+              echo "::warning::semgrep failed to run (attempt $attempt of 3)"
+            done
+            echo "::error::semgrep failed to run on all 3 attempts"
+            return "$rc"
+          }
+          scan --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness
+          scan --include='**/test_*.py' --config semgrep/test-correctness.yml
 
   typecheck:
     if: github.ref != 'refs/heads/version-16'
