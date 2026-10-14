@@ -95,8 +95,8 @@ jobs:
       - name: Semgrep (frappe/semgrep-rules)
         run: |
           git clone --depth 1 https://github.com/frappe/semgrep-rules.git /tmp/frappe-semgrep-rules
-          uv run --frozen --project tools semgrep scan --error --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness carbon_frappe
-          uv run --frozen --project tools semgrep scan --error --include='**/test_*.py' --config semgrep/test-correctness.yml carbon_frappe
+          uv run --frozen --project tools semgrep scan --error -j 1 --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness carbon_frappe
+          uv run --frozen --project tools semgrep scan --error -j 1 --include='**/test_*.py' --config semgrep/test-correctness.yml carbon_frappe
 
   typecheck:
     if: github.ref != 'refs/heads/version-16'
