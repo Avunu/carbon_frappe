@@ -1,0 +1,88 @@
+name: regenerate
+
+# Repairs generated output where it drifted. `check` fails when `yarn codegen`
+# or `nix run .#relock` would change a committed file; this job runs both and
+# commits the result back to the branch, so a branch that only needs
+# regenerating goes green without a human re-running codegen.
+#
+# Runs on pull requests from branches in this repository (fork pull requests
+# get no write token and are skipped) and on pushes to develop.
+#
+# Pushes made with GITHUB_TOKEN start no new workflow runs, so a commit this
+# job lands does not re-run `check` by itself. Set the REGEN_TOKEN secret to a
+# token with contents:write (a PAT or GitHub App token), and add the same
+# value as a Dependabot secret so Dependabot's PRs can be repaired. With it, the
+# commit re-runs the checks, and the next run finds nothing to change and stops.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regenerate-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  regenerate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: yarn install --frozen-lockfile
+
+      # Everything `check` diffs against, regenerated in place. The token is not
+      # in the environment of these steps: the head branch's own scripts run here.
+      - name: Regenerate the codegen output
+        run: yarn codegen
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+        with:
+          determinate: false
+      - name: Set up the Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
+        with:
+          diagnostic-endpoint: ""
+          use-flakehub: false
+      - name: Relock nix/
+        run: nix run .#relock --no-pure-eval
+
+      - name: Commit and push what changed
+        env:
+          REGEN_TOKEN: ${{ secrets.REGEN_TOKEN }}
+          TOKEN: ${{ secrets.REGEN_TOKEN || github.token }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if [ -z "$REGEN_TOKEN" ]; then
+            echo "::warning::REGEN_TOKEN is not set; the commit will not re-run the checks"
+          fi
+          git add -A -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
+            carbon_frappe/public/fonts nix flake.lock
+          if git diff --cached --quiet; then
+            echo "Generated output is current; nothing to commit."
+            exit 0
+          fi
+          git diff --cached --stat
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "chore(codegen): regenerate generated files and nix locks"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" \
+            push origin "HEAD:refs/heads/$BRANCH"
