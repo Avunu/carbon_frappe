@@ -7,7 +7,16 @@
 name = "carbon-frappe-tools"
 version = "0"
 requires-python = ">=3.14"
-dependencies = ["ruff", "ty", "zizmor", "committed", "actionlint-py", "semgrep==1.178.0", "prek", "shellcheck-py"]
+dependencies = [
+	"ruff",
+	"ty",
+	"zizmor",
+	"committed",
+	"actionlint-py",
+	"semgrep==1.178.0",
+	"prek",
+	"shellcheck-py",
+]
 
 [tool.uv]
 package = false
