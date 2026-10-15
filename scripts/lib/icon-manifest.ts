@@ -222,8 +222,8 @@ export const LEGACY_GLYPHS: readonly LegacyGlyph[] = [
 		family: "fa",
 		name: "level-down",
 		icon: "arrow--down-right",
-		apps: ["hrms", "print_designer"],
-		emitters: "hrms: templates/node_card.html; print_designer: Barcode/Dynamic preview modals",
+		apps: ["print_designer"],
+		emitters: "print_designer: Barcode/Dynamic preview modals",
 	},
 	{
 		family: "fa",
