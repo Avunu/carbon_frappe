@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import "./globals.ts";
 import {
 	coerceForPaste,
+	columnField,
 	parseClipboard,
 	planFill,
 } from "../../carbon_frappe/public/js/tables/datatable/paste.ts";
@@ -121,5 +122,21 @@ describe("planFill", () => {
 	});
 	it("plans nothing when the anchor is not a focusable column", () => {
 		assert.deepEqual(planFill(view, [["a"]], { c1: 0, c2: 0, p1: 0, p2: 0 }).targets, []);
+	});
+});
+
+describe("columnField", () => {
+	it("reads a Report View column's docfield", () => {
+		const docfield = df("Currency");
+		assert.equal(columnField({ id: "rate", docfield }), docfield);
+	});
+	it("treats a Query Report column, which has no docfield, as its own field", () => {
+		const column = { id: "valuation_rate", fieldname: "valuation_rate", fieldtype: "Currency" };
+		assert.equal(columnField(column), column);
+		assert.equal(coerceForPaste(columnField(column)!, "12.50"), 12.5);
+	});
+	it("has no field for a standard column or a missing one", () => {
+		assert.equal(columnField({ id: "_rowIndex" }), undefined);
+		assert.equal(columnField(undefined), undefined);
 	});
 });

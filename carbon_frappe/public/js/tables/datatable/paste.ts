@@ -37,6 +37,7 @@ import type { CarbonDataTableHost } from "./managers.ts";
 import type {
 	DataTableCellValue,
 	DataTableColIndex,
+	DataTableColumn,
 	DataTableEditor,
 	DataTableRowIndex,
 	DataTableSelectionBounds,
@@ -194,6 +195,20 @@ export function coerceForPaste(df: DocField, text: string): DataTableCellValue |
 }
 
 /**
+ * The field a column writes. A Report View column carries it as `docfield`
+ * (report_view.js:1268); a Query Report column has none, because it IS its
+ * field - `prepare_columns` assigns the datatable keys onto the report's own
+ * column dict (query_report.js:1513), so `fieldtype`/`options` sit on the
+ * column. Without this every Query Report paste was counted as skipped.
+ */
+export function columnField(column: DataTableColumn | undefined): DocField | undefined {
+	if (!column) return undefined;
+	if (column.docfield) return column.docfield;
+	const own = column as unknown as Partial<DocField>;
+	return typeof own.fieldtype === "string" ? (own as DocField) : undefined;
+}
+
+/**
  * Persist `value` into a cell through the host's `getEditor` contract without
  * showing an editor.
  *
@@ -326,8 +341,7 @@ export async function pasteIntoSelection(host: CarbonDataTableHost, text: string
 	if (!targets.length) return result;
 
 	for (const target of targets) {
-		const column = host.datamanager.getColumn(target.colIndex);
-		const df = column && column.docfield;
+		const df = columnField(host.datamanager.getColumn(target.colIndex));
 		const value = df ? coerceForPaste(df, target.text) : undefined;
 		if (value === undefined) {
 			result.skipped++;
