@@ -218,14 +218,26 @@ describe("scanLegacyEmitters and auditLegacyEmitters on a bench layout", () => {
 });
 
 describe("pinnedFrappeApps", () => {
-	it("lists the frappe-owned inputs flake.lock pins", () => {
+	it("lists the frappe-owned inputs of the root flake, not of its inputs", () => {
 		const lock = {
 			nodes: {
 				erpnext: { locked: { owner: "frappe", repo: "erpnext", type: "github" } },
 				frappe: { locked: { owner: "frappe", repo: "frappe", type: "github" } },
-				"frappe-nix": { locked: { owner: "Avunu", repo: "frappe-nix", type: "github" } },
-				root: { inputs: {} },
+				"frappe-nix": {
+					inputs: { pilot: "pilot" },
+					locked: { owner: "Avunu", repo: "frappe-nix", type: "github" },
+				},
+				pilot: { locked: { owner: "frappe", repo: "pilot", type: "github" } },
+				root: {
+					inputs: {
+						erpnext: "erpnext",
+						frappe: "frappe",
+						"frappe-nix": "frappe-nix",
+						pilot: ["frappe-nix", "pilot"],
+					},
+				},
 			},
+			root: "root",
 		};
 		assert.deepEqual(pinnedFrappeApps(lock), ["erpnext", "frappe"]);
 		assert.deepEqual(pinnedFrappeApps(null), []);
