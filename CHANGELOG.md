@@ -1,5 +1,19 @@
 # Changelog
 
+## [16.3.0](https://github.com/Avunu/carbon_frappe/compare/v16.2.2...v16.3.0) (2026-10-15)
+
+
+### Features
+
+* add marker to make columns resizable on touch screens ([#70](https://github.com/Avunu/carbon_frappe/issues/70)) ([d688448](https://github.com/Avunu/carbon_frappe/commit/d68844804d27e26be530060290b19e93f2d3eaa5))
+
+
+### Bug Fixes
+
+* one click copy/paste ([#78](https://github.com/Avunu/carbon_frappe/issues/78)) ([cc8d750](https://github.com/Avunu/carbon_frappe/commit/cc8d75054dbaddd46a2449ec11ac244789aa78b5))
+* **tools:** pin the tools environment to Python 3.14 ([#75](https://github.com/Avunu/carbon_frappe/issues/75)) ([e67d4ca](https://github.com/Avunu/carbon_frappe/commit/e67d4caabb23a18334bf6c6f2bb82b7dc540aaa2))
+* unblock the Dependabot PRs (regenerate push, pinned frappe apps) ([#77](https://github.com/Avunu/carbon_frappe/issues/77)) ([4668467](https://github.com/Avunu/carbon_frappe/commit/4668467c702df81f872f2a2b8db306febca2c1c3))
+
 ## [16.2.2](https://github.com/Avunu/carbon_frappe/compare/v16.2.1...v16.2.2) (2026-10-07)
 
 
