@@ -38,6 +38,10 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # The GITHUB_TOKEN fallback pushes, so it needs write; with REGEN_TOKEN set
+    # this is unused. A Dependabot run's token stays read-only without it.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
         with:

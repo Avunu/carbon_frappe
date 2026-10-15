@@ -341,14 +341,26 @@ export function legacyEmitterFindings(
 
 /**
  * The frappe apps flake.lock pins (frappe, erpnext, hrms): the ones CI checks
- * out, so the ones check 9 must always see.
+ * out, so the ones check 9 must always see. Only the root flake's own inputs
+ * count — frappe-nix's inputs (marketplace, pilot, semgrep-rules) are frappe
+ * repos too, but nothing checks them out next to frappe.
  */
 export function pinnedFrappeApps(flakeLock: unknown): string[] {
 	if (typeof flakeLock !== "object" || flakeLock === null || !("nodes" in flakeLock)) return [];
 	const nodes = flakeLock.nodes;
 	if (typeof nodes !== "object" || nodes === null) return [];
+	const byName = new Map<string, unknown>(Object.entries(nodes));
+	const root = byName.get(
+		"root" in flakeLock && typeof flakeLock.root === "string" ? flakeLock.root : "root",
+	);
+	if (typeof root !== "object" || root === null || !("inputs" in root)) return [];
+	const inputs = root.inputs;
+	if (typeof inputs !== "object" || inputs === null) return [];
 	const apps: string[] = [];
-	for (const node of Object.values(nodes)) {
+	// A string is the input's own node; an array follows another flake's input.
+	for (const nodeName of Object.values(inputs)) {
+		if (typeof nodeName !== "string") continue;
+		const node = byName.get(nodeName);
 		if (typeof node !== "object" || node === null || !("locked" in node)) continue;
 		const locked = node.locked;
 		if (
