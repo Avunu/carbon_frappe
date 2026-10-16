@@ -62,12 +62,6 @@
               enable = true;
               siteName = "carbon.localhost";
 
-              # docs-site/ is the documentation website (carbon-theme.avunu.net),
-              # built and published by docs-publish.yml with npm. It is not part
-              # of the app, so the bench neither installs nor builds it, and
-              # `nix run .#relock` writes no fallback yarn.lock for it.
-              nodeNestedFrontendExcludes = [ "carbon_frappe/docs-site" ];
-
               app = {
                 enable = true;
                 frappeVersion = "version-16";
