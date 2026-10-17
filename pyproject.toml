@@ -99,9 +99,13 @@ generated = [
 # doesn't render yet: they stay the gate until it does
 retire-keep = [".github/workflows/check.yml", ".github/workflows/version-branch-guard.yml"]
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
+# types/doctypes.d.ts (the desk scripts' DocType registry) is current
+shell-checks = [
+	"yarn -s frappe-types gen-registry --bench .frappe-nix/bench --app carbon_frappe --out types/doctypes.d.ts --check",
+]
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/abdfa649ee09eb3d11de2cb5dba2aa673b77851a"
+frappe-nix-url = "github:Avunu/frappe-nix/e7e5b8838015b869e0e7770a2ef563a4138713a3"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
