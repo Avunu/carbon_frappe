@@ -65,7 +65,7 @@ exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@(abc\\.)?abs
 fail_under = 0
 
 [tool.vulture]
-exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/"]
+exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/", ".devenv/", ".direnv/"]
 
 [tool.test_utils.static-analysis]
 # flow.*: the AI-chat client calls the flow app's API, which this bench doesn't carry
@@ -101,7 +101,7 @@ retire-keep = [".github/workflows/check.yml", ".github/workflows/version-branch-
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/ed7298ced6f12a3d5269c72b8ed715ff5e88d9f5"
+frappe-nix-url = "github:Avunu/frappe-nix/abdfa649ee09eb3d11de2cb5dba2aa673b77851a"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
