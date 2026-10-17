@@ -247,17 +247,17 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1792209597,
-        "narHash": "sha256-+YYpnaFq8YBWG7TdQuc5XHO4cbjD1eVsD5pYnrm8nt0=",
+        "lastModified": 1792212824,
+        "narHash": "sha256-9mwrj7MIUYwhzWnqD6Ubf3adUv4nSU6jz/92rF8+H24=",
         "owner": "Avunu",
         "repo": "frappe-nix",
-        "rev": "e7e5b8838015b869e0e7770a2ef563a4138713a3",
+        "rev": "f25a13cee2c6966d76b2563acb31e65cb732ba31",
         "type": "github"
       },
       "original": {
         "owner": "Avunu",
         "repo": "frappe-nix",
-        "rev": "e7e5b8838015b869e0e7770a2ef563a4138713a3",
+        "rev": "f25a13cee2c6966d76b2563acb31e65cb732ba31",
         "type": "github"
       }
     },

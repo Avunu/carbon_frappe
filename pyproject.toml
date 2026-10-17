@@ -105,7 +105,7 @@ shell-checks = [
 ]
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/e7e5b8838015b869e0e7770a2ef563a4138713a3"
+frappe-nix-url = "github:Avunu/frappe-nix/f25a13cee2c6966d76b2563acb31e65cb732ba31"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
