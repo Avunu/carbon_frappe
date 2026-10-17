@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // CarbonDataTable — a frappe-datatable-compatible facade over CarbonTable.
 //
 // This is the drop-in: `window.DataTable` and `frappe.DataTable` are reassigned

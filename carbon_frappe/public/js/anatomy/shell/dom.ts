@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // DOM helpers shared by the UI Shell modules. Nothing here knows about frappe
 // or Carbon; it is the handful of narrowings the shell repeats.
 

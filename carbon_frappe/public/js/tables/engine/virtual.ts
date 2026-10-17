@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Row virtualization.
 //
 // Report views routinely render tens of thousands of rows (frappe's own guard,

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // CarbonTable — the headless-TanStack + light-DOM-Carbon table engine.
 //
 // One engine sits behind all three frappe surfaces (child-table Grid, List view,

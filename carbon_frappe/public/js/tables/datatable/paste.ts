@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Paste into the Report / Query view grid.
 //
 // frappe-datatable had a paste (`cellmanager.js:149-161`, `pasteContentInCell`

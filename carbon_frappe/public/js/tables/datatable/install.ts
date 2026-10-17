@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Install CarbonDataTable in place of frappe-datatable.
 //
 // Three separate reach-points, because frappe imports the library three ways:

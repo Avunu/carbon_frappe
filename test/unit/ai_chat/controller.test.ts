@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 import { afterEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { STREAM_KEY, createController } from "../../../carbon_frappe/public/js/ai_chat/controller.ts";

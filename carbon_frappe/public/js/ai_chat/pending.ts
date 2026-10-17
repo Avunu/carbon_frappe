@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The one question both the controller and the panel ask of the store: is the
 // conversation waiting for the user to answer an approval card? Kept apart so they
 // cannot disagree.

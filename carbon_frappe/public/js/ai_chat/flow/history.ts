@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Rebuild SDK-shaped messages from a stored Flow Session. Port of `switchSession` in
 // flow's frontend store.js, with the server-side facts it leans on:
 //

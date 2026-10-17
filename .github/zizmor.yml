@@ -8,3 +8,7 @@ rules:
         "actions/*": ref-pin
         "github/*": ref-pin
         "*": hash-pin
+  # The profile's dependabot cooldown (dependabot.cooldown-days) is 3 days.
+  dependabot-cooldown:
+    config:
+      days: 3

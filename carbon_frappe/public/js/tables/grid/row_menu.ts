@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The `⋮` row overflow menu — Carbon's trailing row-action affordance.
 //
 // Carbon's data-table spec puts row actions behind a `cds--overflow-menu` in

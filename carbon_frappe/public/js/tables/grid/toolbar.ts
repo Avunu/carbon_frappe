@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The Carbon table toolbar for frappe's child-table Grid.
 //
 // frappe puts every grid action in a footer BELOW the table:

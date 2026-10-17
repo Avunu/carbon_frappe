@@ -288,6 +288,11 @@ class TestBrandStylesheet(IntegrationTestCase):
 
 	FIELDS = ("brand_light", "brand_dark", "header_bg", "header_text")
 
+	def _set(self, **values):
+		for field, value in values.items():
+			frappe.db.set_single_value("Carbon Settings", field, value)
+		frappe.clear_document_cache("Carbon Settings", "Carbon Settings")
+
 	def setUp(self):
 		super().setUp()
 		self.saved = {f: frappe.db.get_single_value("Carbon Settings", f) for f in self.FIELDS}
@@ -296,11 +301,6 @@ class TestBrandStylesheet(IntegrationTestCase):
 	def tearDown(self):
 		self._set(**self.saved)
 		super().tearDown()
-
-	def _set(self, **values):
-		for field, value in values.items():
-			frappe.db.set_single_value("Carbon Settings", field, value)
-		frappe.clear_document_cache("Carbon Settings", "Carbon Settings")
 
 	def _get(self, host="erp.example.com", **headers):
 		set_request(path="/carbon-brand.css", base_url=f"http://{host}", headers=headers)

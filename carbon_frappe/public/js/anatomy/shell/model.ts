@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The header's view model, read from frappe's module sidebar.
 //
 // Carbon's global header names the product and carries its top-level

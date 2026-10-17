@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // One row of the message list, created once per message id and patched in place for
 // the life of the conversation. Rows are never rebuilt: replacing a <cds-aichat-markdown>
 // or a step list mid-stream would restart its parse and drop its open/expanded state.

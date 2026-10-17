@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Every scroll decision of the message list as a function of numbers, so the DOM code
 // only measures and applies. A port of the decisions in @carbon/ai-chat's
 // messagesAutoScrollController.ts (1.8k lines, not exported, so not vendored); the

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Screen-reader announcements for the chat, through the same live-region rotation
 // @carbon/ai-chat uses (aria-announcer-manager.ts): one write per 250 ms tick, rotated
 // across three polite regions (more than one, or NVDA and JAWS drop back-to-back

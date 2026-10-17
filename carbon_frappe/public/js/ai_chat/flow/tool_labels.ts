@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Tool name and argument labels for the chain-of-thought steps and approval cards.
 // A port of flow's frontend/src/lib/toolMeta.js, minus the value-shape helpers
 // (argKind, recordLabelKey, ...) that only flow's own Vue views use.

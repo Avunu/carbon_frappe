@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Column widths for tables whose columns have no width of their own: the List
 // view and, when a caller gives none, Report and Query views.
 //

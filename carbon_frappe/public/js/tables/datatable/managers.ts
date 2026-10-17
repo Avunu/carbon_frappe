@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // frappe-datatable sub-manager shims.
 //
 // Swapping the constructor is the easy half. The hard half is that frappe,

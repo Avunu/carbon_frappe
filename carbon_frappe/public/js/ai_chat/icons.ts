@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The Carbon glyphs the chat draws itself. They come from @carbon/icons as
 // descriptors (the shape @carbon/web-components' icon loader takes), so the
 // toolbar `actions` of cds-aichat-chat-header accept them as they are and

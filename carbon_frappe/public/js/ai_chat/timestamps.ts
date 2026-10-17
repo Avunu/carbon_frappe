@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Time handling for message timestamps and the conversation list, as pure functions.
 //
 // Frappe stores every datetime as a naive string ("2026-10-02 14:05:09.123456") in the

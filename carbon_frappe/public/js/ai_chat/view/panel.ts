@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The chat shell: Carbon's <cds-aichat-shell> with our header, our message area and the
 // prompt line, wired to the controller and the store. The only view that knows the
 // others exist.

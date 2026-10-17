@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Inline cell editing, to frappe-datatable's `getEditor` contract.
 //
 // The contract (datatable/src/cellmanager.js `getEditor` / `submitEditing`):

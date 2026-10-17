@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Carbon class vocabulary, and the seam for legacy class emission.
 //
 // DUAL EMISSION is the compatibility contract of this whole effort. Every

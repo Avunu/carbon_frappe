@@ -42,6 +42,7 @@ def patch_assets(app_name=None):
 	this app (e.g. `bench build --apps frappe`). Also re-points this app's own
 	`*.bundle.js` keys, which a `.ts` entry point leaves stale — see JS_BUNDLES.
 	"""
+	del app_name  # after_app_install passes the installed app's name; after_migrate passes none
 	# The `# nosemgrep` marks below: frappe's file-traversal rule flags every
 	# `open()`; these paths are built from the bench's own sites/assets, never
 	# from user input.

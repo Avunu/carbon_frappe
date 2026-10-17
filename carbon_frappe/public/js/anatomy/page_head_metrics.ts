@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Expose `.page-head`'s actual, dynamic geometry to CSS as custom properties.
 // Two consumers, both in desk/_page-head.scss and desk/_form.scss:
 //

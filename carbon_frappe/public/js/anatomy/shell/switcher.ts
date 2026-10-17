@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Carbon Switcher — the app switcher in the header's right panel.
 //
 // Carbon (patterns/global-header): "The switcher provides a way for the user

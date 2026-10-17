@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2026, Avunu LLC and contributors
+For license information, please see license.txt-->
+
 # Carbon Frappe
 
 The [IBM Carbon](https://carbondesignsystem.com) (v11) design-language theme for [Frappe](https://frappeframework.com) and ERPNext. Every surface — desk, website/portal, login, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.

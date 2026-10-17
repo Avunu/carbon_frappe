@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // carbon_frappe chart shim — puts every frappe.Chart series on an
 // @carbon/charts categorical palette, and re-themes them when the desk theme
 // changes. Loaded via app_include_js after frappe's desk bundles.

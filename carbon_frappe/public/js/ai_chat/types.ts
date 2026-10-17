@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Local, SDK-shaped chat types. Every field name and nesting here is copied from
 // @carbon/ai-chat's wire types (Messages.ts, MessagingConfig.ts) and ADR-0002's
 // ChatSDKState, so that the structure matches upstream's when `@carbon/ai-chat/sdk`

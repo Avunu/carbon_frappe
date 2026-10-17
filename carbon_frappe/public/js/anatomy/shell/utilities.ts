@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The header's global bar: search, notifications and the account menu, as
 // Carbon `cds--header__action` cells.
 //

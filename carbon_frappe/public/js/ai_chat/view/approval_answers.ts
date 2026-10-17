@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The DOM-free half of the approval card: what an answer is called, when the set of
 // answers is complete, and how a question's text and arguments are split for display.
 // Kept apart from approval.ts so the unit tests need no browser.

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Safe monkey-patching for the few places this theme must reach past CSS.
 //
 // The contract: a patch NEVER throws and NEVER half-applies. If frappe renames

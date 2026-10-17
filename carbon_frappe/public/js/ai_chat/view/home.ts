@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The empty-conversation screen: a greeting and starter prompts, or, when flow has no
 // enabled agent, what an administrator has to configure first.
 //

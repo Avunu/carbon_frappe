@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Server-sent events as flow.api.start_run / resume_run emit them (`_format_sse`:
 // `event: <type>\ndata: <json>\n\n`), read from a fetch body. EventSource cannot be
 // used because the runs are POSTs, so this is the WHATWG SSE line grammar, minus

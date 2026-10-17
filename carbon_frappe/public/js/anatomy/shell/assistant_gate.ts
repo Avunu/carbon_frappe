@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The decisions behind the header's AI action that need neither the DOM nor frappe,
 // kept apart from assistant.ts so node:test can cover them.
 //

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // carbon_frappe anatomy layer — the places this theme reaches past CSS for
 // page chrome.
 //

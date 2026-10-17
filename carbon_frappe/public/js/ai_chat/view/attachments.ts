@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Everything the views draw for attachments, in two builders: the composer's half (attach button,
 // the chips of the files being uploaded, the progress strip, the refusal line, the drop overlay and the
 // listeners for picking, dropping and pasting) and the half on a sent message (read-only chips).

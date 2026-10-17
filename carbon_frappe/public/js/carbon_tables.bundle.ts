@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // carbon_frappe tables — the TanStack + Carbon table engine and its adapters.
 //
 // This bundle lifts carbon_frappe from a stylesheet to a functional

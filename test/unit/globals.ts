@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The desk globals the pure browser modules read AT CALL TIME. Installed on
 // `globalThis` before those modules are imported; each stub reproduces the
 // slice of frappe behaviour the function under test depends on, and nothing

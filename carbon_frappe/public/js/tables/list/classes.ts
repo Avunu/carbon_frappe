@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The `list-row-*` class contract of frappe's List view, re-emitted onto engine
 // DOM.
 //

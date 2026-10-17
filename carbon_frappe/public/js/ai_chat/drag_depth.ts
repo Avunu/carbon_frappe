@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The bookkeeping that tells "a file drag is over the panel" from the flicker of enter and leave
 // events: crossing from one child element to the next fires `dragenter` on the new one before
 // `dragleave` on the old one, so a plain boolean flips off and on again at every boundary. Counting the

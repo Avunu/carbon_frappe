@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // @carbon/icons ships its ES glyph modules (`es/<name>/<size>.js`) without
 // declarations. Each default export is the descriptor object @carbon/web-components'
 // icon loader takes, which is exactly what its `CarbonIcon` type names.

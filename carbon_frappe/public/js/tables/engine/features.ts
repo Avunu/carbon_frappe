@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // TanStack feature composition and the frappe-flavoured filter/sort functions.
 //
 // The engine registers ONE feature set for every table rather than composing

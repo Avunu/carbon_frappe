@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The switcher's view model: what frappe's `/desk` desktop lays out, as a tree.
 //
 // Two desktops exist in v16.50, chosen by Desktop Settings -> Desktop Page

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The `grid-*` class contract of frappe's child-table Grid, re-emitted onto
 // engine DOM.
 //

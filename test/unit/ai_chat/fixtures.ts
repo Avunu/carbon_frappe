@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Recorded-shape flow transcripts shared by every ai_chat test. Nothing here is
 // invented: the event order, the double `tool_started`, the "" `tool_ended` of a
 // paused call, the replayed `tool_ended` of a resume, and the question prompts all

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Carbon HeaderNavigation + HeaderMenu, rendered from the shell model.
 //
 // Markup is @carbon/react's (UIShell/HeaderNavigation.tsx, HeaderMenu.tsx,

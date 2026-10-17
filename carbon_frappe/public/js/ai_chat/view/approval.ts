@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The approval card for a paused Flow Run: one block per pending question, each with
 // the action in plain words, its arguments, and the answers flow offered.
 //
