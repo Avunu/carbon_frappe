@@ -1,16 +1,20 @@
 name: regenerate
 
-# Repairs generated output where it drifted. `check` fails when `yarn codegen`
-# or `nix run .#relock` would change a committed file; this job runs both and
-# commits the result back to the branch, so a branch that only needs
-# regenerating goes green without a human re-running codegen.
+# Repairs the codegen output where it drifted. `ci / typecheck` fails when
+# `yarn codegen` would change a committed file (scripts/ci-typecheck.sh); this
+# job runs it and commits the result back to the branch, so a branch that only
+# needs regenerating (an @carbon/icons or @ibm/plex bump, say) goes green
+# without a human re-running codegen.
+#
+# Only the codegen: the nix/ locks belong to the managed deps.yml, whose
+# relock job regenerates them on Dependabot's flake bumps.
 #
 # Runs on pull requests from branches in this repository (fork pull requests
 # get no write token and are skipped) and on pushes to develop.
 #
 # Pushes made with GITHUB_TOKEN start no new workflow runs, so a commit this
-# job lands does not re-run `check` by itself. Set the REGEN_TOKEN secret to a
-# token with contents:write (a PAT or GitHub App token), and add the same
+# job lands does not re-run the checks by itself. Set the REGEN_TOKEN secret to
+# a token with contents:write (a PAT or GitHub App token), and add the same
 # value as a Dependabot secret so Dependabot's PRs can be repaired. With it, the
 # commit re-runs the checks, and the next run finds nothing to change and stops.
 
@@ -21,8 +25,7 @@ on:
     branches: [develop]
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: regenerate-${{ github.head_ref || github.ref_name }}
@@ -37,37 +40,25 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     # The GITHUB_TOKEN fallback pushes, so it needs write; with REGEN_TOKEN set
     # this is unused. A Dependabot run's token stays read-only without it.
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: package.json
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --frozen-lockfile --non-interactive
 
-      # Everything `check` diffs against, regenerated in place. The token is not
-      # in the environment of these steps: the head branch's own scripts run here.
+      # The token is not in the environment of this step: the head branch's own
+      # scripts run here.
       - name: Regenerate the codegen output
         run: yarn codegen
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
-        with:
-          determinate: false
-      - name: Set up the Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
-        with:
-          diagnostic-endpoint: ""
-          use-flakehub: false
-      - name: Relock nix/
-        run: nix run .#relock --no-pure-eval
 
       - name: Commit and push what changed
         env:
@@ -79,7 +70,7 @@ jobs:
             echo "::warning::REGEN_TOKEN is not set; the commit will not re-run the checks"
           fi
           git add -A -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
-            carbon_frappe/public/fonts nix flake.lock
+            carbon_frappe/public/fonts
           if git diff --cached --quiet; then
             echo "Generated output is current; nothing to commit."
             exit 0
@@ -87,6 +78,6 @@ jobs:
           git diff --cached --stat
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "chore(codegen): regenerate generated files and nix locks"
+            commit -q -m "chore(codegen): regenerate generated files"
           git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" \
             push origin "HEAD:refs/heads/$BRANCH"

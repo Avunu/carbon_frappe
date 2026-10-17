@@ -35,6 +35,7 @@
 		"lint:py": "uv run --frozen --project tools ruff check . && uv run --frozen --project tools ruff format --check .",
 		"typecheck:py": "uv run --frozen --project tools ty check --python \"${FRAPPE_BENCH_ROOT:-.frappe-nix/bench}/env\"",
 		"check:major": "node scripts/check-frappe-major.ts",
+		"ci:typecheck": "bash scripts/ci-typecheck.sh",
 		"test:unit": "node --test --experimental-test-coverage --test-coverage-include='carbon_frappe/public/js/**' --test-coverage-lines=50 'test/unit/**/*.test.ts'",
 		"test:tables": "node scripts/test-tables.ts",
 		"test:shell": "node scripts/test-shell.ts",

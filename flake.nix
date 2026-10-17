@@ -4,7 +4,7 @@
   description = "carbon_frappe: Carbon Frappe";
 
   inputs = {
-    frappe-nix.url = "github:Avunu/frappe-nix/f25a13cee2c6966d76b2563acb31e65cb732ba31";
+    frappe-nix.url = "github:Avunu/frappe-nix/b02c37d7fd391dcc2b473f658455777b42b1dee4";
     nixpkgs.follows = "frappe-nix/nixpkgs";
     frappe = {
       url = "github:frappe/frappe/version-16";
