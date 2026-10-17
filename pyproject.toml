@@ -62,10 +62,10 @@ show_missing = true
 skip_covered = true
 precision = 1
 exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@(abc\\.)?abstractmethod"]
-fail_under = 0
+fail_under = 80
 
 [tool.vulture]
-exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/"]
+exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/", ".devenv/", ".direnv/"]
 
 [tool.test_utils.static-analysis]
 # flow.*: the AI-chat client calls the flow app's API, which this bench doesn't carry
@@ -99,9 +99,13 @@ generated = [
 # doesn't render yet: they stay the gate until it does
 retire-keep = [".github/workflows/check.yml", ".github/workflows/version-branch-guard.yml"]
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
+# types/doctypes.d.ts (the desk scripts' DocType registry) is current
+shell-checks = [
+	"yarn -s frappe-types gen-registry --bench .frappe-nix/bench --app carbon_frappe --out types/doctypes.d.ts --check",
+]
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/ed7298ced6f12a3d5269c72b8ed715ff5e88d9f5"
+frappe-nix-url = "github:Avunu/frappe-nix/f25a13cee2c6966d76b2563acb31e65cb732ba31"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"

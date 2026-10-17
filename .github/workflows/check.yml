@@ -92,9 +92,15 @@ jobs:
 
       # frappe's own rule set, the way its Linters workflow runs it, plus
       # erpnext's rules for test files.
+      # The rules are pinned: an upstream change shows up as a reviewed bump of
+      # SEMGREP_RULES_REV, not as a red check on an unrelated pull request.
       - name: Semgrep (frappe/semgrep-rules)
+        env:
+          SEMGREP_RULES_REV: 81a6e3d47a328249e8ddf04c586e493dd5553002 # develop, 2026-09-30
         run: |
-          git clone --depth 1 https://github.com/frappe/semgrep-rules.git /tmp/frappe-semgrep-rules
+          git init -q /tmp/frappe-semgrep-rules
+          git -C /tmp/frappe-semgrep-rules fetch -q --depth 1 https://github.com/frappe/semgrep-rules.git "$SEMGREP_RULES_REV"
+          git -C /tmp/frappe-semgrep-rules checkout -q FETCH_HEAD
           uv run --frozen --project tools semgrep scan --error --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness carbon_frappe
           uv run --frozen --project tools semgrep scan --error --include='**/test_*.py' --config semgrep/test-correctness.yml carbon_frappe
 
