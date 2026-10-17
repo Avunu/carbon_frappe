@@ -12,6 +12,12 @@ name: regenerate
 # Runs on pull requests from branches in this repository (fork pull requests
 # get no write token and are skipped) and on pushes to develop.
 #
+# Two jobs, as the managed deps.yml splits its relock: `plan` installs the
+# branch's dependencies and runs its codegen with a read-only token and no
+# secrets, and uploads the change as a patch. `push` checks the branch out
+# fresh, runs none of its code, applies that patch only if it touches nothing
+# but the generated paths, and commits and pushes it with the write token.
+#
 # Pushes made with GITHUB_TOKEN start no new workflow runs, so a commit this
 # job lands does not re-run the checks by itself. Set the REGEN_TOKEN secret to
 # a token with contents:write (a PAT or GitHub App token), and add the same
@@ -35,16 +41,16 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
-  regenerate:
+  plan:
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # The GITHUB_TOKEN fallback pushes, so it needs write; with REGEN_TOKEN set
-    # this is unused. A Dependabot run's token stays read-only without it.
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -54,12 +60,49 @@ jobs:
         with:
           node-version-file: package.json
       - run: yarn install --frozen-lockfile --non-interactive
-
-      # The token is not in the environment of this step: the head branch's own
-      # scripts run here.
       - name: Regenerate the codegen output
         run: yarn codegen
+      - name: Make the patch
+        id: diff
+        run: |
+          git add -A -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
+            carbon_frappe/public/fonts
+          mkdir -p "$RUNNER_TEMP/regen"
+          git diff --cached --binary --no-renames > "$RUNNER_TEMP/regen/codegen.patch"
+          if [ -s "$RUNNER_TEMP/regen/codegen.patch" ]; then
+            git diff --cached --stat
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Generated output is current; nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: codegen-patch
+          path: ${{ runner.temp }}/regen/codegen.patch
+          retention-days: 1
 
+  push:
+    needs: plan
+    if: needs.plan.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The GITHUB_TOKEN fallback pushes, so it needs write; with REGEN_TOKEN set
+    # this is unused. A Dependabot run's token stays read-only without it.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: codegen-patch
+          path: ${{ runner.temp }}/regen
+      # Nothing from the branch runs in this job: no install, no scripts, and
+      # git runs with hooks off. The patch may only touch the generated paths.
       - name: Commit and push what changed
         env:
           REGEN_TOKEN: ${{ secrets.REGEN_TOKEN }}
@@ -69,15 +112,20 @@ jobs:
           if [ -z "$REGEN_TOKEN" ]; then
             echo "::warning::REGEN_TOKEN is not set; the commit will not re-run the checks"
           fi
-          git add -A -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
-            carbon_frappe/public/fonts
-          if git diff --cached --quiet; then
-            echo "Generated output is current; nothing to commit."
-            exit 0
+          patch="$RUNNER_TEMP/regen/codegen.patch"
+          git apply --numstat -z "$patch" | tr '\0' '\n' | cut -f3- > "$RUNNER_TEMP/regen/paths"
+          if [ ! -s "$RUNNER_TEMP/regen/paths" ] || grep -v -E \
+            '^carbon_frappe/public/(js/generated|scss/generated|fonts)/.+$' \
+            "$RUNNER_TEMP/regen/paths" | grep -q .; then
+            echo "::error::the codegen patch touches paths outside the generated output"
+            cat "$RUNNER_TEMP/regen/paths"
+            exit 1
           fi
+          git -c core.hooksPath=/dev/null apply --index "$patch"
           git diff --cached --stat
-          git -c user.name="github-actions[bot]" \
+          git -c core.hooksPath=/dev/null -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "chore(codegen): regenerate generated files"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" \
-            push origin "HEAD:refs/heads/$BRANCH"
+            commit --no-verify -q -m "chore(codegen): regenerate generated files"
+          git -c core.hooksPath=/dev/null \
+            -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" \
+            push --no-verify origin "HEAD:refs/heads/$BRANCH"

@@ -95,6 +95,10 @@ generated = [
 	"carbon_frappe/public/scss/generated/**",
 	"carbon_frappe/public/fonts/**",
 ]
+# The committed nix/ locks are what relock produces: run by `ci / test`
+# (frappe-test --ci, shell checks), which fails if it changes anything, so a
+# dependency change without its relock fails the PR instead of a later build.
+shell-checks = ["nix run .#relock --no-pure-eval"]
 # the browser suites, against the site nightly's integration job brings up
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
 # scripts/ci-typecheck.sh compiles the theme against frappe's sources, whose sass
