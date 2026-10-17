@@ -17,6 +17,8 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    cooldown:
+      default-days: 3
 
   # @carbon/*, tanstack, sass, frappe-types, the formatter and linters.
   - package-ecosystem: "npm"
@@ -29,6 +31,8 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+    cooldown:
+      default-days: 3
 
   # ruff, ty, zizmor, committed, actionlint, semgrep, prek — tools/uv.lock.
   - package-ecosystem: "uv"
@@ -42,6 +46,8 @@ updates:
     groups:
       tools:
         patterns: ["*"]
+    cooldown:
+      default-days: 3
 
   # Flake inputs: frappe-nix, and frappe/erpnext/hrms themselves — a weekly
   # "the framework moved; does the theme still hold?" pull request, answered
@@ -61,6 +67,12 @@ updates:
     commit-message:
       prefix: "chore"
     open-pull-requests-limit: 5
+    # frappe-nix is pinned in [tool.frappe-nix.dev-shell] and the profile moves
+    # only with `nix flake update standards-profile && nix run .#frappe-init -- --sync`:
+    # either can rewrite managed files, so neither moves without a reviewed sync
+    ignore:
+      - dependency-name: "frappe-nix"
+      - dependency-name: "standards-profile"
     groups:
       flake-inputs:
         patterns: ["*"]

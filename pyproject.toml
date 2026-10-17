@@ -68,7 +68,8 @@ fail_under = 0
 exclude = [".venv/", "node_modules/", ".frappe-nix/", ".dev-dist/"]
 
 [tool.test_utils.static-analysis]
-whitelist = ["frappe.*", "erpnext.*", "hrms.*"]
+# flow.*: the AI-chat client calls the flow app's API, which this bench doesn't carry
+whitelist = ["frappe.*", "erpnext.*", "hrms.*", "flow.*"]
 
 # ---------------------------------------------------------------------------
 # frappe-nix app standards. The managed files (flake.nix, .envrc, the tool
@@ -134,5 +135,7 @@ overrides = [
 		"carbon_frappe/public/js/ai_chat/entry.ts",
 	], rules = { "import/no-unassigned-import" = "off" } },
 	# the standalone table demo runs in a browser page and logs to it
-	{ files = ["dev/**"], rules = { "no-console" = "off", "no-await-in-loop" = "off" } },
+	{ files = [
+		"dev/**",
+	], rules = { "no-console" = "off", "no-await-in-loop" = "off" } },
 ]
