@@ -10,8 +10,7 @@
 	"env": {
 		"builtin": true,
 		"es2024": true,
-		"browser": true,
-		"node": true
+		"browser": true
 	},
 	"rules": {
 		"typescript/no-explicit-any": "error",
@@ -30,35 +29,59 @@
 	},
 	"ignorePatterns": [
 		"carbon_frappe/public/dist/**",
-		"carbon_frappe/public/js/generated/**",
+		".frappe-nix/**",
 		".dev-dist/**",
-		".frappe-nix/**"
+		"nix/**",
+		"docs-site/**",
+		"types/doctypes.d.ts",
+		"carbon_frappe/public/js/generated/**",
+		"carbon_frappe/public/scss/generated/**",
+		"carbon_frappe/public/fonts/**"
 	],
 	"overrides": [
 		{
-			"files": [
-				"carbon_frappe/public/js/*.bundle.ts",
-				"carbon_frappe/public/js/ai_chat/register.ts",
-				"carbon_frappe/public/js/ai_chat/entry.ts",
-				"test/**"
-			],
+			"files": ["scripts/**", "marketplace/**", "ci/**", "test/**"],
+			"env": {
+				"node": true
+			},
+			"rules": {
+				"no-console": "off",
+				"no-await-in-loop": "off",
+				"import/no-unassigned-import": "off"
+			}
+		},
+		{
+			"files": ["carbon_frappe/public/js/*.bundle.ts", "carbon_frappe/public/js/*.bundle.js"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}
 		},
 		{
-			"files": ["scripts/**", "dev/**"],
-			"rules": {
-				"no-console": "off",
-				"no-await-in-loop": "off"
-			}
-		},
-		{
-			"files": ["carbon_frappe/**/doctype/**/*.js"],
+			"files": ["carbon_frappe/carbon_frappe/doctype/carbon_settings/carbon_settings.js"],
 			"globals": {
 				"frappe": "readonly",
 				"__": "readonly",
-				"cur_frm": "readonly"
+				"cur_frm": "readonly",
+				"cur_list": "readonly",
+				"locals": "readonly",
+				"$": "readonly",
+				"jQuery": "readonly",
+				"moment": "readonly",
+				"erpnext": "readonly",
+				"hrms": "readonly"
+			}
+		},
+		{
+			"files": ["carbon_frappe/public/js/ai_chat/register.ts", "carbon_frappe/public/js/ai_chat/entry.ts"],
+			"rules": {
+				"import/no-unassigned-import": "off"
+			}
+		},
+		{
+			"files": ["dev/**"],
+			"rules": {
+				"no-console": "off",
+				"no-await-in-loop": "off"
 			}
 		}
 	]
