@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The per-column header menu — frappe-datatable's `dt-dropdown`, as a Carbon
 // overflow menu.
 //

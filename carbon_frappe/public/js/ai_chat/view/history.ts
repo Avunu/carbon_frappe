@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The conversation list: Carbon's cds-aichat-history-* components, laid over the message area
 // of the chat. It does not use the shell's own `history` slot: the shell renders that slot
 // beside the messages and only when it is at least 640px wide (messages-min-width +

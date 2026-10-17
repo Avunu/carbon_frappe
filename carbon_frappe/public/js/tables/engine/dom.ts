@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Minimal DOM helpers for the table engine.
 //
 // The engine deliberately does NOT use jQuery for its own rendering: it

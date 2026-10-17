@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Carbon UI Shell header.
 //
 // frappe/www/desk.html:40 ships an empty <header></header> that frappe only

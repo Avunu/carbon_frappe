@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The footer under a finished reply: thumbs up and down (cds-aichat-feedback-buttons) and the
 // comment panel a thumbs-down opens (cds-aichat-feedback). The rules are feedback_state.ts's;
 // this module renders them and makes the call.

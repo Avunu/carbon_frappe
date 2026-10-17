@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // How the conversation list is organised, as pure functions: calendar-day buckets and the
 // client-side search. The view (view/history.ts) draws what these return.
 import type { HistoryItem } from "./history_model.ts";

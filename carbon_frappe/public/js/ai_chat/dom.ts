@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // DOM builders shared by the views. The always-loaded shell has its own string form of the
 // error block (anatomy/shell/assistant.ts failureHtml) because this module ships in the lazy
 // bundle; the two must stay separate.

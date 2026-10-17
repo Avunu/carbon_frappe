@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { THUMBNAIL_MAX_BYTES, chipFile } from "../../../carbon_frappe/public/js/ai_chat/view/attachments.ts";

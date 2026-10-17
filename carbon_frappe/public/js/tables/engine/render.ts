@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Keyed, incremental DOM renderer for CarbonTable.
 //
 // WHY NOT A FULL RE-RENDER. The obvious vanilla approach — rebuild <tbody> from

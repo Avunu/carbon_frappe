@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The thumbs-up/down footer of a reply as a pure state machine, so every rule about it
 // (one rating per reply, a thumbs-down asks for details before it counts, clicking the
 // selected thumb withdraws it, a refused call is rolled back) is testable without a DOM.

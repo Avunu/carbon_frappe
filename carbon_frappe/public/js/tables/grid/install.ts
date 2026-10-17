@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Install CarbonGrid as the child-table control's grid.
 //
 // `Grid` is a module-private default export of frappe/form/grid.js — there is no

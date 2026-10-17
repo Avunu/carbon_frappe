@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The slice of Flow's DocTypes this adapter reads through `frappe.client.get` /
 // `get_list`. Every field below exists in the DocType JSON
 // (flow/flow/doctype/{flow_session,flow_session_message,flow_session_attachment,

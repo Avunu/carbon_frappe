@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The AI assistant's header action, its host panel, the lazy loader and the takeover
 // of flow's own panel. Always loaded (carbon_anatomy.bundle), so everything about the
 // chat itself stays behind `import()`; see scripts/build-ai-chat.ts for what that loads.

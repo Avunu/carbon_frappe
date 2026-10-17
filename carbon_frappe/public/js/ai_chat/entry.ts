@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The lazy chat bundle's entry: what the header button import()s on first open.
 // scripts/build-ai-chat.ts builds this file (and everything it pulls in) as split ESM
 // into public/dist/ai_chat/. It is not named `*.bundle.*`, so frappe's own esbuild

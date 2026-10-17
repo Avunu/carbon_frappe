@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Make the page heading actually open the rename dialog when the document is
 // renameable.
 //

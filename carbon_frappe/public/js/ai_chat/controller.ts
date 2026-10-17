@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Turns user intent into Flow calls and Flow events into store updates. The only
 // module that calls the network (through the injected FlowClient) and the only writer
 // of the ChatStore. Views read the store and call these methods; they never touch the

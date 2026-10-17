@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The translation seam for the chat. Modules never call the global `__` at import
 // time (there is none in Node, and none before the desk boots); they take a
 // `Translate` and are handed `globalTranslate()` by whoever mounts them, so the unit

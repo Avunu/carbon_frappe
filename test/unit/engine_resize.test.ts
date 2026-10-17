@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { isColumnResize } from "../../carbon_frappe/public/js/tables/engine/table.ts";

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The state behind the conversation list: what the controller loads and the history view
 // draws. Separate from ChatStore because it is not part of the conversation (ADR-0002's
 // ChatSDKState has no list of past sessions) and changes on a different rhythm: it is

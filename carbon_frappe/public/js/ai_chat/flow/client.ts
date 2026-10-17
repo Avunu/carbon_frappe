@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The only module of the adapter that talks to the network. Every call, streaming or
 // not, is a `fetch` POST to /api/method with the CSRF header, except uploads: those
 // use XMLHttpRequest (injected as an `UploadTransport`) because `fetch` reports no

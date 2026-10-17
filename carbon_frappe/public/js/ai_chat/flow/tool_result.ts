@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // How a tool's serialized result maps onto a chain-of-thought step. Shared by the
 // live reducer (reduce.ts) and the history rebuild (history.ts): both must call
 // the same classifier, or a conversation would look different the moment it is

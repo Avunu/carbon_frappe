@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The typed surface of the <cds-aichat-*> elements the chat creates or reads.
 //
 // Each interface lists ONLY the properties this code touches, copied from the

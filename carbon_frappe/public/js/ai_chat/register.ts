@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Registers every <cds-aichat-*> element the chat uses, for its side effect.
 //
 // prompt-line is imported piece by piece, never through `prompt-line/index.js`:

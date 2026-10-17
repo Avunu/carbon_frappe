@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // CarbonGridRow — frappe's GridRow, rendering into the Carbon table engine.
 //
 // This subclass replaces only the DOM-PRODUCING half of GridRow. Everything

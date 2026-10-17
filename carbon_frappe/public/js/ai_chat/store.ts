@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The chat state container. Shaped like ADR-0002's ChatSDKStateAccess so that
 // swapping in `@carbon/ai-chat/sdk` later is a type-only change for its consumers.
 // `upsert` takes (id, state, updater) like the SDK's `messaging.upsertMessage`, but is

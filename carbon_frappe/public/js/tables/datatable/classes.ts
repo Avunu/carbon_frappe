@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The `dt-*` class contract of frappe-datatable, re-emitted onto engine DOM.
 //
 // This file is the entire reason a report written against frappe-datatable keeps

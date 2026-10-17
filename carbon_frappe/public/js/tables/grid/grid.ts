@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // CarbonGrid — frappe's child-table Grid, rendered by the Carbon table engine.
 //
 // WHAT CHANGES: who lays the columns out. frappe 16.50 sizes every column in

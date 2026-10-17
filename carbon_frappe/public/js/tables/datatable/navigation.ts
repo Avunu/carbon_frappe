@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Spreadsheet cell navigation for the Report / Query views.
 //
 // The Report view is frappe's BULK EDITING surface, not a read-only list: 7 of

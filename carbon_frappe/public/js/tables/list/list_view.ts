@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The List view, rendered by the Carbon table engine.
 //
 // This is the lightest of the three adapters on purpose. frappe's List view is

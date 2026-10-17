@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // localStorage keys that both the always-loaded shell code (anatomy/shell/assistant.ts) and the
 // lazily loaded chat read or write. A leaf module on purpose: the shell can import it without
 // pulling any chat code into carbon_anatomy.bundle, and the chat does not depend on the shell.

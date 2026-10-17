@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Carbon's expandable-row anatomy, built for frappe's child-table Grid.
 //
 // WHAT CARBON REQUIRES (packages/styles/scss/components/data-table/expandable/

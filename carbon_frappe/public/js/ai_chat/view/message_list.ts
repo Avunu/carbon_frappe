@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The scrolling list of rows, the processing indicator, the bottom spacer and the
 // "scroll to bottom" button, driven by the ChatStore. Pin/spacer/jump decisions are
 // computed by ../scroll_policy.ts; this module measures the DOM and applies them. The

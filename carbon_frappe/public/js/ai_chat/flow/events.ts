@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The frames flow.api.start_run / resume_run send with `stream=1`, as typed values.
 // Source of truth is `_event_to_dict` in flow/api/api.py; each variant below is one
 // branch of it. The frame is `event: <type>\ndata: <json>\n\n` and the JSON repeats

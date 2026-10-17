@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Folds the events of one Flow stream into the draft response the chat shows.
 // Pure and immutable: every function returns a new object where something
 // changed and the SAME object where nothing did, because the store diffs by

@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // carbon_frappe desk shim — two independent patches with nothing in common but
 // living in the one bundle frappe loads last (see the assets.json note below):
 // tagging formatted data values with `carbon-num` so the stylesheet can set IBM

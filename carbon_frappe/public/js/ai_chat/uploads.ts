@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // The rules for attaching files, with no DOM and no network: what may be attached, how a refusal
 // is worded, and how a file travels between the composer's pending list, the request's
 // `structured_data`, flow's `attachments` argument and the chips the views draw. Kept pure so

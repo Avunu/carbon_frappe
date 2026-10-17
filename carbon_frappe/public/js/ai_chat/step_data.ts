@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // How a tool call's arguments and result are shown inside a collapsed step: as markdown,
 // because the step body renders them with <cds-aichat-markdown> like everything else.
 // Pure, so the unit tests cover the fencing rules without a DOM.

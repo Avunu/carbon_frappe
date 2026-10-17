@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Avunu LLC and contributors
+// For license information, please see license.txt
+
 // Fixture page for the CarbonTable engine, driven by scripts/dev-table.ts.
 // Runs OUTSIDE a bench: no frappe global, no jQuery, no desk bundle. That is the
 // point — it proves the engine has no hidden dependency on the desk, and it is
