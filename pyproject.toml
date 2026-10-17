@@ -88,7 +88,8 @@ site = "carbon.localhost"
 build = true
 # `yarn codegen` output; its freshness is checked by check.yml's typecheck job.
 # Kept out of the formatters, linters and validate_copyright (the icon data is
-# IBM's, under Apache-2.0); the .ts modules are still type-checked.
+# IBM's, under Apache-2.0); the .ts modules are still type-checked. The codegen
+# formats its own output (scripts/lib/format.ts).
 generated = [
 	"carbon_frappe/public/js/generated/**",
 	"carbon_frappe/public/scss/generated/**",
