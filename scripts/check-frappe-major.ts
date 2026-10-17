@@ -4,15 +4,16 @@
 // that, and a conventional-commit release process breaks it on its own.
 //
 //   node scripts/check-frappe-major.ts                    (the prek hook, CI)
-//   node scripts/check-frappe-major.ts some/package.json  (release-please's release branch)
+//   node scripts/check-frappe-major.ts some/package.json  (another package.json)
 //
 // WHY. `carbon_frappe@16.x.y` means "the theme for frappe v16", the way
 // erpnext, hrms and frappe-types version themselves; minor and patch are ours.
 // One `feat!:` and release-please proposes 17.0.0 — a "v17 theme" that is the
 // v16 code. scripts/check-commit-subject.ts refuses that at commit time; this
 // is the check that runs on the version release-please actually proposes
-// (release-please.yml's `guard-major`, against the release branch's
-// package.json), and on every push, against three facts that must agree:
+// (`ci / typecheck` runs it through scripts/ci-typecheck.sh on the release PR,
+// which release.yml's dispatch-ci starts), and on every push, against three
+// facts that must agree:
 //
 //   package.json  version major == frappe.major
 //   flake.lock    inputs.frappe.original.ref == version-<frappe.major>

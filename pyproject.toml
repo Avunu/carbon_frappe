@@ -86,7 +86,7 @@ siblings = ["erpnext", "hrms"]
 site = "carbon.localhost"
 # patch-assets, the audits and the AI-chat bundle are a real build step
 build = true
-# `yarn codegen` output; its freshness is checked by check.yml's typecheck job.
+# `yarn codegen` output; its freshness is checked by `ci:typecheck` (ci / typecheck).
 # Kept out of the formatters, linters and validate_copyright (the icon data is
 # IBM's, under Apache-2.0); the .ts modules are still type-checked. The codegen
 # formats its own output (scripts/lib/format.ts).
@@ -95,17 +95,18 @@ generated = [
 	"carbon_frappe/public/scss/generated/**",
 	"carbon_frappe/public/fonts/**",
 ]
-# The profile retires these for the ci module's managed callers, which frappe-nix
-# doesn't render yet: they stay the gate until it does
-retire-keep = [".github/workflows/check.yml", ".github/workflows/version-branch-guard.yml"]
+# The committed nix/ locks are what relock produces: run by `ci / test`
+# (frappe-test --ci, shell checks), which fails if it changes anything, so a
+# dependency change without its relock fails the PR instead of a later build.
+shell-checks = ["nix run .#relock --no-pure-eval"]
+# the browser suites, against the site nightly's integration job brings up
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
-# types/doctypes.d.ts (the desk scripts' DocType registry) is current
-shell-checks = [
-	"yarn -s frappe-types gen-registry --bench .frappe-nix/bench --app carbon_frappe --out types/doctypes.d.ts --check",
-]
+# scripts/ci-typecheck.sh compiles the theme against frappe's sources, whose sass
+# pipeline resolves `~frappe-charts` and friends from frappe's own node_modules
+frappe-node-modules = true
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/f25a13cee2c6966d76b2563acb31e65cb732ba31"
+frappe-nix-url = "github:Avunu/frappe-nix/de60612a38409a61004f3d311a9e2748d2a3d341"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
