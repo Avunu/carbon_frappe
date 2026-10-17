@@ -101,7 +101,7 @@ retire-keep = [".github/workflows/check.yml", ".github/workflows/version-branch-
 nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
 
 [tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/a6863e0f13f28a1ba943924bd799771a290154fe"
+frappe-nix-url = "github:Avunu/frappe-nix/ed7298ced6f12a3d5269c72b8ed715ff5e88d9f5"
 
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
