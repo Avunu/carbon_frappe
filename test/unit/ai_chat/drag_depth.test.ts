@@ -3,7 +3,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createDragDepth } from "../../../carbon_frappe/public/js/ai_chat/drag_depth.ts";
+import { createDragDepth } from "../../../carbon_theme/public/js/ai_chat/drag_depth.ts";
 
 describe("createDragDepth", () => {
 	it("starts a drag on the first enter only", () => {

@@ -197,7 +197,7 @@ export function auditGeneratedIcons(appRoot: string, warn: Warn): void {
 
 	for (const file of generatedIconFiles(carbon)) {
 		const abs = path.join(appRoot, file.path);
-		const shown = path.relative(path.join(appRoot, "carbon_frappe", "public"), abs);
+		const shown = path.relative(path.join(appRoot, "carbon_theme", "public"), abs);
 		if (!fs.existsSync(abs)) {
 			warn(`${shown} is missing — run \`yarn codegen\``);
 			continue;
@@ -224,7 +224,7 @@ export function auditSpriteReferences(appRoot: string, frappeRoot: string, warn:
 		if (file.endsWith(".svg"))
 			for (const id of findSpriteIds(fs.readFileSync(file, "utf-8"))) available.add(id);
 	}
-	const jsRoot = path.join(appRoot, "carbon_frappe", "public", "js");
+	const jsRoot = path.join(appRoot, "carbon_theme", "public", "js");
 	const wanted = new Map<string, string>();
 	for (const file of walk(
 		jsRoot,
@@ -397,7 +397,7 @@ export function auditLegacyEmitters(
 			.readdirSync(appsDir)
 			// this app's own generated stylesheet is the one place the names are meant to appear;
 			// an entry that is not an app (no `<name>/<name>/` package) is skipped by the scan
-			.filter((name) => name !== "carbon_frappe")
+			.filter((name) => name !== "carbon_theme")
 			.map((name) => ({ name, root: path.join(appsDir, name) }));
 	} else {
 		log(

@@ -4,8 +4,8 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import "./globals.ts";
-import { activeHref, readModel, readSidebar } from "../../carbon_frappe/public/js/anatomy/shell/model.ts";
-import type { RowNode } from "../../carbon_frappe/public/js/anatomy/shell/model.ts";
+import { activeHref, readModel, readSidebar } from "../../carbon_theme/public/js/anatomy/shell/model.ts";
+import type { RowNode } from "../../carbon_theme/public/js/anatomy/shell/model.ts";
 
 // There is no DOM under node:test. The sidebar walk reads a handful of selectors off whatever it is
 // handed (shell/model.ts `RowNode`), so a tree of nodes that answer exactly those selectors, by

@@ -12,11 +12,11 @@ import {
 	displayArgs,
 	splitPrompt,
 	stepFor,
-} from "../../../carbon_frappe/public/js/ai_chat/view/approval_answers.ts";
-import { identityTranslate } from "../../../carbon_frappe/public/js/ai_chat/flow/tool_labels.ts";
-import type { Translate } from "../../../carbon_frappe/public/js/ai_chat/flow/tool_labels.ts";
-import type { FlowQuestion } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
-import type { ChainOfThoughtStep } from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/view/approval_answers.ts";
+import { identityTranslate } from "../../../carbon_theme/public/js/ai_chat/flow/tool_labels.ts";
+import type { Translate } from "../../../carbon_theme/public/js/ai_chat/flow/tool_labels.ts";
+import type { FlowQuestion } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
+import type { ChainOfThoughtStep } from "../../../carbon_theme/public/js/ai_chat/types.ts";
 
 const upper: Translate = (source, replace) => identityTranslate(source, replace).toUpperCase();
 

@@ -22,7 +22,7 @@
  * The `pagehead` suite (scripts/shell/pagehead.ts) drives the page head on existing
  * documents every site has (a Role, a Language) and never saves.
  *
- * Requires: a running bench with carbon_frappe and erpnext installed and
+ * Requires: a running bench with carbon_theme and erpnext installed and
  * built (the fixtures are the Projects and Stock sidebars), and
  * `chromium` on PATH. Screenshots land in .dev-dist/screenshots/.
  */

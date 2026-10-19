@@ -18,7 +18,7 @@ import {
 	seedSession,
 	serialisePanelState,
 	shouldMountAssistant,
-} from "../../carbon_frappe/public/js/anatomy/shell/assistant_gate.ts";
+} from "../../carbon_theme/public/js/anatomy/shell/assistant_gate.ts";
 
 describe("shouldMountAssistant", () => {
 	it("needs flow in boot.versions", () => {
@@ -209,9 +209,9 @@ describe("parseManifest", () => {
 
 describe("assetUrl", () => {
 	it("resolves a manifest name under the served dist directory", () => {
-		assert.equal(ASSET_BASE, "/assets/carbon_frappe/dist/ai_chat/");
-		assert.equal(MANIFEST_URL, "/assets/carbon_frappe/dist/ai_chat/manifest.json");
-		assert.equal(assetUrl("entry.AB12CD34.js"), "/assets/carbon_frappe/dist/ai_chat/entry.AB12CD34.js");
+		assert.equal(ASSET_BASE, "/assets/carbon_theme/dist/ai_chat/");
+		assert.equal(MANIFEST_URL, "/assets/carbon_theme/dist/ai_chat/manifest.json");
+		assert.equal(assetUrl("entry.AB12CD34.js"), "/assets/carbon_theme/dist/ai_chat/entry.AB12CD34.js");
 	});
 });
 

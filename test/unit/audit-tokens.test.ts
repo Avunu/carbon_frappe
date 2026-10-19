@@ -97,8 +97,8 @@ describe("bundleImports", () => {
 		]);
 	});
 	it("puts our own relative imports under our own directory", () => {
-		assert.deepEqual(bundleImports('@import "./carbon/fonts";', "carbon_frappe/public/scss"), [
-			"carbon_frappe/public/scss/carbon/fonts",
+		assert.deepEqual(bundleImports('@import "./carbon/fonts";', "carbon_theme/public/scss"), [
+			"carbon_theme/public/scss/carbon/fonts",
 		]);
 	});
 });
@@ -234,7 +234,7 @@ describe("the semantic layer's shape in frappe's colors.css", () => {
 });
 
 describe("the theme's own semantic pins", () => {
-	const mapDir = path.join(import.meta.dirname, "..", "..", "carbon_frappe", "public", "scss", "map");
+	const mapDir = path.join(import.meta.dirname, "..", "..", "carbon_theme", "public", "scss", "map");
 	// The SPA partial declares frappe-ui's names on purpose and is not held to the roles.
 	const pinned = new Set<string>();
 	for (const f of fs.readdirSync(mapDir).filter((n) => n.endsWith(".scss") && !n.endsWith("-spa.scss"))) {
@@ -308,7 +308,7 @@ describe("scss/map/_semantic-ramp.scss", () => {
 	}
 	// `createRequire` answers `any`; the annotation is where that stops.
 	const sass: SassCompiler = createRequire(import.meta.url)("sass");
-	const mapDir = path.join(import.meta.dirname, "..", "..", "carbon_frappe", "public", "scss", "map");
+	const mapDir = path.join(import.meta.dirname, "..", "..", "carbon_theme", "public", "scss", "map");
 	const compile = (call: string): string =>
 		sass.compileString(`@import "semantic-ramp"; x { ${call} }`, {
 			loadPaths: [mapDir],

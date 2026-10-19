@@ -65,8 +65,8 @@ jobs:
       - name: Make the patch
         id: diff
         run: |
-          git add -A -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
-            carbon_frappe/public/fonts
+          git add -A -- carbon_theme/public/js/generated carbon_theme/public/scss/generated \
+            carbon_theme/public/fonts
           mkdir -p "$RUNNER_TEMP/regen"
           git diff --cached --binary --no-renames > "$RUNNER_TEMP/regen/codegen.patch"
           if [ -s "$RUNNER_TEMP/regen/codegen.patch" ]; then
@@ -115,7 +115,7 @@ jobs:
           patch="$RUNNER_TEMP/regen/codegen.patch"
           git apply --numstat -z "$patch" | tr '\0' '\n' | cut -f3- > "$RUNNER_TEMP/regen/paths"
           if [ ! -s "$RUNNER_TEMP/regen/paths" ] || grep -v -E \
-            '^carbon_frappe/public/(js/generated|scss/generated|fonts)/.+$' \
+            '^carbon_theme/public/(js/generated|scss/generated|fonts)/.+$' \
             "$RUNNER_TEMP/regen/paths" | grep -q .; then
             echo "::error::the codegen patch touches paths outside the generated output"
             cat "$RUNNER_TEMP/regen/paths"

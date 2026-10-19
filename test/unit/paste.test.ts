@@ -9,7 +9,7 @@ import {
 	columnField,
 	parseClipboard,
 	planFill,
-} from "../../carbon_frappe/public/js/tables/datatable/paste.ts";
+} from "../../carbon_theme/public/js/tables/datatable/paste.ts";
 import type { DocField } from "frappe-types";
 
 const df = (fieldtype: DocField["fieldtype"], options?: string): DocField =>

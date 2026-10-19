@@ -4,7 +4,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { CARBON } from "../../carbon_frappe/public/js/tables/engine/classes.ts";
+import { CARBON } from "../../carbon_theme/public/js/tables/engine/classes.ts";
 import { auditGeneratedIcons } from "../../scripts/lib/audit-icons.ts";
 import {
 	CHROME_GLYPHS,

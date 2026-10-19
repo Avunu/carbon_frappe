@@ -10,7 +10,7 @@ import {
 	formatMessageTime,
 	readTimeZones,
 	serverDatetimeToEpoch,
-} from "../../../carbon_frappe/public/js/ai_chat/timestamps.ts";
+} from "../../../carbon_theme/public/js/ai_chat/timestamps.ts";
 
 const KOLKATA = "Asia/Kolkata";
 const NEW_YORK = "America/New_York";

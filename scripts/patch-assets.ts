@@ -7,7 +7,7 @@
  * This script runs as this app's `build` script — i.e. after `bench build` has
  * compiled all bundles and written assets.json — and deterministically points
  * the shadowed keys (desk/website/login/email .bundle.css and their
- * rtl_ variants) at carbon_frappe's compiled assets, then clears the
+ * rtl_ variants) at carbon_theme's compiled assets, then clears the
  * `assets_json` redis cache so the web workers re-read the file.
  *
  * Outside a bench (standalone checkout) it exits 0 without doing anything.
@@ -26,7 +26,7 @@ const benchRoot = process.env.FRAPPE_BENCH_ROOT || path.resolve(appRoot, "..", "
 const assetsDir = path.join(benchRoot, "sites", "assets");
 
 function log(msg: string): void {
-	console.log(`[carbon_frappe] ${msg}`);
+	console.log(`[carbon_theme] ${msg}`);
 }
 
 /**
@@ -59,7 +59,7 @@ for (const [jsonName, cssDir, keyPrefix] of [
 	["assets-rtl.json", "css-rtl", "rtl_"],
 ] satisfies readonly AssetsVariant[]) {
 	const jsonPath = path.join(assetsDir, jsonName);
-	const distDir = path.join(assetsDir, "carbon_frappe", "dist", cssDir);
+	const distDir = path.join(assetsDir, "carbon_theme", "dist", cssDir);
 	if (!fs.existsSync(jsonPath) || !fs.existsSync(distDir)) continue;
 
 	// A flat basename -> site-absolute-URL map. The values stay `unknown`:
@@ -124,7 +124,7 @@ for (const [jsonName, cssDir, keyPrefix] of [
 //
 // No rtl variant: that prefix is a CSS-only convention (esbuild.js:451-453).
 const jsAssetsPath = path.join(assetsDir, "assets.json");
-const jsDistDir = path.join(assetsDir, "carbon_frappe", "dist", "js");
+const jsDistDir = path.join(assetsDir, "carbon_theme", "dist", "js");
 if (fs.existsSync(jsAssetsPath) && fs.existsSync(jsDistDir)) {
 	const assets: unknown = JSON.parse(fs.readFileSync(jsAssetsPath, "utf-8"));
 	if (!isRecord(assets)) throw new Error(`${jsAssetsPath} is not a JSON object`);
@@ -207,7 +207,7 @@ if (patched) {
 		);
 	}
 } else {
-	log("assets.json already points at carbon_frappe bundles");
+	log("assets.json already points at carbon_theme bundles");
 }
 
 process.exit(0);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The one rule this repo adds on top of conventional commits: the major
-// never moves through a commit subject. `carbon_frappe@16.x` means "the
+// never moves through a commit subject. `carbon_theme@16.x` means "the
 // theme for frappe v16" (scripts/check-frappe-major.ts), so a `feat!:` or a
 // `BREAKING CHANGE:` footer — which would make release-please propose 17.0.0
 // — is refused at commit time, where it is free to fix.

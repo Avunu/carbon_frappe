@@ -8,24 +8,24 @@ import type {
 	FlowSessionAttachmentRow,
 	FlowSessionDoc,
 	FlowSessionMessageRow,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/docs.ts";
-import { pausedRun, sessionToMessages } from "../../../carbon_frappe/public/js/ai_chat/flow/history.ts";
-import { initialStreamState, reduceFlowEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/reduce.ts";
-import type { FlowEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
-import { attachmentChipsOf, fileFieldFor } from "../../../carbon_frappe/public/js/ai_chat/uploads.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/docs.ts";
+import { pausedRun, sessionToMessages } from "../../../carbon_theme/public/js/ai_chat/flow/history.ts";
+import { initialStreamState, reduceFlowEvent } from "../../../carbon_theme/public/js/ai_chat/flow/reduce.ts";
+import type { FlowEvent } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
+import { attachmentChipsOf, fileFieldFor } from "../../../carbon_theme/public/js/ai_chat/uploads.ts";
 import {
 	isFlowApprovalItem,
 	isInlineErrorItem,
 	isRequest,
 	isResponse,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import type {
 	GenericItem,
 	Message,
 	MessageRequest,
 	MessageResponse,
 	TextItem,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import {
 	CALL_CREATE,
 	CALL_DELETE,

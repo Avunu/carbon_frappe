@@ -64,7 +64,7 @@ const strict = process.argv.includes("--strict");
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const frappeRoot = process.env.FRAPPE_PATH || path.resolve(appRoot, "..", "frappe");
-const scssRoot = path.join(appRoot, "carbon_frappe", "public", "scss");
+const scssRoot = path.join(appRoot, "carbon_theme", "public", "scss");
 
 let failures = 0;
 const warn = (msg: string): void => {
@@ -159,7 +159,7 @@ if (!/\.cf-zone-g100\s*\{\s*@include\s+theme\.theme\(\s*themes\.\$g100\s*\)/.tes
 // of the shell's classes are written.
 {
 	const stylesRoot = path.join(appRoot, "node_modules", "@carbon", "styles", "scss");
-	const jsRoot = path.join(appRoot, "carbon_frappe", "public", "js");
+	const jsRoot = path.join(appRoot, "carbon_theme", "public", "js");
 	if (!fs.existsSync(stylesRoot)) {
 		warn("@carbon/styles is not installed — cannot verify Carbon class names");
 	} else {

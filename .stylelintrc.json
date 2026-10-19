@@ -1,6 +1,6 @@
 {
 	"extends": ["stylelint-config-standard-scss"],
-	"ignoreFiles": ["carbon_frappe/public/scss/generated/**", "carbon_frappe/public/dist/**"],
+	"ignoreFiles": ["carbon_theme/public/scss/generated/**", "carbon_theme/public/dist/**"],
 	"rules": {
 		"selector-class-pattern": null,
 		"no-descending-specificity": null,

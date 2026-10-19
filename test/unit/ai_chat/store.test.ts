@@ -3,7 +3,7 @@
 
 import { afterEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createChatStore } from "../../../carbon_frappe/public/js/ai_chat/store.ts";
+import { createChatStore } from "../../../carbon_theme/public/js/ai_chat/store.ts";
 import type {
 	ChatError,
 	ChatState,
@@ -12,8 +12,8 @@ import type {
 	MessageResponse,
 	MessageState,
 	PendingUpload,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
-import { isResponse } from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
+import { isResponse } from "../../../carbon_theme/public/js/ai_chat/types.ts";
 
 function request(id: string, text = id): MessageRequest {
 	return { id, input: { message_type: "text", text } };

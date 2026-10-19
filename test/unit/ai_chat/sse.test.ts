@@ -4,9 +4,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { getEventListeners } from "node:events";
-import { SSEFrameParser, readFlowEvents } from "../../../carbon_frappe/public/js/ai_chat/flow/sse.ts";
-import type { SSEFrame } from "../../../carbon_frappe/public/js/ai_chat/flow/sse.ts";
-import type { FlowEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
+import { SSEFrameParser, readFlowEvents } from "../../../carbon_theme/public/js/ai_chat/flow/sse.ts";
+import type { SSEFrame } from "../../../carbon_theme/public/js/ai_chat/flow/sse.ts";
+import type { FlowEvent } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
 import {
 	ERROR_AFTER_DONE,
 	ERROR_BEFORE_TEXT,

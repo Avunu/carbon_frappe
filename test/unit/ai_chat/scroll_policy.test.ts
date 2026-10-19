@@ -21,7 +21,7 @@ import {
 	scrollTopAfterPrepend,
 	spacerHeightFor,
 	userScrolledAway,
-} from "../../../carbon_frappe/public/js/ai_chat/scroll_policy.ts";
+} from "../../../carbon_theme/public/js/ai_chat/scroll_policy.ts";
 
 describe("constants", () => {
 	it("keep the thresholds the upstream controller documents", () => {

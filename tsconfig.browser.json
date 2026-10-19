@@ -7,10 +7,10 @@
 		"allowImportingTsExtensions": true
 	},
 	"include": [
-		"carbon_frappe/public/js/**/*.ts",
-		"carbon_frappe/public/js/**/*.d.ts",
+		"carbon_theme/public/js/**/*.ts",
+		"carbon_theme/public/js/**/*.d.ts",
 		"types/**/*.d.ts",
 		"dev/**/*.ts"
 	],
-	"exclude": ["node_modules", "carbon_frappe/public/dist"]
+	"exclude": ["node_modules", "carbon_theme/public/dist"]
 }

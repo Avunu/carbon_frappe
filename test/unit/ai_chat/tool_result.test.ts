@@ -3,7 +3,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { classifyToolResult, toolError } from "../../../carbon_frappe/public/js/ai_chat/flow/tool_result.ts";
+import { classifyToolResult, toolError } from "../../../carbon_theme/public/js/ai_chat/flow/tool_result.ts";
 
 // Shapes from flow's tools/builtins.py: run_action reports successes under `results`
 // (create/update/delete use created/updated/deleted) and omits `failures` when empty.

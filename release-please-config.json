@@ -7,12 +7,12 @@
 	"packages": {
 		".": {
 			"release-type": "node",
-			"package-name": "carbon-frappe",
+			"package-name": "carbon-theme",
 			"changelog-path": "CHANGELOG.md",
 			"extra-files": [
 				{
 					"type": "generic",
-					"path": "carbon_frappe/__init__.py"
+					"path": "carbon_theme/__init__.py"
 				}
 			]
 		}

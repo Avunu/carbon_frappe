@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# carbon_frappe's own steps of `ci / typecheck` (`yarn -s ci:typecheck`, run by
+# carbon_theme's own steps of `ci / typecheck` (`yarn -s ci:typecheck`, run by
 # `frappe-nix gate typecheck` after the managed steps):
 #
 #   check:major   package.json's major is the frappe major the flake pins
@@ -36,14 +36,14 @@ step() {
 
 generated_current() {
 	yarn -s codegen
-	git diff --exit-code -- carbon_frappe/public/js/generated carbon_frappe/public/scss/generated \
-		carbon_frappe/public/fonts || {
+	git diff --exit-code -- carbon_theme/public/js/generated carbon_theme/public/scss/generated \
+		carbon_theme/public/fonts || {
 		echo "yarn codegen changed committed files: run it and commit the result" >&2
 		return 1
 	}
 	local untracked
-	untracked="$(git ls-files --others --exclude-standard -- carbon_frappe/public/js/generated \
-		carbon_frappe/public/scss/generated carbon_frappe/public/fonts)"
+	untracked="$(git ls-files --others --exclude-standard -- carbon_theme/public/js/generated \
+		carbon_theme/public/scss/generated carbon_theme/public/fonts)"
 	if [ -n "$untracked" ]; then
 		printf 'yarn codegen wrote untracked files:\n%s\n' "$untracked" >&2
 		return 1

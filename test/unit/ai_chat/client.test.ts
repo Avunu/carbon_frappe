@@ -27,9 +27,9 @@ import {
 	type UploadProgress,
 	type UploadReply,
 	type XhrLike,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/client.ts";
-import { createFlowClient } from "../../../carbon_frappe/public/js/ai_chat/controller.ts";
-import type { FlowEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/client.ts";
+import { createFlowClient } from "../../../carbon_theme/public/js/ai_chat/controller.ts";
+import type { FlowEvent } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
 import {
 	ANSWERS_APPROVE_ALL,
 	ANSWERS_REDIRECT,

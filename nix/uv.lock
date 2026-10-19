@@ -4,8 +4,8 @@ requires-python = "==3.14.*"
 
 [manifest]
 members = [
-    "carbon-frappe",
-    "carbon-frappe-bench",
+    "carbon-theme",
+    "carbon-theme-bench",
     "erpnext",
     "frappe",
     "hrms",
@@ -191,11 +191,11 @@ wheels = [
 ]
 
 [[package]]
-name = "carbon-frappe"
-source = { editable = "apps/carbon_frappe" }
+name = "carbon-theme"
+source = { editable = "apps/carbon_theme" }
 
 [[package]]
-name = "carbon-frappe-bench"
+name = "carbon-theme-bench"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

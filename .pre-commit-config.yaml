@@ -10,7 +10,7 @@ default_stages: [pre-commit]
 default_language_version:
   python: python3.14
 fail_fast: false
-exclude: ^(nix/|\.frappe-nix/|docs-site/|CHANGELOG\.md$|types/doctypes\.d\.ts$|carbon_frappe/public/js/generated/.*$|carbon_frappe/public/scss/generated/.*$|carbon_frappe/public/fonts/.*$)
+exclude: ^(nix/|\.frappe-nix/|docs-site/|CHANGELOG\.md$|types/doctypes\.d\.ts$|carbon_theme/public/js/generated/.*$|carbon_theme/public/scss/generated/.*$|carbon_theme/public/fonts/.*$)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -70,7 +70,7 @@ repos:
       - id: stylelint
         name: stylelint
         language: system
-        entry: yarn -s stylelint "carbon_frappe/public/**/*.scss"
+        entry: yarn -s stylelint "carbon_theme/public/**/*.scss"
         pass_filenames: false
         types: [scss]
       - id: zizmor
@@ -141,11 +141,11 @@ repos:
         args: ["."]
       - id: validate_doctype_python_types
       - id: validate_copyright
-        args: [--app, carbon_frappe]
+        args: [--app, carbon_theme]
         # Never stamp a managed file (its header is line 1, or it is the profile's), or a generated one (its
         # freshness diff would fail), nor a script: a stamp above `#!/usr/bin/env node` breaks it (scripts/ and
         # ci/ hold the node tools).
-        exclude: ^(docs/|docs-site/|scripts/|ci/|marketplace/shots\.d\.ts$|types/doctypes\.d\.ts$|tsconfig[^/]*\.json$|carbon_frappe/public/js/generated/.*$|carbon_frappe/public/scss/generated/.*$|carbon_frappe/public/fonts/.*$)
+        exclude: ^(docs/|docs-site/|scripts/|ci/|marketplace/shots\.d\.ts$|types/doctypes\.d\.ts$|tsconfig[^/]*\.json$|carbon_theme/public/js/generated/.*$|carbon_theme/public/scss/generated/.*$|carbon_theme/public/fonts/.*$)
         exclude_types: [executable]
       # Bench-aware: silent no-ops outside a bench. CI runs them in a mini-bench (`frappe-nix minibench`).
       - id: validate_customizations
@@ -157,7 +157,7 @@ repos:
         stages: [manual]
 
   # frappe-nix:local-begin repos
-  # carbon_frappe's own hooks: tsc over the project references, the unit tests, the docs
+  # carbon_theme's own hooks: tsc over the project references, the unit tests, the docs
   # copy of the README, and no major bump through a commit subject (which, unlike the
   # managed frappe-nix-commit-msg hook, also runs outside the dev shell).
   - repo: local
@@ -173,7 +173,7 @@ repos:
         language: system
         entry: yarn -s test:unit
         pass_filenames: false
-        files: ^(carbon_frappe/public/js/|scripts/|test/unit/|flake\.lock$)
+        files: ^(carbon_theme/public/js/|scripts/|test/unit/|flake\.lock$)
       # The documentation site publishes docs/README.md; README.md is the one
       # that is edited. Copy it over: `cp README.md docs/README.md`.
       - id: docs-readme

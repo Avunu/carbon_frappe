@@ -99,7 +99,7 @@ export interface MirrorSpec {
  * diffing it would report every import frappe's bundle makes as "missing".
  */
 export function diffMirror(frappeBundle: string, ours: string, spec: MirrorSpec): string[] {
-	const ourImports = new Set(bundleImports(ours, "carbon_frappe/public/scss"));
+	const ourImports = new Set(bundleImports(ours, "carbon_theme/public/scss"));
 	if (ourImports.has(`${spec.frappeEntryDir}/${spec.bundle}.bundle`)) return [];
 	const missing: string[] = [];
 	for (const imp of bundleImports(frappeBundle, spec.frappeEntryDir)) {
@@ -151,7 +151,7 @@ export function sassImportCandidates(target: string): string[] {
  * creates.
  */
 export function frappeImportTarget(imp: string): string | undefined {
-	if (imp.startsWith("carbon_frappe/")) return undefined;
+	if (imp.startsWith("carbon_theme/")) return undefined;
 	if (imp.startsWith("frappe/public/node_modules/")) {
 		return `node_modules/${imp.slice("frappe/public/node_modules/".length)}`;
 	}
@@ -166,7 +166,7 @@ export function frappeImportTarget(imp: string): string | undefined {
  */
 export function missingFrappeImports(ours: string, isFile: (fromFrappeRoot: string) => boolean): string[] {
 	const missing: string[] = [];
-	for (const imp of bundleImports(ours, "carbon_frappe/public/scss")) {
+	for (const imp of bundleImports(ours, "carbon_theme/public/scss")) {
 		const target = frappeImportTarget(imp);
 		if (target !== undefined && !sassImportCandidates(target).some(isFile)) missing.push(imp);
 	}

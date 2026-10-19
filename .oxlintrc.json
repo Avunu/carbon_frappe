@@ -28,15 +28,15 @@
 		"unicorn/no-array-sort": "off"
 	},
 	"ignorePatterns": [
-		"carbon_frappe/public/dist/**",
+		"carbon_theme/public/dist/**",
 		".frappe-nix/**",
 		".dev-dist/**",
 		"nix/**",
 		"docs-site/**",
 		"types/doctypes.d.ts",
-		"carbon_frappe/public/js/generated/**",
-		"carbon_frappe/public/scss/generated/**",
-		"carbon_frappe/public/fonts/**"
+		"carbon_theme/public/js/generated/**",
+		"carbon_theme/public/scss/generated/**",
+		"carbon_theme/public/fonts/**"
 	],
 	"overrides": [
 		{
@@ -51,13 +51,13 @@
 			}
 		},
 		{
-			"files": ["carbon_frappe/public/js/*.bundle.ts", "carbon_frappe/public/js/*.bundle.js"],
+			"files": ["carbon_theme/public/js/*.bundle.ts", "carbon_theme/public/js/*.bundle.js"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}
 		},
 		{
-			"files": ["carbon_frappe/carbon_frappe/doctype/carbon_settings/carbon_settings.js"],
+			"files": ["carbon_theme/carbon_frappe/doctype/carbon_settings/carbon_settings.js"],
 			"globals": {
 				"frappe": "readonly",
 				"__": "readonly",
@@ -72,7 +72,7 @@
 			}
 		},
 		{
-			"files": ["carbon_frappe/public/js/ai_chat/register.ts", "carbon_frappe/public/js/ai_chat/entry.ts"],
+			"files": ["carbon_theme/public/js/ai_chat/register.ts", "carbon_theme/public/js/ai_chat/entry.ts"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}

@@ -58,7 +58,7 @@ wheels = [
 ]
 
 [[package]]
-name = "carbon-frappe-tools"
+name = "carbon-theme-tools"
 version = "0"
 source = { virtual = "." }
 dependencies = [

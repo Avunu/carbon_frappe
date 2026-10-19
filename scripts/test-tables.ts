@@ -17,7 +17,7 @@
  *   node scripts/test-tables.ts grid list      # named suites
  *   CF_SITE_URL=http://localhost:8000 node scripts/test-tables.ts
  *
- * Requires: a running bench with carbon_frappe installed and built, and
+ * Requires: a running bench with carbon_theme installed and built, and
  * `chromium` on PATH. Screenshots land in .dev-dist/screenshots/.
  */
 import { spawn } from "node:child_process";

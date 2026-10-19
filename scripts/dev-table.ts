@@ -94,7 +94,7 @@ const scss = `
 [data-theme="dark"] { @include theme.theme(themes.$g100); }
 :root { --carbon-border-subtle: var(--cds-border-subtle-01); }
 [data-theme="dark"] { --carbon-border-subtle: var(--cds-border-subtle-00); }
-@import "carbon_frappe/public/scss/desk/carbon-table";
+@import "carbon_theme/public/scss/desk/carbon-table";
 html, body { margin: 0; height: 100%; font-family: "IBM Plex Sans", system-ui, sans-serif;
   background: var(--cds-background); color: var(--cds-text-primary); }
 #host { height: calc(100vh - 60px); }

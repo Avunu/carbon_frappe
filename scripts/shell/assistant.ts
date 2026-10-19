@@ -18,7 +18,7 @@
 //   CF_AI_ONLY=AI-28,AI-29 CF_SITE_URL=... node scripts/shell/assistant.ts       just those cases
 //   CF_AI_TRACE=1 ...                                                             each assertion as it happens
 //
-// Requires a bench with carbon_frappe and flow built, `yarn build:chat` run (case AI-01 says
+// Requires a bench with carbon_theme and flow built, `yarn build:chat` run (case AI-01 says
 // so when it was not), and `chromium` on PATH. Without flow installed the suite asserts the
 // negative of AI-01 and stops. Screenshots land in .dev-dist/screenshots/.
 import fs from "node:fs";
@@ -1766,7 +1766,7 @@ async function runSuite(loadMark: number): Promise<void> {
 	}
 
 	// From Node, not the page: a request the page makes is a request AI-02 would count.
-	const manifest = await fetch(`${BASE}/assets/carbon_frappe/dist/ai_chat/manifest.json`);
+	const manifest = await fetch(`${BASE}/assets/carbon_theme/dist/ai_chat/manifest.json`);
 	if (!manifest.ok) {
 		fail(
 			"AI-01",

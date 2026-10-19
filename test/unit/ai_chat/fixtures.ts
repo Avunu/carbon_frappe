@@ -19,12 +19,12 @@ import type {
 	TextEvent,
 	ToolEndedEvent,
 	ToolStartedEvent,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
 import type {
 	FlowRunDoc,
 	FlowSessionDoc,
 	FlowSessionMessageRow,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/docs.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/docs.ts";
 
 // -- Python-compatible JSON ---------------------------------------------------
 

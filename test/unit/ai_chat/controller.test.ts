@@ -3,44 +3,44 @@
 
 import { afterEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { STREAM_KEY, createController } from "../../../carbon_frappe/public/js/ai_chat/controller.ts";
+import { STREAM_KEY, createController } from "../../../carbon_theme/public/js/ai_chat/controller.ts";
 import type {
 	Controller,
 	ControllerDeps,
 	ControllerStorage,
 	FlowClient,
-} from "../../../carbon_frappe/public/js/ai_chat/controller.ts";
-import { FlowHttpError } from "../../../carbon_frappe/public/js/ai_chat/flow/client.ts";
+} from "../../../carbon_theme/public/js/ai_chat/controller.ts";
+import { FlowHttpError } from "../../../carbon_theme/public/js/ai_chat/flow/client.ts";
 import type {
 	AttachedFile,
 	StartRunParams,
 	UploadOptions,
 	UploadedFile,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/client.ts";
-import type { FlowEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/client.ts";
+import type { FlowEvent } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
 import type {
 	FlowRunDoc,
 	FlowSessionDoc,
 	FlowSessionSummary,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/docs.ts";
-import { sessionToMessages } from "../../../carbon_frappe/public/js/ai_chat/flow/history.ts";
-import { fileFieldFor } from "../../../carbon_frappe/public/js/ai_chat/uploads.ts";
-import type { UploadLimits } from "../../../carbon_frappe/public/js/ai_chat/uploads.ts";
-import { pendingApproval } from "../../../carbon_frappe/public/js/ai_chat/pending.ts";
-import { createChatStore } from "../../../carbon_frappe/public/js/ai_chat/store.ts";
-import type { ChatStore } from "../../../carbon_frappe/public/js/ai_chat/store.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/docs.ts";
+import { sessionToMessages } from "../../../carbon_theme/public/js/ai_chat/flow/history.ts";
+import { fileFieldFor } from "../../../carbon_theme/public/js/ai_chat/uploads.ts";
+import type { UploadLimits } from "../../../carbon_theme/public/js/ai_chat/uploads.ts";
+import { pendingApproval } from "../../../carbon_theme/public/js/ai_chat/pending.ts";
+import { createChatStore } from "../../../carbon_theme/public/js/ai_chat/store.ts";
+import type { ChatStore } from "../../../carbon_theme/public/js/ai_chat/store.ts";
 import type {
 	ChatStatus,
 	FlowApprovalItem,
 	MessageResponse,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import {
 	isFlowApprovalItem,
 	isInlineErrorItem,
 	isRequest,
 	isResponse,
 	isTextItem,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import {
 	ANSWERS_APPROVE_ALL,
 	ANSWERS_DENY,

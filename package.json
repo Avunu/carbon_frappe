@@ -1,5 +1,5 @@
 {
-	"name": "carbon-frappe",
+	"name": "carbon-theme",
 	"version": "16.3.0",
 	"private": true,
 	"description": "Carbon Design System theme for Frappe",
@@ -9,15 +9,15 @@
 		"erpnext",
 		"frappe"
 	],
-	"homepage": "https://github.com/Avunu/carbon_frappe#readme",
+	"homepage": "https://github.com/Avunu/carbon_theme#readme",
 	"bugs": {
-		"url": "https://github.com/Avunu/carbon_frappe/issues"
+		"url": "https://github.com/Avunu/carbon_theme/issues"
 	},
 	"license": "MIT",
 	"author": "Avunu LLC",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Avunu/carbon_frappe.git"
+		"url": "git+https://github.com/Avunu/carbon_theme.git"
 	},
 	"type": "module",
 	"scripts": {
@@ -27,7 +27,7 @@
 		"codegen": "node scripts/sync-fonts.ts && node scripts/generate-chart-palettes.ts && node scripts/generate-icons.ts",
 		"audit:drift": "node scripts/audit-tokens.ts --strict && node scripts/audit-markup.ts --strict && node scripts/build-ai-chat.ts --check",
 		"compile": "node scripts/dev-compile.ts",
-		"lint:css": "stylelint \"carbon_frappe/public/**/*.scss\"",
+		"lint:css": "stylelint \"carbon_theme/public/**/*.scss\"",
 		"typecheck": "tsc --build tsconfig.json",
 		"format": "oxfmt",
 		"format:check": "oxfmt --check",
@@ -36,7 +36,7 @@
 		"typecheck:py": "uv run --frozen --project tools ty check --python \"${FRAPPE_BENCH_ROOT:-.frappe-nix/bench}/env\"",
 		"check:major": "node scripts/check-frappe-major.ts",
 		"ci:typecheck": "bash scripts/ci-typecheck.sh",
-		"test:unit": "node --test --experimental-test-coverage --test-coverage-include='carbon_frappe/public/js/**' --test-coverage-lines=50 'test/unit/**/*.test.ts'",
+		"test:unit": "node --test --experimental-test-coverage --test-coverage-include='carbon_theme/public/js/**' --test-coverage-lines=50 'test/unit/**/*.test.ts'",
 		"test:tables": "node scripts/test-tables.ts",
 		"test:shell": "node scripts/test-shell.ts",
 		"check": "yarn -s format:check && yarn -s lint && yarn -s lint:css && yarn -s typecheck && yarn -s test:unit",

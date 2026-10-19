@@ -17,7 +17,7 @@ indent_style = space
 indent_size = 2
 
 # frappe's exporter: 1-space JSON, no final newline, for everything under the package
-[carbon_frappe/**.json]
+[carbon_theme/**.json]
 indent_style = space
 indent_size = 1
 insert_final_newline = false
