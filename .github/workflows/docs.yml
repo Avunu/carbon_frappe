@@ -21,6 +21,6 @@ jobs:
   docs:
     permissions:
       contents: read # checkout
-    uses: Avunu/site-docs/.github/workflows/check-docs.yml@232c6b6116cbab524078044fa3a613d88e2cd6c3 # 2026-10-16
+    uses: Avunu/site-docs/.github/workflows/check-docs.yml@8d0c21cf479f4be762b2df38714226edb9c57c45 # 2026-10-16
     with:
       path: carbon-theme
