@@ -16,7 +16,7 @@
  *  3. Mirrored literals — the frappe declarations we deliberately override
  *     still exist, proving the mechanism (not just the value) is unchanged.
  *  4. Asset shadow — sites/assets/assets.json still points the shadowed
- *     bundles at carbon_frappe. A partial `bench build --apps frappe`, and
+ *     bundles at carbon_theme. A partial `bench build --apps frappe`, and
  *     `bench watch` rebuilding frappe mid-session, both re-claim these keys,
  *     which serves stock frappe CSS with no other symptom.
  *  4b. This app's own `*.bundle.js` keys still resolve to a file that exists.
@@ -134,7 +134,7 @@ if (fs.existsSync(assetsPath)) {
 		if (typeof v !== "string") {
 			throw new TypeError(`assets.json: ${name}.bundle.css is ${typeof v}, not a URL string`);
 		}
-		return !v.includes("/carbon_frappe/");
+		return !v.includes("/carbon_theme/");
 	});
 	if (stolen.length) {
 		warn(
@@ -182,7 +182,7 @@ if (fs.existsSync(assetsPath)) {
 // shows its "could not be loaded" notice). A tree with no build at all is normal for a
 // fresh checkout and CI, so that case is a note, not a finding; a manifest that
 // names something absent is one.
-const chatDist = path.join(appRoot, "carbon_frappe", "public", "dist", "ai_chat");
+const chatDist = path.join(appRoot, "carbon_theme", "public", "dist", "ai_chat");
 const chatManifestPath = path.join(chatDist, "manifest.json");
 if (!fs.existsSync(chatDist)) {
 	console.log(

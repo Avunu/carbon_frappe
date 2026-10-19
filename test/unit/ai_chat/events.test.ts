@@ -8,7 +8,7 @@ import {
 	parseFlowEvent,
 	parseFlowQuestion,
 	parseFlowQuestions,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
 import {
 	isFlowRole,
 	isFlowRunDoc,
@@ -20,12 +20,12 @@ import {
 	parseFlowSessionDoc,
 	parseFlowSessionSummaries,
 	parseToolCalls,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/docs.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/docs.ts";
 import {
 	classifyToolResult,
 	parseToolContent,
 	toolError,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/tool_result.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/tool_result.ts";
 import {
 	CALL_CREATE,
 	CALL_DELETE,

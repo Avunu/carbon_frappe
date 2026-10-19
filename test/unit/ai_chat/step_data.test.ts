@@ -3,7 +3,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { fenced, stepDataMarkdown } from "../../../carbon_frappe/public/js/ai_chat/step_data.ts";
+import { fenced, stepDataMarkdown } from "../../../carbon_theme/public/js/ai_chat/step_data.ts";
 
 describe("fenced", () => {
 	it("wraps code in a three-backtick fence with the language", () => {

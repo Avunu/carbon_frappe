@@ -6,6 +6,6 @@
 		"types": ["node", "frappe-types/global"],
 		"allowImportingTsExtensions": true
 	},
-	"include": ["test/**/*.ts", "carbon_frappe/public/js/**/*.ts", "scripts/lib/**/*.ts"],
-	"exclude": ["node_modules", "carbon_frappe/public/dist"]
+	"include": ["test/**/*.ts", "carbon_theme/public/js/**/*.ts", "scripts/lib/**/*.ts"],
+	"exclude": ["node_modules", "carbon_theme/public/dist"]
 }

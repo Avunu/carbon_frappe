@@ -11,13 +11,13 @@ import {
 	onThumb,
 	restoredRating,
 	settle,
-} from "../../../carbon_frappe/public/js/ai_chat/feedback_state.ts";
-import type { FeedbackState } from "../../../carbon_frappe/public/js/ai_chat/feedback_state.ts";
+} from "../../../carbon_theme/public/js/ai_chat/feedback_state.ts";
+import type { FeedbackState } from "../../../carbon_theme/public/js/ai_chat/feedback_state.ts";
 import type {
 	GenericItem,
 	GenericItemMessageOptions,
 	MessageResponse,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 
 const none = initialFeedbackState(null);
 const up = initialFeedbackState("Up");

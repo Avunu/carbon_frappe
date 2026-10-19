@@ -11,7 +11,7 @@ import {
 	estimateWidth,
 	metaWidth,
 	textOf,
-} from "../../carbon_frappe/public/js/tables/widths.ts";
+} from "../../carbon_theme/public/js/tables/widths.ts";
 
 describe("textOf", () => {
 	it("drops tags and counts an entity as one character", () => {

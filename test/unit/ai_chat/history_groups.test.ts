@@ -7,10 +7,10 @@ import {
 	bucketOf,
 	filterItems,
 	groupByDate,
-} from "../../../carbon_frappe/public/js/ai_chat/history_groups.ts";
-import type { HistoryItem } from "../../../carbon_frappe/public/js/ai_chat/history_model.ts";
-import type { Translate } from "../../../carbon_frappe/public/js/ai_chat/i18n.ts";
-import { identityTranslate } from "../../../carbon_frappe/public/js/ai_chat/i18n.ts";
+} from "../../../carbon_theme/public/js/ai_chat/history_groups.ts";
+import type { HistoryItem } from "../../../carbon_theme/public/js/ai_chat/history_model.ts";
+import type { Translate } from "../../../carbon_theme/public/js/ai_chat/i18n.ts";
+import { identityTranslate } from "../../../carbon_theme/public/js/ai_chat/i18n.ts";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;

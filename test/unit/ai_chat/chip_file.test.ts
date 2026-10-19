@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { THUMBNAIL_MAX_BYTES, chipFile } from "../../../carbon_frappe/public/js/ai_chat/view/attachments.ts";
+import { THUMBNAIL_MAX_BYTES, chipFile } from "../../../carbon_theme/public/js/ai_chat/view/attachments.ts";
 
 function file(size: number, type: string, name = "photo.jpg"): File {
 	return new File([new Uint8Array(size)], name, { type });

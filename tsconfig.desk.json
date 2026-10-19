@@ -4,16 +4,16 @@
 	"compilerOptions": {
 		"composite": true
 	},
-	"include": ["carbon_frappe/**/*.js", "types/doctypes.d.ts", "types/carbon_frappe.augment.d.ts"],
+	"include": ["carbon_theme/**/*.js", "types/doctypes.d.ts", "types/carbon_theme.augment.d.ts"],
 	"exclude": [
 		"node_modules",
 		"**/*.bundle.js",
 		"**/public/dist/**",
-		"carbon_frappe/www/**",
+		"carbon_theme/www/**",
 		"**/web_form/**",
-		"carbon_frappe/templates/**",
-		"carbon_frappe/public/js/generated/**",
-		"carbon_frappe/public/scss/generated/**",
-		"carbon_frappe/public/fonts/**"
+		"carbon_theme/templates/**",
+		"carbon_theme/public/js/generated/**",
+		"carbon_theme/public/scss/generated/**",
+		"carbon_theme/public/fonts/**"
 	]
 }

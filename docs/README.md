@@ -1,7 +1,7 @@
 <!-- Copyright (c) 2026, Avunu LLC and contributors
 For license information, please see license.txt-->
 
-# Carbon Frappe
+# Carbon Theme for Frappe
 
 The [IBM Carbon](https://carbondesignsystem.com) (v11) design-language theme for [Frappe](https://frappeframework.com) and ERPNext. Every surface — desk, website/portal, login, email, charts, and frappe-ui/Espresso components — is restyled to look as though it was designed with Carbon: IBM Plex type, square geometry, Carbon color tokens, 2px focus rings, the g100 UI Shell header, and Carbon's categorical chart palettes, all sourced from the official `@carbon/*` npm packages.
 
@@ -13,7 +13,7 @@ Three mechanisms keep the shadow deterministic:
 
 1.  **Name collision** — this app builds after frappe, so its entries win the assets.json merge.
 2.  **`scripts/patch-assets.ts`** — runs as the app's `build` script after every full `bench build`; re-points the shadowed keys (and `rtl_` variants) at this app's compiled assets and clears the redis `assets_json` cache.
-3.  **`after_migrate` hook** (`carbon_frappe.build.patch_assets`) — re-asserts the shadow after migrations, healing partial `bench build --apps frappe` runs.
+3.  **`after_migrate` hook** (`carbon_theme.build.patch_assets`) — re-asserts the shadow after migrations, healing partial `bench build --apps frappe` runs.
 
 Inside each bundle, the styling itself is a three-layer transposition:
 
@@ -145,8 +145,8 @@ Compatibility is the point. Nothing here alters a public frappe API:
 ## Install
 
 ```sh
-bench get-app https://github.com/Avunu/carbon_frappe
-bench --site <site> install-app carbon_frappe
+bench get-app https://github.com/Avunu/carbon_theme
+bench --site <site> install-app carbon_theme
 bench build
 ```
 
@@ -154,17 +154,17 @@ bench build
 
 ### Verifying
 
-- `sites/assets/assets.json` → `"desk.bundle.css"` should point at `/assets/carbon_frappe/dist/css/…`
+- `sites/assets/assets.json` → `"desk.bundle.css"` should point at `/assets/carbon_theme/dist/css/…`
 - DevTools on `/app`: `--cds-background` present on `:root`; `--bg-color` resolves through the `--cds-*` chain; toggling the theme (Settings → Toggle Theme) flips token values and `color-scheme`.
-- Fonts: IBM Plex woff2 requests from `/assets/carbon_frappe/fonts/`; no Inter requests.
-- With flow installed: `/assets/carbon_frappe/dist/ai_chat/manifest.json` answers 200 and names an `entry.<hash>.js` and a `chat.<hash>.css` that exist next to it (`yarn audit:drift` checks the same, and fails when the build on disk is older than its sources). It is requested only when the assistant panel is first opened.
+- Fonts: IBM Plex woff2 requests from `/assets/carbon_theme/fonts/`; no Inter requests.
+- With flow installed: `/assets/carbon_theme/dist/ai_chat/manifest.json` answers 200 and names an `entry.<hash>.js` and a `chat.<hash>.css` that exist next to it (`yarn audit:drift` checks the same, and fails when the build on disk is older than its sources). It is requested only when the assistant panel is first opened.
 
 ## Caveats (read before deploying)
 
 - **Bench-global**: assets.json is shared by every site on the bench, so the theme applies to sites that don't have the app installed. Run carbon\_frappe on a dedicated bench.
 - **Partial builds**: `bench build --apps frappe` re-points the shadowed keys at frappe's assets until the next full `bench build` or `bench migrate`. Prefer plain `bench build`.
 - **`bench watch`**: rebuilds of frappe's own bundles re-claim the keys mid-session. This is the most common way to lose the theme, and it has **no symptom other than stock frappe styling reappearing** — nothing errors. `yarn audit:drift` now checks for it explicitly; the fix is `node scripts/patch-assets.ts`.
-- **TypeScript bundle entries**: the four `carbon_*.bundle.ts` entry points are compiled by frappe's own esbuild, but frappe keys `assets.json` by the _entry_ basename (`esbuild.js:450`), so a build writes `carbon_desk.bundle.**ts**` while `hooks.py` and `include_script` look up `carbon_desk.bundle.**js**` with no extension fallback. The `.js` key then keeps an older build's hash and the desk serves a swept or stale bundle — silently. `scripts/patch-assets.ts` repairs it on every `bench build`, `carbon_frappe/build.py` repairs it on migrate/install, and `yarn audit:drift` detects it; but **`bench watch` runs none of those**, so re-run `node scripts/patch-assets.ts` after a watch session.
+- **TypeScript bundle entries**: the four `carbon_*.bundle.ts` entry points are compiled by frappe's own esbuild, but frappe keys `assets.json` by the _entry_ basename (`esbuild.js:450`), so a build writes `carbon_desk.bundle.**ts**` while `hooks.py` and `include_script` look up `carbon_desk.bundle.**js**` with no extension fallback. The `.js` key then keeps an older build's hash and the desk serves a swept or stale bundle — silently. `scripts/patch-assets.ts` repairs it on every `bench build`, `carbon_theme/build.py` repairs it on migrate/install, and `yarn audit:drift` detects it; but **`bench watch` runs none of those**, so re-run `node scripts/patch-assets.ts` after a watch session.
 - The shadowing relies on frappe's (undocumented) basename keying and merge semantics of `assets.json`. The orthodox fallback — `app_include_css`/`web_include_css` hooks — remains structurally compatible with this app's bundles if the shadow mechanism ever breaks.
 
 ### Drift guards
@@ -297,13 +297,13 @@ Bump the exact-pinned `@carbon/*` versions, then `yarn install && yarn codegen &
 Releases are cut by [release-please](https://github.com/googleapis/release-please). Nobody edits the version by hand, and nobody pushes to `version-16`.
 
 1. Land conventional commits on `develop` (`fix:` → patch, `feat:` → minor; the other types are left out of the changelog). Pull requests are squash-merged, so the title is the commit subject and is linted as one.
-2. release-please keeps an open **release pull request** against `develop` with the next version and the accumulated changelog. Merging it _is_ the release: `release.yml` tags `v16.x.y`, cuts the GitHub release, and fast-forwards **`version-16`** — the production branch, what `bench get-app https://github.com/Avunu/carbon_frappe --branch version-16` installs — to the release commit. `develop` carries `CHANGELOG.md` and the version; `version-16` is always exactly the latest release.
+2. release-please keeps an open **release pull request** against `develop` with the next version and the accumulated changelog. Merging it _is_ the release: `release.yml` tags `v16.x.y`, cuts the GitHub release, and fast-forwards **`version-16`** — the production branch, what `bench get-app https://github.com/Avunu/carbon_theme --branch version-16` installs — to the release commit. `develop` carries `CHANGELOG.md` and the version; `version-16` is always exactly the latest release.
 3. There is no artifact to publish: a frappe app installs from git, and `bench build` compiles the assets on the target.
 
-**The major never moves on its own.** `carbon_frappe@16.x.y` means "the theme for frappe v16" — the major is the frappe major, the way erpnext, hrms and frappe-types are versioned — so a `feat!:` subject or a `BREAKING CHANGE:` footer proposing 17.0.0 is a bug, not a release. The commit-msg hook and `ci / pr-policy` refuse both; `release.yml` runs CI on the release pull request, where `ci / typecheck`'s `yarn check:major` checks the version release-please actually proposes, and refuses to move `version-16` to a tag outside `v16.`; `yarn check:major` runs on every push and also cross-checks `frappe.major` in `package.json` against the flake's frappe pin. Breaking changes ship as `feat:` on the line they belong to. Moving to frappe v17 is a new `version-17` branch: point the flake input at `version-17`, set `frappe.major`/`frappe.branch`, and land a `Release-As: 17.0.0` commit. `scripts/check-frappe-major.ts` has the full rationale and the recovery for a stray `!` (an empty commit with a `Release-As:` footer).
+**The major never moves on its own.** `carbon_theme@16.x.y` means "the theme for frappe v16" — the major is the frappe major, the way erpnext, hrms and frappe-types are versioned — so a `feat!:` subject or a `BREAKING CHANGE:` footer proposing 17.0.0 is a bug, not a release. The commit-msg hook and `ci / pr-policy` refuse both; `release.yml` runs CI on the release pull request, where `ci / typecheck`'s `yarn check:major` checks the version release-please actually proposes, and refuses to move `version-16` to a tag outside `v16.`; `yarn check:major` runs on every push and also cross-checks `frappe.major` in `package.json` against the flake's frappe pin. Breaking changes ship as `feat:` on the line they belong to. Moving to frappe v17 is a new `version-17` branch: point the flake input at `version-17`, set `frappe.major`/`frappe.branch`, and land a `Release-As: 17.0.0` commit. `scripts/check-frappe-major.ts` has the full rationale and the recovery for a stray `!` (an empty commit with a `Release-As:` footer).
 
 Repository settings this relies on are what `frappe-nix repo doctor` checks ([GitHub settings](https://github.com/Avunu/frappe-nix/blob/main/docs/app-standards/github.md)): "Allow auto-merge" and "Allow GitHub Actions to create and approve pull requests" ON; `develop` requiring `ci / pr-policy`, `ci / lint`, `ci / typecheck`, `ci / test` and `ci / marketplace`; `version-16` moved only by the release automation.
 
 ## License
 
-MIT — see `license.txt`. IBM Plex is vendored under the OFL (see `carbon_frappe/public/fonts/LICENSE-*.txt`).
+MIT — see `license.txt`. IBM Plex is vendored under the OFL (see `carbon_theme/public/fonts/LICENSE-*.txt`).

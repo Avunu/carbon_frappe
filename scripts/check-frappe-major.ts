@@ -6,7 +6,7 @@
 //   node scripts/check-frappe-major.ts                    (the prek hook, CI)
 //   node scripts/check-frappe-major.ts some/package.json  (another package.json)
 //
-// WHY. `carbon_frappe@16.x.y` means "the theme for frappe v16", the way
+// WHY. `carbon_theme@16.x.y` means "the theme for frappe v16", the way
 // erpnext, hrms and frappe-types version themselves; minor and patch are ours.
 // One `feat!:` and release-please proposes 17.0.0 — a "v17 theme" that is the
 // v16 code. scripts/check-commit-subject.ts refuses that at commit time; this
@@ -84,7 +84,7 @@ if (problems.length) {
 	console.error(`The package major must be the frappe major. Checked ${target}\n`);
 	for (const p of problems) console.error(`  - ${p}`);
 	console.error(
-		"\ncarbon_frappe@X.y.z means 'the theme for frappe vX'. If release-please proposed this," +
+		"\ncarbon_theme@X.y.z means 'the theme for frappe vX'. If release-please proposed this," +
 			"\na commit carried a `!` or a `BREAKING CHANGE:` footer: land an empty commit with a" +
 			"\n`Release-As: <version>` footer and it rewrites its pull request on the next run." +
 			"\nMoving to a new frappe major is a new version-<N> branch; see this script's header.",

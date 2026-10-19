@@ -454,7 +454,7 @@ export async function newPage(port: number): Promise<Page> {
 }
 
 /**
- * Fail loudly if the desk is not actually serving carbon_frappe's stylesheet.
+ * Fail loudly if the desk is not actually serving carbon_theme's stylesheet.
  *
  * The theme is delivered by SHADOWING frappe's `desk.bundle.css` key in
  * sites/assets/assets.json. A running `bench watch` re-claims that key every
@@ -469,10 +469,10 @@ export async function assertCarbonStylesheet(page: Page): Promise<string> {
 		`[...document.querySelectorAll('link[rel=stylesheet]')].map((l) => l.href)`,
 	);
 	const desk = links.filter((h) => h.includes("desk.bundle") && h.endsWith(".css"));
-	const href = desk.find((h) => h.includes("/assets/carbon_frappe/"));
+	const href = desk.find((h) => h.includes("/assets/carbon_theme/"));
 	if (href === undefined) {
 		throw new Error(
-			"carbon_frappe's desk.bundle.css is NOT being served (assets.json shadow lost -- " +
+			"carbon_theme's desk.bundle.css is NOT being served (assets.json shadow lost -- " +
 				"usually a running `bench watch` re-claimed the key). " +
 				"Fix with: node scripts/patch-assets.ts   Loaded instead: " +
 				(desk.join(", ") || "<none>"),

@@ -3,7 +3,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { announcementText } from "../../../carbon_frappe/public/js/ai_chat/announce.ts";
+import { announcementText } from "../../../carbon_theme/public/js/ai_chat/announce.ts";
 
 const SAY = (markdown: string, max = 1000): string => announcementText(markdown, max);
 

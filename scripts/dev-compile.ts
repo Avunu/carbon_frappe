@@ -58,7 +58,7 @@ const sass: SassModule = require("sass");
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const frappeRoot = process.env.FRAPPE_PATH || path.resolve(appRoot, "..", "frappe");
-const scssDir = path.join(appRoot, "carbon_frappe", "public", "scss");
+const scssDir = path.join(appRoot, "carbon_theme", "public", "scss");
 const outDir = path.join(appRoot, ".dev-dist");
 
 if (!fs.existsSync(path.join(frappeRoot, "frappe", "public", "scss"))) {

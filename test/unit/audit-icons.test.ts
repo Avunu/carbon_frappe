@@ -165,7 +165,7 @@ describe("scanLegacyEmitters and auditLegacyEmitters on a bench layout", () => {
 	put("apps/frappe/frappe/public/dist/js/x.js", "fa-from-dist");
 	put("apps/frappe/frappe/public/js/vendor.min.js", "fa-from-min");
 	put("apps/frappe/frappe/public/scss/report.scss", ".fa-from-stylesheet {}");
-	put("apps/carbon_frappe/carbon_frappe/public/js/x.ts", "fa-from-the-theme");
+	put("apps/carbon_theme/carbon_theme/public/js/x.ts", "fa-from-the-theme");
 	put("apps/hrms/hrms/templates/node_card.html", "fa fa-level-down");
 	put("apps/not_an_app/README.md", "fa-ignored");
 	const apps = path.join(root, "apps");

@@ -4,7 +4,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import "./globals.ts";
-import { guessFilter } from "../../carbon_frappe/public/js/tables/engine/features.ts";
+import { guessFilter } from "../../carbon_theme/public/js/tables/engine/features.ts";
 
 describe("guessFilter (frappe-datatable's inline-filter grammar)", () => {
 	it("reads the comparison prefixes", () => {

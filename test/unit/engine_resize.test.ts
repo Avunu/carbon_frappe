@@ -3,7 +3,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { isColumnResize } from "../../carbon_frappe/public/js/tables/engine/table.ts";
+import { isColumnResize } from "../../carbon_theme/public/js/tables/engine/table.ts";
 
 // `onColumnResize` is emitted through the engine's open `emit(name, ...args)`, so
 // a handler receives `unknown`. This guard is how the Grid and the List view

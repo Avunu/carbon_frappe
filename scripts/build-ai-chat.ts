@@ -30,7 +30,7 @@ import * as esbuild from "esbuild";
 import * as sass from "sass";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const publicDir = path.join(appRoot, "carbon_frappe", "public");
+const publicDir = path.join(appRoot, "carbon_theme", "public");
 const entryFile = path.join(publicDir, "js", "ai_chat", "entry.ts");
 const scssFile = path.join(publicDir, "scss", "ai_chat", "chat.scss");
 const outDir = path.join(publicDir, "dist", "ai_chat");

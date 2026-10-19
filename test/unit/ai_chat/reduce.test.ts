@@ -11,15 +11,15 @@ import {
 	reduceFlowEvent,
 	resumeStreamState,
 	stopStream,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/reduce.ts";
-import type { FlowEvent, ToolEndedEvent } from "../../../carbon_frappe/public/js/ai_chat/flow/events.ts";
-import { isFlowApprovalItem, isTextItem } from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/reduce.ts";
+import type { FlowEvent, ToolEndedEvent } from "../../../carbon_theme/public/js/ai_chat/flow/events.ts";
+import { isFlowApprovalItem, isTextItem } from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import type {
 	ChainOfThoughtStep,
 	GenericItem,
 	StreamState,
 	TextItem,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 import {
 	ANSWERS_APPROVE_ALL,
 	ANSWERS_DENY,

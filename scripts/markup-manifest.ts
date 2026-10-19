@@ -1011,7 +1011,7 @@ export const MIRRORED_LITERALS: readonly MirroredLiteral[] = [
 	["z-index: 1060", "frappe/public/css/espresso/components/menu.css"],
 ];
 
-/** assets.json keys this app shadows; all must point at carbon_frappe. */
+/** assets.json keys this app shadows; all must point at carbon_theme. */
 export const SHADOWED_BUNDLES: readonly ShadowedBundle[] = ["desk", "website", "login", "email"];
 
 /** This app's own esbuild entry points, by bare bundle name. */
@@ -1027,7 +1027,7 @@ export type JsBundle = "carbon_charts" | "carbon_desk" | "carbon_anatomy" | "car
  * `carbon_desk.bundle.js` and has no extension fallback
  * (frappe/utils/jinja_globals.py:151-156). Nothing errors; the `.js` key just
  * keeps an older build's hash. Declared here so patch-assets (the repair),
- * audit-markup (the guard) and carbon_frappe/build.py cannot drift apart.
+ * audit-markup (the guard) and carbon_theme/build.py cannot drift apart.
  */
 export const JS_BUNDLES: readonly JsBundle[] = [
 	"carbon_charts",

@@ -8,9 +8,9 @@ import {
 	HISTORY_TITLE_MAX,
 	createHistoryModel,
 	toHistoryItem,
-} from "../../../carbon_frappe/public/js/ai_chat/history_model.ts";
-import type { HistoryItem } from "../../../carbon_frappe/public/js/ai_chat/history_model.ts";
-import { identityTranslate } from "../../../carbon_frappe/public/js/ai_chat/i18n.ts";
+} from "../../../carbon_theme/public/js/ai_chat/history_model.ts";
+import type { HistoryItem } from "../../../carbon_theme/public/js/ai_chat/history_model.ts";
+import { identityTranslate } from "../../../carbon_theme/public/js/ai_chat/i18n.ts";
 
 const item = (id: string): HistoryItem => ({ id, title: id, modified: 1 });
 

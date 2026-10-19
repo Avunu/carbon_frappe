@@ -2,9 +2,9 @@
 /**
  * Dev-time codegen: render the @carbon/icons glyphs this theme owns, as named in
  * scripts/lib/icon-manifest.ts, and emit
- *   - carbon_frappe/public/js/generated/shell-icons.ts      the UI Shell header's glyphs
- *   - carbon_frappe/public/js/generated/icons.ts            table and page chrome glyphs
- *   - carbon_frappe/public/scss/generated/_legacy-icons.scss  `.fa-*` / `.octicon-*` as masks
+ *   - carbon_theme/public/js/generated/shell-icons.ts      the UI Shell header's glyphs
+ *   - carbon_theme/public/js/generated/icons.ts            table and page chrome glyphs
+ *   - carbon_theme/public/scss/generated/_legacy-icons.scss  `.fa-*` / `.octicon-*` as masks
  * The output is committed. Run via `npm run codegen` after Carbon bumps or a
  * manifest edit.
  *

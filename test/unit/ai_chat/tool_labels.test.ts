@@ -12,8 +12,8 @@ import {
 	toolContext,
 	toolLabel,
 	toolStepTitle,
-} from "../../../carbon_frappe/public/js/ai_chat/flow/tool_labels.ts";
-import type { Translate } from "../../../carbon_frappe/public/js/ai_chat/flow/tool_labels.ts";
+} from "../../../carbon_theme/public/js/ai_chat/flow/tool_labels.ts";
+import type { Translate } from "../../../carbon_theme/public/js/ai_chat/flow/tool_labels.ts";
 
 const upper: Translate = (source, replace) => identityTranslate(source, replace).toUpperCase();
 

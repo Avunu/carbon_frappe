@@ -3,8 +3,8 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import type { AttachedFile, UploadedFile } from "../../../carbon_frappe/public/js/ai_chat/flow/client.ts";
-import type { FlowSessionAttachmentRow } from "../../../carbon_frappe/public/js/ai_chat/flow/docs.ts";
+import type { AttachedFile, UploadedFile } from "../../../carbon_theme/public/js/ai_chat/flow/client.ts";
+import type { FlowSessionAttachmentRow } from "../../../carbon_theme/public/js/ai_chat/flow/docs.ts";
 import {
 	FALLBACK_MAX_FILE_BYTES,
 	MAX_ATTACHMENTS,
@@ -28,14 +28,14 @@ import {
 	transferProgress,
 	uploadChips,
 	validateFiles,
-} from "../../../carbon_frappe/public/js/ai_chat/uploads.ts";
-import type { FileRejection, UploadLimits } from "../../../carbon_frappe/public/js/ai_chat/uploads.ts";
+} from "../../../carbon_theme/public/js/ai_chat/uploads.ts";
+import type { FileRejection, UploadLimits } from "../../../carbon_theme/public/js/ai_chat/uploads.ts";
 import type {
 	ExternalFileReference,
 	MessageInput,
 	PendingUpload,
 	StructuredField,
-} from "../../../carbon_frappe/public/js/ai_chat/types.ts";
+} from "../../../carbon_theme/public/js/ai_chat/types.ts";
 
 function substitute(source: string, replace: readonly string[] = []): string {
 	return source.replace(/\{(\d+)\}/g, (_match, index: string) => replace[Number(index)] ?? "");

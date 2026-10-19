@@ -3,8 +3,8 @@
  * Dev-time codegen: extract @carbon/charts' 14-series categorical palettes
  * (white + dark theme) from its scss/_color-palette.scss, resolve values via
  * @carbon/colors, and emit:
- *   - carbon_frappe/public/scss/generated/_chart-palettes.scss  ($chart-colors-light/dark)
- *   - carbon_frappe/public/js/generated/chart-palettes.ts       (ESM light/dark/heatmap)
+ *   - carbon_theme/public/scss/generated/_chart-palettes.scss  ($chart-colors-light/dark)
+ *   - carbon_theme/public/js/generated/chart-palettes.ts       (ESM light/dark/heatmap)
  * Both outputs are committed. Run via `npm run codegen` after Carbon bumps.
  *
  * The JS output is a `.ts` module, not a `.js` one, because it is imported by
@@ -109,8 +109,8 @@ const heatmap = [10, 30, 50, 60, 80].map((step) => {
 	return swatch;
 });
 
-const scssDir = path.join(appRoot, "carbon_frappe", "public", "scss", "generated");
-const jsDir = path.join(appRoot, "carbon_frappe", "public", "js", "generated");
+const scssDir = path.join(appRoot, "carbon_theme", "public", "scss", "generated");
+const jsDir = path.join(appRoot, "carbon_theme", "public", "js", "generated");
 fs.mkdirSync(scssDir, { recursive: true });
 fs.mkdirSync(jsDir, { recursive: true });
 

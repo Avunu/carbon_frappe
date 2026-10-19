@@ -260,7 +260,7 @@ export const ICONS_GENERATOR = "scripts/generate-icons.ts";
  */
 export function generatedIconFiles(carbon: CarbonIcons): GeneratedIconFile[] {
 	const render = (spec: GlyphSpec): string => carbon.render(spec);
-	const js = "carbon_frappe/public/js/generated";
+	const js = "carbon_theme/public/js/generated";
 	return [
 		{
 			path: `${js}/shell-icons.ts`,
@@ -283,7 +283,7 @@ export function generatedIconFiles(carbon: CarbonIcons): GeneratedIconFile[] {
 			}),
 		},
 		{
-			path: "carbon_frappe/public/scss/generated/_legacy-icons.scss",
+			path: "carbon_theme/public/scss/generated/_legacy-icons.scss",
 			text: legacyStylesheet({
 				generator: ICONS_GENERATOR,
 				version: carbon.version,

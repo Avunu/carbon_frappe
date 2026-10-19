@@ -4,8 +4,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import "./globals.ts";
-import { buildAppsTree, buildDesktopTree } from "../../carbon_frappe/public/js/anatomy/shell/desktop.ts";
-import type { IconRoute } from "../../carbon_frappe/public/js/anatomy/shell/desktop.ts";
+import { buildAppsTree, buildDesktopTree } from "../../carbon_theme/public/js/anatomy/shell/desktop.ts";
+import type { IconRoute } from "../../carbon_theme/public/js/anatomy/shell/desktop.ts";
 import type { FrappeBootAppEntry, FrappeDesktopIconRecord } from "frappe-types";
 
 // -- the Apps screen (the default desktop) -----------------------------------------
