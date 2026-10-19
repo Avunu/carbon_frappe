@@ -105,9 +105,6 @@ nightly-suites = ["node scripts/test-tables.ts", "node scripts/test-shell.ts"]
 # pipeline resolves `~frappe-charts` and friends from frappe's own node_modules
 frappe-node-modules = true
 
-[tool.frappe-nix.dev-shell]
-frappe-nix-url = "github:Avunu/frappe-nix/de60612a38409a61004f3d311a9e2748d2a3d341"
-
 [tool.frappe-nix.releases]
 bootstrap-sha = "3c33bb4b9f57d49bf200a3dc1ec54138c55faa82"
 
