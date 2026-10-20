@@ -896,7 +896,7 @@ export class BodyRendererShim {
 	 * (pequea's Timber Stock Order Form). The engine renders the foot with the
 	 * body, so this is a scheduled whole render.
 	 */
-	renderFooter(): void{
+	renderFooter(): void {
 		this.host.engine.scheduleRender();
 	}
 	showToastMessage(message: string, hideAfter?: number): void {
