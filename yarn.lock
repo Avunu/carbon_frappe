@@ -1327,10 +1327,10 @@
   dependencies:
     "@tanstack/store" "^0.11.2"
 
-"@tanstack/virtual-core@3.19.5":
-  version "3.19.5"
-  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.19.5.tgz#d4d287d519a4b938aa52106a97e3e10b5d147428"
-  integrity sha512-X/wq6DtSK/XClznMM+I4JE63yyIwmyPk4Ts83bD0VKaIbwHNdRsO5QipCPX+3OovqYyr0puQNpbmp8+SPhspNg==
+"@tanstack/virtual-core@3.19.6":
+  version "3.19.6"
+  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.19.6.tgz#1a185556d5cd3f65a6db3c5a372feb4fde7cbafc"
+  integrity sha512-CsTW892z23gy7IyxYTTorVu1uZWB+0N349rSMgKz4rFLPpLza7F7TpcCKeI5iUAwYQCt8QUlOU67J+KXCxtpGw==
 
 "@tiptap/core@^3.22.5":
   version "3.31.4"
