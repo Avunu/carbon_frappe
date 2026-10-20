@@ -806,6 +806,17 @@ export class CellManagerShim {
 	): DataTableCell | undefined {
 		return this.host.updateCell(colIndex, rowIndex, { content: value }, refreshHtml);
 	}
+	/**
+	 * Report scripts that write `cell.content` themselves re-render through
+	 * this, one call per cell (pequea's Timber Stock Order Form). Stock rewrites
+	 * that one cell's DOM; the engine renders while, so drop the memoised HTML
+	 * and schedule a render - a loop over a row's cells coalesces into one frame.
+	 */
+	refreshCell(cell: DataTableCell | null | undefined, refreshHTML = false): void {
+		if (!cell) return;
+		if (refreshHTML) cell.html = null;
+		this.host.engine.scheduleRender();
+	}
 	getCell$(colIndex: DataTableColIndex, rowIndex: DataTableRowIndex): MaybeJQuery {
 		const node = this.host.engine.getCellNode(
 			this.host.rowIdFor(rowIndex),
@@ -879,6 +890,14 @@ export class BodyRendererShim {
 	}
 	renderRows(): void {
 		this.host.engine.render();
+	}
+	/**
+	 * Called after a script edits cells so the totals row picks them up
+	 * (pequea's Timber Stock Order Form). The engine renders the foot with the
+	 * body, so this is a scheduled whole render.
+	 */
+	renderFooter(): void{
+		this.host.engine.scheduleRender();
 	}
 	showToastMessage(message: string, hideAfter?: number): void {
 		this.host.showToastMessage(message, hideAfter);
