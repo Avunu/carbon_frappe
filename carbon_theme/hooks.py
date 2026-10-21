@@ -4,7 +4,7 @@
 app_name = "carbon_theme"
 app_title = "Carbon Theme for Frappe"
 app_publisher = "Avunu LLC"
-app_description = "Carbon Design System theme for Frappe."
+app_description = "IBM Carbon Design System theme for the Frappe desk, website, login and email"
 app_email = "mail@avu.nu"
 app_license = "MIT"
 
