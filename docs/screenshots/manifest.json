@@ -1,0 +1,62 @@
+[
+	{
+		"name": "child-table",
+		"theme": "dark",
+		"alt": "A Sales Invoice form with its Items child table drawn by the theme's table engine, with the Carbon table toolbar",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "736004a3640028e35a2c08b9cd0655f8623df29860de407cf8e76860aef91535"
+	},
+	{
+		"name": "child-table",
+		"theme": "light",
+		"alt": "A Sales Invoice form with its Items child table drawn by the theme's table engine, with the Carbon table toolbar",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "28c311135272bd5e9660b13e085138f9eade5869023e34e624028f88656e4068"
+	},
+	{
+		"name": "list-view",
+		"theme": "dark",
+		"alt": "The Sales Invoice list in Carbon: the g100 UI Shell header with the module's links, the side nav, filter fields and a Carbon data table with status tags",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "d77bbe605b4bb25f8e77f6366ee525c08528142c98f0271c87a83257498808b3"
+	},
+	{
+		"name": "list-view",
+		"theme": "light",
+		"alt": "The Sales Invoice list in Carbon: the g100 UI Shell header with the module's links, the side nav, filter fields and a Carbon data table with status tags",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "22fe6b9a34e81ad8d069cf6100bd4af428765a39bf46b64b1a8f972683c47165"
+	},
+	{
+		"name": "report-view",
+		"theme": "dark",
+		"alt": "The Sales Invoice Report view on the theme's table engine, with sortable, resizable Carbon column headers",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "ffb9f44baebcbd9d794f36a6a13d3182dd90c4360504b2aa11336a9d47c57330"
+	},
+	{
+		"name": "report-view",
+		"theme": "light",
+		"alt": "The Sales Invoice Report view on the theme's table engine, with sortable, resizable Carbon column headers",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "70a2881f776ea782501ed3d57a50fd715fd482ec2501fdc8d4023687293f7743"
+	}
+]

@@ -327,12 +327,17 @@ class TestBrandStylesheet(IntegrationTestCase):
 		self.assertEqual(self._get(**{"If-None-Match": etag}).status_code, 200)
 
 	def test_dev_indicator_on_localhost(self):
-		self.assertIn(DEV_SHELL["bg"], self._get(host="frappe.localhost:8889").get_data(as_text=True))
-		self.assertNotIn(DEV_SHELL["bg"], self._get(host="erp.example.com").get_data(as_text=True))
-		self.assertNotIn(
-			DEV_SHELL["bg"],
-			self._get(host="frappe.localhost:8889", Cookie="carbon_dev_indicator=0").get_data(as_text=True),
-		)
+		# Decided by the host name, so a site config value (the demo site sets one) is left out.
+		with patch.dict(frappe.conf, {}):
+			frappe.conf.pop(brand.DEV_INDICATOR_KEY, None)
+			self.assertIn(DEV_SHELL["bg"], self._get(host="frappe.localhost:8889").get_data(as_text=True))
+			self.assertNotIn(DEV_SHELL["bg"], self._get(host="erp.example.com").get_data(as_text=True))
+			self.assertNotIn(
+				DEV_SHELL["bg"],
+				self._get(host="frappe.localhost:8889", Cookie="carbon_dev_indicator=0").get_data(
+					as_text=True
+				),
+			)
 
 	def test_broken_palette_never_breaks_the_page(self):
 		"""An HTML error page served as the stylesheet would leave the theme
