@@ -18,6 +18,31 @@ const OPEN_INVOICE = {
 };
 const ITEMS = '.frappe-control[data-fieldname="items"]';
 
+// The demo's invoices are submitted, so their grids are read-only. Duplicating
+// one (the form's own Duplicate) gives an unsaved draft with the same items,
+// whose grid is editable and whose toolbar carries Add row. The eval resolves
+// once the new form's grid has drawn its rows.
+const DUPLICATE_INVOICE = {
+	eval: `new Promise((resolve) => {
+		cur_frm.copy_doc();
+		const start = Date.now();
+		const tick = () => {
+			const grid = cur_frm.doc.__islocal && cur_frm.fields_dict.items?.grid;
+			if ((grid && grid.wrapper.find(".grid-body .grid-row").length) || Date.now() - start > 20000) resolve();
+			else setTimeout(tick, 200);
+		};
+		tick();
+	});`,
+};
+
+// Opens the first row as Carbon's expandable row (the grid keeps frappe's
+// GridRow.toggle_view), then scrolls the table's toolbar to just below the
+// sticky page head, so the toolbar, the rows and the open panel all show.
+const EXPAND_FIRST_ROW = {
+	eval: `cur_frm.fields_dict.items.grid.grid_rows[0].toggle_view(true);
+		window.scrollTo(0, window.scrollY + $(cur_frm.fields_dict.items.wrapper).get(0).getBoundingClientRect().top - 200);`,
+};
+
 export default {
 	demo: { erpnextDemo: true, date: "2026-01-15", seed: 1 },
 	shots: [
@@ -34,14 +59,16 @@ export default {
 		{
 			name: "child-table",
 			route: "/desk/sales-invoice",
-			alt: "A Sales Invoice form with its Items child table drawn by the theme's table engine, with the Carbon table toolbar",
+			alt: "An editable Sales Invoice's Items child table drawn by the theme's table engine, with the Carbon table toolbar and Add row, and the first row expanded into its form in place",
 			waitFor: SHELL,
 			actions: [
 				{ waitFor: ROWS },
 				OPEN_INVOICE,
 				{ waitFor: `${ITEMS} .grid-body .grid-row` },
 				SETTLE,
-				{ eval: `document.querySelector(${JSON.stringify(ITEMS)}).scrollIntoView({ block: "center" });` },
+				DUPLICATE_INVOICE,
+				SETTLE,
+				EXPAND_FIRST_ROW,
 				SETTLE,
 			],
 			mask: [".frappe-timestamp"],

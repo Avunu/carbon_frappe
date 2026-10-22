@@ -2,22 +2,22 @@
 	{
 		"name": "child-table",
 		"theme": "dark",
-		"alt": "A Sales Invoice form with its Items child table drawn by the theme's table engine, with the Carbon table toolbar",
+		"alt": "An editable Sales Invoice's Items child table drawn by the theme's table engine, with the Carbon table toolbar and Add row, and the first row expanded into its form in place",
 		"featured": true,
 		"readme": "feature",
 		"width": 2880,
 		"height": 1800,
-		"sha256": "736004a3640028e35a2c08b9cd0655f8623df29860de407cf8e76860aef91535"
+		"sha256": "af24818b9036b3fb4bb9e133071c69a541d0b2f2e48765343c2a559c86c53009"
 	},
 	{
 		"name": "child-table",
 		"theme": "light",
-		"alt": "A Sales Invoice form with its Items child table drawn by the theme's table engine, with the Carbon table toolbar",
+		"alt": "An editable Sales Invoice's Items child table drawn by the theme's table engine, with the Carbon table toolbar and Add row, and the first row expanded into its form in place",
 		"featured": true,
 		"readme": "feature",
 		"width": 2880,
 		"height": 1800,
-		"sha256": "28c311135272bd5e9660b13e085138f9eade5869023e34e624028f88656e4068"
+		"sha256": "38581ed83f3d9ee9aad3c22308b5b6c6734e9da0e7d7cc49ee4cbf3f454df5a6"
 	},
 	{
 		"name": "list-view",
