@@ -13,7 +13,7 @@ bench build
 ## Verifying
 
 - `sites/assets/assets.json` → `"desk.bundle.css"` should point at `/assets/carbon_theme/dist/css/…`
-- DevTools on `/app`: `--cds-background` present on `:root`; `--bg-color` resolves through the `--cds-*` chain; toggling the theme (Settings → Toggle Theme) flips token values and `color-scheme`.
+- DevTools on `/desk`: `--cds-background` present on `:root`; `--bg-color` resolves through the `--cds-*` chain; toggling the theme (Settings → Toggle Theme) flips token values and `color-scheme`.
 - Fonts: IBM Plex woff2 requests from `/assets/carbon_theme/fonts/`; no Inter requests.
 - With flow installed: `/assets/carbon_theme/dist/ai_chat/manifest.json` answers 200 and names an `entry.<hash>.js` and a `chat.<hash>.css` that exist next to it (`yarn audit:drift` checks the same, and fails when the build on disk is older than its sources). It is requested only when the assistant panel is first opened.
 

@@ -77,7 +77,7 @@ Then run a full `bench build`. `bench get-app` installs the npm dependencies the
 The theme works without configuration. Two things can be set:
 
 - **Carbon Settings** (System Manager, in the Carbon Frappe module): **Brand Colour (Light)**, **Brand Colour (Dark)**, **Header Background** and **Header Text**. All are optional, and an empty field keeps Carbon's own value. The brand colour sets Carbon's interactive colour: primary buttons, links, focus rings, selected rows, the sidebar selection bar and the active tab. If only the light colour is set, the dark one is derived from it. A saved change shows on the next page load.
-- **The dev indicator** is decided from the request's host name. Turn it off or on for a site with `bench --site <site> set-config carbon_dev_indicator 0` (or `1`); a `carbon_dev_indicator` cookie does the same for one browser.
+- **The dev indicator** is decided from the request's host name. Turn it off or on for a site with `bench --site <site> set-config carbon_dev_indicator 0` (or `1`). Where the site config does not set it, a `carbon_dev_indicator` cookie does the same for one browser.
 
 [Configuration](docs/configuration.md) describes how the colours are derived and what is deliberately not branded.
 
@@ -85,7 +85,7 @@ The theme works without configuration. Two things can be set:
 
 - **Stylesheet shadowing.** Frappe looks every stylesheet up in `sites/assets/assets.json` by its bundle name. This app ships bundles with the same names as Frappe's (`desk.bundle.css`, `website.bundle.css`, `login.bundle.css`, `email.bundle.css`) that recompile Frappe's own SCSS with Carbon's values and add Carbon's components on top. Because the app builds after Frappe, its entries replace Frappe's. `scripts/patch-assets.ts` (run by `bench build`) and the `after_migrate` and `after_app_install` hooks (`carbon_theme.build.patch_assets`) point the entries back at the app if a partial build has reset them.
 - **Token mapping.** Carbon's design tokens are emitted as `--cds-*` custom properties, and Frappe's colour ramps, neutral roles, radii, focus, shadows and type scale are mapped onto them, so Frappe's own components pick up Carbon's values.
-- **Brand stylesheet.** The colours from Carbon Settings are served per site at `/carbon-brand.css` by a `page_renderer` (`carbon_theme/brand.py`) and linked after the bundles through `app_include_css` and `web_include_css`. Nothing is emitted until a colour is set.
+- **Brand stylesheet.** The colours from Carbon Settings are served per site at `/carbon-brand.css` by a `page_renderer` (`carbon_theme/brand.py`) and linked after the bundles through `app_include_css` and `web_include_css`. It is empty until a colour is set or the dev indicator is on.
 - **frappe-ui apps.** Apps built with Vite bypass Frappe's asset pipeline, so an `after_request` hook (`carbon_theme/injector.py`) adds `carbon_frappe_ui.bundle.css` and the brand stylesheet to any HTML response that loads a Vite module entry.
 - **JavaScript bundles** (`app_include_js`): `carbon_charts` (chart palettes), `carbon_desk` (marks numbers and dates for IBM Plex Mono), `carbon_anatomy` (the UI Shell header, the page header and the assistant's button) and `carbon_tables` (the table engine, which replaces `frappe.ui.form.Grid`, the List view rows and `frappe.DataTable`). Each theme patch calls the original and falls back to Frappe's own behaviour if what it patches is missing.
 
@@ -94,9 +94,9 @@ The documentation covers each part in detail: [How it works](docs/how-it-works.m
 ## Limitations
 
 - **The theme applies to the whole bench.** `assets.json` is shared by every site on a bench, so sites that do not have the app installed are themed too. Run it on a bench of its own.
-- **Partial builds and `bench watch` undo the theme.** `bench build --apps frappe` and `bench watch` point the shadowed bundles back at Frappe's until the next full `bench build` or `bench migrate`. Nothing errors; the desk simply looks like stock Frappe again. After a watch session, run `node scripts/patch-assets.ts`.
+- **Partial builds and `bench watch` undo the theme.** `bench build --apps frappe` and `bench watch` point the shadowed bundles back at Frappe's until the next full `bench build` or `bench migrate`. Nothing errors; the desk simply looks like stock Frappe again. After a watch session, run `node scripts/patch-assets.ts` in the app's directory.
 - **Shadowing depends on undocumented behaviour** of how Frappe names and merges `assets.json` entries. A Frappe change there can stop the theme from loading.
-- **No UI Shell header or assistant on phones.** Below 768px wide Frappe's own navbar is kept, and so it is where Frappe fills the header itself: on read-only sites, while impersonating a user and while an announcement widget shows.
+- **No UI Shell header or assistant on phones.** Below 768px wide Frappe's own navbar is kept. It is also kept wherever Frappe fills the header itself: on read-only sites, while impersonating a user and while an announcement widget shows.
 - **Column pinning does not work on child tables.** `df.sticky` and the leading gutters do not stay fixed when a child table scrolls sideways; the List and Report views are not affected.
 - **Some tables are not replaced:** the Data Import preview and the System Console keep the stock frappe-datatable (still themed), and `frappe.ui.EmbeddedList` keeps its plain table.
 - **Older frappe-ui apps are themed on a best-effort basis.** Apps on frappe-ui v0 (and flow's `beta.3`) use older token names, some of which cannot be mapped exactly; CRM's `1.0.0-beta.29` can show some coloured text one shade off.
