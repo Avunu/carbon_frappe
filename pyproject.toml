@@ -1,7 +1,7 @@
 [project]
 name = "carbon_theme"
 authors = [{ name = "Avunu LLC", email = "mail@avu.nu" }]
-description = "Carbon Design System theme for Frappe"
+description = "IBM Carbon Design System theme for the Frappe desk, website, login and email"
 # frappe v16 is `>=3.14,<3.15`; ty derives its target from this line
 requires-python = ">=3.14"
 readme = "README.md"

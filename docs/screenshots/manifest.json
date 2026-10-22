@@ -1,0 +1,62 @@
+[
+	{
+		"name": "child-table",
+		"theme": "dark",
+		"alt": "An editable Sales Invoice's Items child table drawn by the theme's table engine, with the Carbon table toolbar and Add row, and the first row expanded into its form in place",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "af24818b9036b3fb4bb9e133071c69a541d0b2f2e48765343c2a559c86c53009"
+	},
+	{
+		"name": "child-table",
+		"theme": "light",
+		"alt": "An editable Sales Invoice's Items child table drawn by the theme's table engine, with the Carbon table toolbar and Add row, and the first row expanded into its form in place",
+		"featured": true,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "38581ed83f3d9ee9aad3c22308b5b6c6734e9da0e7d7cc49ee4cbf3f454df5a6"
+	},
+	{
+		"name": "list-view",
+		"theme": "dark",
+		"alt": "The Sales Invoice list in Carbon: the g100 UI Shell header with the module's links, the side nav, filter fields and a Carbon data table with status tags",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "d77bbe605b4bb25f8e77f6366ee525c08528142c98f0271c87a83257498808b3"
+	},
+	{
+		"name": "list-view",
+		"theme": "light",
+		"alt": "The Sales Invoice list in Carbon: the g100 UI Shell header with the module's links, the side nav, filter fields and a Carbon data table with status tags",
+		"featured": true,
+		"readme": "hero",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "22fe6b9a34e81ad8d069cf6100bd4af428765a39bf46b64b1a8f972683c47165"
+	},
+	{
+		"name": "report-view",
+		"theme": "dark",
+		"alt": "The Sales Invoice Report view on the theme's table engine, with sortable, resizable Carbon column headers",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "ffb9f44baebcbd9d794f36a6a13d3182dd90c4360504b2aa11336a9d47c57330"
+	},
+	{
+		"name": "report-view",
+		"theme": "light",
+		"alt": "The Sales Invoice Report view on the theme's table engine, with sortable, resizable Carbon column headers",
+		"featured": false,
+		"readme": "feature",
+		"width": 2880,
+		"height": 1800,
+		"sha256": "70a2881f776ea782501ed3d57a50fd715fd482ec2501fdc8d4023687293f7743"
+	}
+]

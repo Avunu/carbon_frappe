@@ -1,0 +1,10 @@
+# The app's registry listing (docs/app-standards/marketplace.md); frappe-listing check validates it.
+schema = 1
+title = "Carbon Theme for Frappe"
+tagline = "IBM Carbon Design System theme for the Frappe desk, website, login and email"
+type = "extension"
+category = "Extensions"
+categories = ["Themes", "User Interface"]
+website = "https://avunu.net/open-source/carbon_theme/"
+documentation = "https://docs.avunu.net/carbon-theme/"
+apps_screen = false
