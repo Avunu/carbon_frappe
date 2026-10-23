@@ -138,8 +138,20 @@ export function createPanel(deps: PanelDeps): Panel {
 
 	function headerActions(): HeaderAction[] {
 		const toggle: HeaderAction = expanded
-			? { text: __("Collapse"), icon: ICONS.minimize16, onClick: toggleExpanded, fixed: true, testId: EXPAND }
-			: { text: __("Expand"), icon: ICONS.maximize16, onClick: toggleExpanded, fixed: true, testId: EXPAND };
+			? {
+					text: __("Collapse"),
+					icon: ICONS.minimize16,
+					onClick: toggleExpanded,
+					fixed: true,
+					testId: EXPAND,
+				}
+			: {
+					text: __("Expand"),
+					icon: ICONS.maximize16,
+					onClick: toggleExpanded,
+					fixed: true,
+					testId: EXPAND,
+				};
 		return [
 			{
 				text: __("Conversation history"),
@@ -313,7 +325,9 @@ export function createPanel(deps: PanelDeps): Panel {
 		onFeedback: (run, rating, comment) =>
 			controller.submitFeedback(run, rating, comment).catch((error: unknown) => {
 				console.error(error);
-				deps.notify(error instanceof Error ? error.message : __("Something went wrong. Please try again."));
+				deps.notify(
+					error instanceof Error ? error.message : __("Something went wrong. Please try again."),
+				);
 				throw error;
 			}),
 		onRequestInputFocus: () => focusInput(),
@@ -482,7 +496,8 @@ export function createPanel(deps: PanelDeps): Panel {
 		const { pendingUploads, hasInFlightUploads } = store.get();
 		// A redirect answer to an approval card ignores staged files, so a running or failed upload must not hold it back.
 		sendControl.disableSend =
-			!approvalPending && (hasInFlightUploads || pendingUploads.some((upload) => upload.status === "error"));
+			!approvalPending &&
+			(hasInFlightUploads || pendingUploads.some((upload) => upload.status === "error"));
 		attachments?.setBlocked(approvalPending ? "approval" : off ? "unavailable" : null);
 		// the setup, approval and staged-file states all write the placeholder, so it is derived here
 		promptLine.placeholder = setupBlocks()

@@ -79,7 +79,11 @@ function menuEl(): HTMLDivElement {
 		const down = e.key === "ArrowDown";
 		const at = buttons.findIndex((b) => b === document.activeElement);
 		const next =
-			at < 0 ? (down ? 0 : buttons.length - 1) : (at + (down ? 1 : -1) + buttons.length) % buttons.length;
+			at < 0
+				? down
+					? 0
+					: buttons.length - 1
+				: (at + (down ? 1 : -1) + buttons.length) % buttons.length;
 		buttons[next]?.focus();
 	});
 	window.addEventListener("scroll", () => closeMenu(), true);

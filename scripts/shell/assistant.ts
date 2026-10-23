@@ -152,7 +152,9 @@ function record(event: CdpEvent): void {
 	} else if (event.method === "Runtime.exceptionThrown") {
 		const details = dig(event.params, "exceptionDetails");
 		const text =
-			str(dig(details, "exception", "description")) ?? str(dig(details, "text")) ?? "uncaught exception";
+			str(dig(details, "exception", "description")) ??
+			str(dig(details, "text")) ??
+			"uncaught exception";
 		errors.push({ at, kind: "uncaught", text });
 	} else if (event.method === "Runtime.consoleAPICalled" && dig(event.params, "type") === "error") {
 		const args = dig(event.params, "args");
@@ -699,7 +701,8 @@ async function list(
 		`filters=${encodeURIComponent(JSON.stringify(filters))}` +
 		`&fields=${encodeURIComponent(JSON.stringify(fields))}&limit_page_length=0${orderBy ? `&order_by=${encodeURIComponent(orderBy)}` : ""}`;
 	const reply = await api(page, "GET", `${resource(doctype)}?${query}`);
-	if (reply.status !== 200) throw new Error(`listing ${doctype} failed: ${reply.status} ${show(reply.json)}`);
+	if (reply.status !== 200)
+		throw new Error(`listing ${doctype} failed: ${reply.status} ${show(reply.json)}`);
 	const data = dig(reply.json, "data");
 	return Array.isArray(data) ? data.filter(isRecord) : [];
 }
@@ -1624,7 +1627,9 @@ async function stage(page: Page, files: readonly FileSpec[], timeout = 30000): P
 	if (set !== files.length) throw new Error(`the page set ${set} of ${files.length} files on the picker`);
 	const staged = await waitChips(page, files.length, isStaged, timeout);
 	if (staged.length !== files.length || !staged.every(isStaged)) {
-		throw new Error(`the files were not all attached within ${timeout / 1000}s: ${JSON.stringify(staged)}`);
+		throw new Error(
+			`the files were not all attached within ${timeout / 1000}s: ${JSON.stringify(staged)}`,
+		);
 	}
 	return staged;
 }
@@ -1696,16 +1701,21 @@ try {
 	// measured from here: everything the desk requested before anything was clicked.
 	const loadMark = netMark();
 	await page.goto(`${BASE}/desk/todo`);
-	await page.waitFor(`!!(frappe.app && frappe.app.sidebar) && !!document.querySelector('.cf-shell-header')`, {
-		timeout: 90000,
-	});
+	await page.waitFor(
+		`!!(frappe.app && frappe.app.sidebar) && !!document.querySelector('.cf-shell-header')`,
+		{
+			timeout: 90000,
+		},
+	);
 	await sleep(1500);
 	await assertCarbonStylesheet(page);
 
 	if (CLEANUP_ONLY) {
 		run.fixtures = true;
 		const problems = await cleanup(page);
-		console.log(problems.length ? `cleanup left: ${problems.join("; ")}` : "cleanup: nothing left behind");
+		console.log(
+			problems.length ? `cleanup left: ${problems.join("; ")}` : "cleanup: nothing left behind",
+		);
 		process.exitCode = problems.length ? 1 : 0;
 	} else {
 		await runSuite(loadMark);
@@ -1833,7 +1843,13 @@ async function runSuite(loadMark: number): Promise<void> {
 			chunks,
 			"[]",
 		);
-		ok("AI-02", "the first desk load requests nothing named react", reactish.length === 0, reactish, "[]");
+		ok(
+			"AI-02",
+			"the first desk load requests nothing named react",
+			reactish.length === 0,
+			reactish,
+			"[]",
+		);
 		const host = await page.eval<{
 			tag: string;
 			label: string | null;
@@ -1918,9 +1934,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		const release = await delayRequests(page, "*/dist/ai_chat/manifest.json*", 800);
 		try {
 			await click(page, trigger, false);
-			await page.waitFor(`!!document.querySelector('#cf-ai-panel .cf-ai-status .cds--inline-loading')`, {
-				timeout: 4000,
-			});
+			await page.waitFor(
+				`!!document.querySelector('#cf-ai-panel .cf-ai-status .cds--inline-loading')`,
+				{
+					timeout: 4000,
+				},
+			);
 			const state = await page.eval<{ text: string; busy: string | null }>(`({
 				text: ${A}.deepText(document.querySelector('#cf-ai-panel .cf-ai-status .cds--inline-loading')),
 				busy: document.getElementById('cf-ai-panel').getAttribute('aria-busy'),
@@ -1996,7 +2015,10 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-04",
 			"input has focus",
-			await flag(page, `${A}.deepActive() === ${A}.textarea() && ${A}.textarea().tagName === 'TEXTAREA'`),
+			await flag(
+				page,
+				`${A}.deepActive() === ${A}.textarea() && ${A}.textarea().tagName === 'TEXTAREA'`,
+			),
 			await page.eval(`${A}.deepActive() && ${A}.deepActive().tagName`),
 			"the textarea of cds-aichat-prompt-line",
 		);
@@ -2355,12 +2377,22 @@ async function runSuite(loadMark: number): Promise<void> {
 			state.userText,
 			`contains "hello"`,
 		);
-		ok("AI-11", "the processing indicator appeared while waiting", seen.processing, seen.processing, "true");
+		ok(
+			"AI-11",
+			"the processing indicator appeared while waiting",
+			seen.processing,
+			seen.processing,
+			"true",
+		);
 		ok("AI-11", "one assistant row", state.assistantRows === 1, state.assistantRows, "1");
 		ok(
 			"AI-11",
 			"the reply renders a heading, bold, inline code, a table and a python code snippet",
-			state.md.h2 && state.md.strong && state.md.code && state.md.table && state.md.snippet === "python",
+			state.md.h2 &&
+				state.md.strong &&
+				state.md.code &&
+				state.md.table &&
+				state.md.snippet === "python",
 			state.md,
 			`h2, strong, code, cds-aichat-table, snippet language "python"`,
 		);
@@ -2463,7 +2495,8 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-12",
 			"the step was observed processing, and the collapsed toggle named it meanwhile",
-			seen.steps.includes(`${TOOL_READ}:processing`) && seen.processingLabels.some((l) => l !== "Show steps"),
+			seen.steps.includes(`${TOOL_READ}:processing`) &&
+				seen.processingLabels.some((l) => l !== "Show steps"),
 			{ steps: seen.steps, labelsWhileProcessing: seen.processingLabels },
 			`a "${TOOL_READ}:processing" sample and a toggle label other than "Show steps" during it`,
 		);
@@ -2522,7 +2555,13 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok("AI-13", "the Stop button is visible while streaming", stopVisible, stopVisible, "true");
 		await click(page, `${A}.send().shadowRoot.querySelector('cds-aichat-stop-streaming-button')`);
 		const asked = await until(() => netSince(mark, /flow\.api\.(api\.)?stop_run/).length > 0, 3000);
-		ok("AI-13", "Stop calls stop_run within 3s", asked, netSince(mark, /stop_run/).length, ">= 1 request");
+		ok(
+			"AI-13",
+			"Stop calls stop_run within 3s",
+			asked,
+			netSince(mark, /stop_run/).length,
+			">= 1 request",
+		);
 		await page.waitFor(`!!${A}.lastAssistant().querySelector('.cf-ai-stopped')`, { timeout: 5000 });
 		await stopWatch(page);
 		const state = await page.eval<{
@@ -2539,7 +2578,10 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-13",
 			"the row says Response stopped and the input is back: Send shown, enabled, focused",
-			state.stopped.includes("Response stopped") && !state.stopVisible && !state.disabled && state.focused,
+			state.stopped.includes("Response stopped") &&
+				!state.stopVisible &&
+				!state.disabled &&
+				state.focused,
 			state,
 			`"Response stopped", no Stop, prompt enabled, focused`,
 		);
@@ -2790,9 +2832,12 @@ async function runSuite(loadMark: number): Promise<void> {
 			const began = Date.now();
 			await startWatch(page);
 			await say(page, word, false);
-			await page.waitFor(`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`, {
-				timeout: 90000,
-			});
+			await page.waitFor(
+				`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`,
+				{
+					timeout: 90000,
+				},
+			);
 			await waitIdle(page);
 			// the announcer writes on a 250 ms tick, so the message can land just after the row settles
 			await sleep(700);
@@ -2983,10 +3028,22 @@ async function runSuite(loadMark: number): Promise<void> {
 		);
 		await press(page, "ArrowDown");
 		at = await active();
-		ok("AI-19", "ArrowDown moves to the next row", at.row === at.total - 1, at, `row index ${at.total - 1}`);
+		ok(
+			"AI-19",
+			"ArrowDown moves to the next row",
+			at.row === at.total - 1,
+			at,
+			`row index ${at.total - 1}`,
+		);
 		await press(page, "ArrowDown");
 		at = await active();
-		ok("AI-19", "ArrowDown on the last row returns to the prompt line", at.input, at, "prompt line focused");
+		ok(
+			"AI-19",
+			"ArrowDown on the last row returns to the prompt line",
+			at.input,
+			at,
+			"prompt line focused",
+		);
 		await press(page, "ArrowUp");
 		await press(page, "Escape");
 		const stillOpen = await flag(page, `${A}.isOpen()`);
@@ -3011,7 +3068,9 @@ async function runSuite(loadMark: number): Promise<void> {
 	});
 
 	await group("AI-20", async () => {
-		const original = await page.eval<string | null>(`document.documentElement.getAttribute('data-theme')`);
+		const original = await page.eval<string | null>(
+			`document.documentElement.getAttribute('data-theme')`,
+		);
 		if (!(await flag(page, `!!${A}.shell().querySelector('cds-aichat-code-snippet')`)))
 			await say(page, "hello");
 		const measure = async (theme: string) => {
@@ -3070,7 +3129,10 @@ async function runSuite(loadMark: number): Promise<void> {
 			"different values",
 		);
 		if (original === null) await page.eval(`document.documentElement.removeAttribute('data-theme')`);
-		else await page.eval(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(original)})`);
+		else
+			await page.eval(
+				`document.documentElement.setAttribute('data-theme', ${JSON.stringify(original)})`,
+			);
 	});
 
 	await group("AI-21", async () => {
@@ -3449,7 +3511,11 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-28",
 			"the action is pressed, the prompt line stays visible below the list, the home and message list are inert, focus is in the search field",
-			open.pressed === "true" && open.promptBelow && open.homeInert && open.listInert && open.searchFocus,
+			open.pressed === "true" &&
+				open.promptBelow &&
+				open.homeInert &&
+				open.listInert &&
+				open.searchFocus,
 			open,
 			`pressed "true", prompt below, both inert, focus in the toolbar's input`,
 		);
@@ -3626,7 +3692,9 @@ async function runSuite(loadMark: number): Promise<void> {
 		await startCase(page);
 		await openHistory(page);
 		const typeSearch = async (text: string): Promise<void> => {
-			await page.eval(`(() => { const i = ${A}.searchInput(); i.focus(); i.select(); return true; })()`);
+			await page.eval(
+				`(() => { const i = ${A}.searchInput(); i.focus(); i.select(); return true; })()`,
+			);
 			await insertText(page, text);
 			await sleep(350);
 		};
@@ -3895,7 +3963,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		);
 		await pickMenuEntry(page, "Rename");
 		await page.waitFor(`!!${field} && ${A}.deepActive() === ${field}`, { timeout: 5000 });
-		const selected = await page.eval<{ start: number; end: number; length: number; value: string }>(`(() => {
+		const selected = await page.eval<{
+			start: number;
+			end: number;
+			length: number;
+			value: string;
+		}>(`(() => {
 			const i = ${field}; return { start: i.selectionStart, end: i.selectionEnd, length: i.value.length, value: i.value };
 		})()`);
 		ok(
@@ -3939,7 +4012,8 @@ async function runSuite(loadMark: number): Promise<void> {
 		await page.waitFor(`${item}.name === ${q(renamed)} && ${item}.rename !== true`, { timeout: 5000 });
 		const stored = await eventually(
 			async () =>
-				str(dig((await api(page, "GET", resource("Flow Session", alpha))).json, "data", "title")) ?? "",
+				str(dig((await api(page, "GET", resource("Flow Session", alpha))).json, "data", "title")) ??
+				"",
 			(title) => title === renamed,
 		);
 		const after = await page.eval<{ focus: boolean; shown: boolean; open: boolean }>(`({
@@ -4061,10 +4135,12 @@ async function runSuite(loadMark: number): Promise<void> {
 			"no panel, row listed, session exists, focus inside the row",
 		);
 		await click(page, `${A}.itemTrigger(${A}.itemOf(${q(spare)}))`);
-		const reopened = await page.waitFor(`${A}.menuOpen(${A}.itemOf(${q(spare)}))`, { timeout: 3000 }).then(
-			() => true,
-			() => false,
-		);
+		const reopened = await page
+			.waitFor(`${A}.menuOpen(${A}.itemOf(${q(spare)}))`, { timeout: 3000 })
+			.then(
+				() => true,
+				() => false,
+			);
 		await sleep(250);
 		const again = await page.eval<string[]>(`${A}.menuEntries().map((e) => e.textContent.trim())`);
 		ok(
@@ -4091,7 +4167,11 @@ async function runSuite(loadMark: number): Promise<void> {
 		await click(page, `${A}.delButton('danger')`);
 		await page.waitFor(`!${A}.itemOf(${q(other)}) && !${A}.delPanel()`, { timeout: 10000 });
 		await sleep(400);
-		const afterOther = await page.eval<{ session: string | null; focusInList: boolean; shown: boolean }>(`({
+		const afterOther = await page.eval<{
+			session: string | null;
+			focusInList: boolean;
+			shown: boolean;
+		}>(`({
 			session: localStorage.getItem('cf-ai-session'), shown: ${A}.histShown(),
 			focusInList: ${A}.items().some((i) => ${A}.contains(i, ${A}.deepActive())) || ${A}.deepActive() === ${A}.searchInput(),
 		})`);
@@ -4151,7 +4231,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		await page.waitFor(`!${A}.histShown()`, { timeout: 5000 });
 		await sleep(700);
 		const seen = await stopWatch(page);
-		const state = await page.eval<{ home: boolean; session: string | null; rows: number; focus: boolean }>(`({
+		const state = await page.eval<{
+			home: boolean;
+			session: string | null;
+			rows: number;
+			focus: boolean;
+		}>(`({
 			home: ${A}.visible(document.querySelector('#cf-ai-panel .cf-ai-home')), session: localStorage.getItem('cf-ai-session'),
 			rows: ${A}.rows().length, focus: ${A}.deepActive() === ${A}.textarea(),
 		})`);
@@ -4285,7 +4370,9 @@ async function runSuite(loadMark: number): Promise<void> {
 				ok(
 					"AI-37",
 					"a list that cannot be read shows an error with Try again and no rows",
-					failure.text.includes("Could not load your conversations") && failure.retry && failure.rows === 0,
+					failure.text.includes("Could not load your conversations") &&
+						failure.retry &&
+						failure.rows === 0,
 					{ ...failure, text: failure.text.slice(0, 100) },
 					`"Could not load your conversations", [data-action=retry-history], 0 rows`,
 				);
@@ -4378,7 +4465,9 @@ async function runSuite(loadMark: number): Promise<void> {
 				ok(
 					"AI-38",
 					"deleting the conversation another tab is streaming is refused with a message, and it stays",
-					alerts.some((a) => a.includes("another tab")) && refused.row && (await sessionExists(page, held)),
+					alerts.some((a) => a.includes("another tab")) &&
+						refused.row &&
+						(await sessionExists(page, held)),
 					{ alerts, row: refused.row },
 					`an alert naming the other tab, the row and the session kept`,
 				);
@@ -4468,7 +4557,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-39",
 			"a finished reply carries both thumbs, neither selected",
-			initial !== null && !initial.up && !initial.down && !initial.upOff && !initial.downOff && !initial.open,
+			initial !== null &&
+				!initial.up &&
+				!initial.down &&
+				!initial.upOff &&
+				!initial.downOff &&
+				!initial.open,
 			initial,
 			"both thumbs enabled, none selected",
 		);
@@ -4529,7 +4623,10 @@ async function runSuite(loadMark: number): Promise<void> {
 			`(${A}.deepAll(${A}.footer().querySelector('cds-aichat-feedback'), 'textarea')[0].focus(), true)`,
 		);
 		await insertText(page, "too long");
-		await click(page, `${A}.deepAll(${A}.footer().querySelector('cds-aichat-feedback'), 'cds-button')[0]`);
+		await click(
+			page,
+			`${A}.deepAll(${A}.footer().querySelector('cds-aichat-feedback'), 'cds-button')[0]`,
+		);
 		const sentDown = await until(() => feedbackCalls(mark).length > 0, 5000);
 		const down = await eventually(
 			() => ratingOf(rated),
@@ -4651,8 +4748,14 @@ async function runSuite(loadMark: number): Promise<void> {
 				"AI-40",
 				"restored rows carry the run's creation time read in the site's zone, not the browser's",
 				restored.length === 2 &&
-					restored.every((t) => t.datetime !== null && Math.abs(Date.parse(t.datetime) - expected) <= 1000),
-				{ creation, expected: new Date(expected).toISOString(), rows: restored.map((t) => t.datetime) },
+					restored.every(
+						(t) => t.datetime !== null && Math.abs(Date.parse(t.datetime) - expected) <= 1000,
+					),
+				{
+					creation,
+					expected: new Date(expected).toISOString(),
+					rows: restored.map((t) => t.datetime),
+				},
 				"both rows within 1s of Flow Run.creation in the system zone",
 			);
 			const shown = await page.eval<boolean[]>(
@@ -4756,7 +4859,9 @@ async function runSuite(loadMark: number): Promise<void> {
 			`(document.querySelector('#cf-ai-panel .cf-ai-earlier').scrollIntoView({ block: 'nearest' }), true)`,
 		);
 		await sleep(200);
-		const topBefore = await page.eval<number>(`${A}.rowByKey(${q(keyOfFirst)}).getBoundingClientRect().top`);
+		const topBefore = await page.eval<number>(
+			`${A}.rowByKey(${q(keyOfFirst)}).getBoundingClientRect().top`,
+		);
 		const rowsBefore = state.rows;
 		await click(page, `document.querySelector('#cf-ai-panel .cf-ai-earlier')`, false);
 		await page.waitFor(`${A}.rows().length > ${rowsBefore}`, { timeout: 10000 });
@@ -4777,7 +4882,11 @@ async function runSuite(loadMark: number): Promise<void> {
 				prepended.rows - rowsBefore <= 32 &&
 				Math.abs(prepended.top - topBefore) <= 2 &&
 				prepended.focus,
-			{ added: prepended.rows - rowsBefore, movedBy: prepended.top - topBefore, focus: prepended.focus },
+			{
+				added: prepended.rows - rowsBefore,
+				movedBy: prepended.top - topBefore,
+				focus: prepended.focus,
+			},
 			"28 to 32 rows added, moved by at most 2px, focus on the previously first row",
 		);
 		await page.eval(`(${A}.rows()[0].focus(), true)`);
@@ -4829,7 +4938,13 @@ async function runSuite(loadMark: number): Promise<void> {
 		await chooseSession(page, fixture("long"));
 		const handles = await page.eval<{
 			top: { w: number; h: number; label: string | null; text: string; action: string | null } | null;
-			bottom: { w: number; h: number; label: string | null; text: string; action: string | null } | null;
+			bottom: {
+				w: number;
+				h: number;
+				label: string | null;
+				text: string;
+				action: string | null;
+			} | null;
 			jumpHidden: boolean;
 		}>(`(() => {
 			const read = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), label: el.getAttribute('aria-label'), text: el.textContent.trim(), action: el.getAttribute('data-action') }; };
@@ -4943,9 +5058,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		await startCase(page);
 		await tolerate(async () => {
 			await chatInNewConversation(page, "ERROR make the block wide", false);
-			await page.waitFor(`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`, {
-				timeout: 90000,
-			});
+			await page.waitFor(
+				`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`,
+				{
+					timeout: 90000,
+				},
+			);
 			await waitIdle(page);
 			await sleep(500);
 			const layout = await page.eval<{
@@ -4988,9 +5106,12 @@ async function runSuite(loadMark: number): Promise<void> {
 		await startCase(page);
 		await tolerate(async () => {
 			const first = await chatInNewConversation(page, "FLAKY one", false);
-			await page.waitFor(`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`, {
-				timeout: 90000,
-			});
+			await page.waitFor(
+				`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`,
+				{
+					timeout: 90000,
+				},
+			);
 			await waitIdle(page);
 			await sleep(700);
 			const cut = await page.eval<{ retries: number; inLast: boolean }>(`(() => {
@@ -5092,7 +5213,10 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-45",
 			"with no agent configured the prompt and the send control are disabled and say how to proceed",
-			setup.prompt && setup.textarea && setup.send && setup.placeholder === "Finish setup to start chatting",
+			setup.prompt &&
+				setup.textarea &&
+				setup.send &&
+				setup.placeholder === "Finish setup to start chatting",
 			setup,
 			`disabled, placeholder "Finish setup to start chatting"`,
 		);
@@ -5244,7 +5368,9 @@ async function runSuite(loadMark: number): Promise<void> {
 
 	await group("AI-48", async () => {
 		await startCase(page);
-		const original = await page.eval<string | null>(`document.documentElement.getAttribute('data-theme')`);
+		const original = await page.eval<string | null>(
+			`document.documentElement.getAttribute('data-theme')`,
+		);
 		await openHistory(page);
 		const paint = async (theme: string): Promise<{ want: string; got: string[]; surface: boolean }> => {
 			await page.eval(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(theme)})`);
@@ -5279,7 +5405,10 @@ async function runSuite(loadMark: number): Promise<void> {
 			"different colours",
 		);
 		if (original === null) await page.eval(`document.documentElement.removeAttribute('data-theme')`);
-		else await page.eval(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(original)})`);
+		else
+			await page.eval(
+				`document.documentElement.setAttribute('data-theme', ${JSON.stringify(original)})`,
+			);
 		await closeHistory(page);
 	});
 
@@ -5977,7 +6106,11 @@ async function runSuite(loadMark: number): Promise<void> {
 					line,
 					`title "File upload error", reason and "Remove the attachment and try again.", has-error`,
 				);
-				const log = await waitHeard(page, "assertive", `${BLANK.name}: No readable text found in this file.`);
+				const log = await waitHeard(
+					page,
+					"assertive",
+					`${BLANK.name}: No readable text found in this file.`,
+				);
 				ok(
 					"AI-56",
 					"the assertive region names the file and the reason",
@@ -6008,7 +6141,8 @@ async function runSuite(loadMark: number): Promise<void> {
 				ok(
 					"AI-56",
 					"the orphaned File doc is deleted",
-					(await filesSince(page, before, 0, 8000)).length === 0 && netSince(mark, UPLOAD_URL).length === 1,
+					(await filesSince(page, before, 0, 8000)).length === 0 &&
+						netSince(mark, UPLOAD_URL).length === 1,
 					(await filesSince(page, before, 0, 100)).map((f) => f.name),
 					"the upload happened once and no File doc remains",
 				);
@@ -6082,7 +6216,9 @@ async function runSuite(loadMark: number): Promise<void> {
 			}>(`${A}.dropState()`);
 			const said = await waitHeard(page, "polite", "Drop files to attach them to your message.");
 			await sleep(800);
-			const times = await page.eval<number>(`${A}.liveCount("Drop files to attach them to your message.")`);
+			const times = await page.eval<number>(
+				`${A}.liveCount("Drop files to attach them to your message.")`,
+			);
 			ok(
 				"AI-57",
 				"a file drag over the panel shows the overlay, marks the shell and tells a screen reader once",
@@ -6093,7 +6229,13 @@ async function runSuite(loadMark: number): Promise<void> {
 					over.prevented &&
 					over.dropEffect === "copy" &&
 					times === 1,
-				{ shown, enter: enter.prevented, over, times, said: said.filter((l) => l.includes("Drop files")) },
+				{
+					shown,
+					enter: enter.prevented,
+					over,
+					times,
+					said: said.filter((l) => l.includes("Drop files")),
+				},
 				"overlay shown, shell.cf-ai-shell--dragging, dragenter and dragover cancelled, dropEffect copy, one announcement",
 			);
 			await dragEvent(page, "dragleave", [NOTES]);
@@ -6129,7 +6271,12 @@ async function runSuite(loadMark: number): Promise<void> {
 					!done.dragging &&
 					chip?.name === NOTES.name &&
 					netSince(mark, UPLOAD_URL).length === 1,
-				{ drop: drop.prevented, overlay: done, chip: chip?.name, uploads: netSince(mark, UPLOAD_URL).length },
+				{
+					drop: drop.prevented,
+					overlay: done,
+					chip: chip?.name,
+					uploads: netSince(mark, UPLOAD_URL).length,
+				},
 				`drop cancelled, overlay off, chip "${NOTES.name}", one upload_file request`,
 			);
 			await waitChips(page, 1, isStaged, 20000);
@@ -6178,9 +6325,13 @@ async function runSuite(loadMark: number): Promise<void> {
 			"defaultPrevented true, a chip named CF AI Test pasted.txt",
 		);
 		await waitChips(page, 1, isStaged, 20000);
-		const html = await pasteFiles(page, [{ name: "CF AI Test cells.txt", text: BODY, type: "text/plain" }], {
-			html: "<table><tr><td>1</td></tr></table>",
-		});
+		const html = await pasteFiles(
+			page,
+			[{ name: "CF AI Test cells.txt", text: BODY, type: "text/plain" }],
+			{
+				html: "<table><tr><td>1</td></tr></table>",
+			},
+		);
 		const words = await pasteFiles(page, [], { text: "plain words" });
 		await sleep(500);
 		ok(
@@ -6201,7 +6352,11 @@ async function runSuite(loadMark: number): Promise<void> {
 				const failures: Array<[string, Verdict, string]> = [
 					[
 						"a file flow cannot parse (a 500 with only a traceback line)",
-						{ kind: "reply", status: 500, body: { exception: "zipfile.BadZipFile: File is not a zip file" } },
+						{
+							kind: "reply",
+							status: 500,
+							body: { exception: "zipfile.BadZipFile: File is not a zip file" },
+						},
 						"The file could not be read.",
 					],
 					[
@@ -6305,7 +6460,9 @@ async function runSuite(loadMark: number): Promise<void> {
 			ok(
 				"AI-59",
 				"New chat clears a staged file and deletes its File doc",
-				(await chips(page)).length === 0 && doc !== undefined && (await fileGone(page, doc.name, 5000)),
+				(await chips(page)).length === 0 &&
+					doc !== undefined &&
+					(await fileGone(page, doc.name, 5000)),
 				{ chips: (await chips(page)).length, doc: doc?.name },
 				"no chip, File doc gone within 5s",
 			);
@@ -6354,7 +6511,10 @@ async function runSuite(loadMark: number): Promise<void> {
 					await waitChips(page, 1, () => true, 5000);
 					await until(() => held.paused().length === 1, 8000);
 					const [created] = await filesSince(page, before, 1, 8000);
-					await click(page, `document.querySelector('#cf-ai-panel [data-action="cancel-uploads"]')`);
+					await click(
+						page,
+						`document.querySelector('#cf-ai-panel [data-action="cancel-uploads"]')`,
+					);
 					const log = await waitHeard(page, "polite", "Upload cancelled.");
 					await sleep(500);
 					ok(
@@ -6389,7 +6549,10 @@ async function runSuite(loadMark: number): Promise<void> {
 					await pickFiles(page, [DATA]);
 					await waitChips(page, 1, () => true, 5000);
 					const [made] = await filesSince(page, before2, 1, 8000);
-					await click(page, `document.querySelector('#cf-ai-panel [data-action="cancel-uploads"]')`);
+					await click(
+						page,
+						`document.querySelector('#cf-ai-panel [data-action="cancel-uploads"]')`,
+					);
 					await waitHeard(page, "polite", "Upload cancelled.");
 					ok(
 						"AI-59",
@@ -6460,7 +6623,9 @@ async function runSuite(loadMark: number): Promise<void> {
 		ok(
 			"AI-60",
 			"afterwards the strip is gone and the chip can be removed",
-			!finished.shown && (await chips(page)).length === 1 && isStaged((await chips(page))[0] ?? NO_CHIP),
+			!finished.shown &&
+				(await chips(page)).length === 1 &&
+				isStaged((await chips(page))[0] ?? NO_CHIP),
 			{ strip: finished.shown, chips: await chips(page) },
 			"strip hidden, one staged chip",
 		);
@@ -6606,9 +6771,12 @@ async function runSuite(loadMark: number): Promise<void> {
 			const mark = netMark();
 			const mockMark = flowMock.requests.length;
 			await say(page, "FLAKY cfai63", false);
-			await page.waitFor(`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`, {
-				timeout: 90000,
-			});
+			await page.waitFor(
+				`!!${A}.lastAssistant() && !!${A}.lastAssistant().querySelector('.cf-ai-error')`,
+				{
+					timeout: 90000,
+				},
+			);
 			await waitIdle(page);
 			await click(page, `document.querySelector('#cf-ai-panel [data-action="retry-reply"]')`);
 			await page.waitFor(`${A}.userRows().length >= 2`, { timeout: 15000 }).catch(() => {});
@@ -6713,7 +6881,12 @@ async function runSuite(loadMark: number): Promise<void> {
 						!!during.label &&
 						!!hostNames.cancelLabel &&
 						hostNames.unnamed.length === 0,
-					{ attach: button.name, strip: during, cancel: hostNames.cancelLabel, unnamed: hostNames.unnamed },
+					{
+						attach: button.name,
+						strip: during,
+						cancel: hostNames.cancelLabel,
+						unnamed: hostNames.unnamed,
+					},
 					"a named Attach button, role progressbar with aria-label, a named Cancel, no unnamed button",
 				);
 				ok(
@@ -6751,7 +6924,8 @@ async function runSuite(loadMark: number): Promise<void> {
 				"Enter and Space on the Attach button each open the picker; real files from disk attach",
 				byEnter === "selectMultiple" &&
 					bySpace === "selectMultiple" &&
-					JSON.stringify(three.map((c) => c.name)) === JSON.stringify([NOTES.name, DATA.name, MARKDOWN.name]),
+					JSON.stringify(three.map((c) => c.name)) ===
+						JSON.stringify([NOTES.name, DATA.name, MARKDOWN.name]),
 				{ byEnter, bySpace, chips: three.map((c) => c.name) },
 				`both open a "selectMultiple" picker; chips ${JSON.stringify([NOTES.name, DATA.name, MARKDOWN.name])}`,
 			);
@@ -6787,7 +6961,9 @@ async function runSuite(loadMark: number): Promise<void> {
 	await group("AI-66", async () => {
 		await tolerate(async () => {
 			await freshChat(page);
-			const original = await page.eval<string | null>(`document.documentElement.getAttribute('data-theme')`);
+			const original = await page.eval<string | null>(
+				`document.documentElement.getAttribute('data-theme')`,
+			);
 			await pickFiles(page, [NOTES, DATA, BLANK]);
 			const three = await waitChips(page, 3, (c) => c.state !== "uploading", 30000);
 			ok(
@@ -6888,7 +7064,8 @@ async function runSuite(loadMark: number): Promise<void> {
 			"AI-67",
 			"it is the list AI-51 saw",
 			observed.accept === null ||
-				JSON.stringify(observed.accept.split(",").sort()) === JSON.stringify([...expectedAccept].sort()),
+				JSON.stringify(observed.accept.split(",").sort()) ===
+					JSON.stringify([...expectedAccept].sort()),
 			{ before: observed.accept, now: accept },
 			observed.accept === null ? "AI-51 did not run (nothing to compare)" : "the same list",
 		);
@@ -7008,13 +7185,21 @@ async function runSuite(loadMark: number): Promise<void> {
 			await press(page, "i", CTRL);
 			await page.waitFor(`${A}.isOpen()`, { timeout: 10000 });
 			const ours = await page.eval<unknown>(`${A}.flowVisible()`);
-			ok("AI-23", "Ctrl+I opens ours again, not flow's", ours !== true, ours, "flow.panel.visible not true");
+			ok(
+				"AI-23",
+				"Ctrl+I opens ours again, not flow's",
+				ours !== true,
+				ours,
+				"flow.panel.visible not true",
+			);
 			await closePanelWithTrigger(page);
 
 			await page.send("Network.setBlockedURLs", { urls: ["*/dist/ai_chat/*"] });
 			await freshPage(page);
 			await click(page, trigger, false);
-			await page.waitFor(`!!document.querySelector('#cf-ai-panel [data-action="flow"]')`, { timeout: 20000 });
+			await page.waitFor(`!!document.querySelector('#cf-ai-panel [data-action="flow"]')`, {
+				timeout: 20000,
+			});
 			await click(page, `document.querySelector('#cf-ai-panel [data-action="flow"]')`);
 			await sleep(600);
 			const toFlow = await page.eval<{ flow: unknown; ours: boolean; expanded: string | null }>(`({

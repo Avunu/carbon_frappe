@@ -105,7 +105,9 @@ export interface ShellModel {
  * also takes the class while its menu is open (sidebar_header.js:273-283).
  */
 export function activeHref(): string | null {
-	const anchor = document.querySelector(".body-sidebar .sidebar-items .active-sidebar > a.item-anchor[href]");
+	const anchor = document.querySelector(
+		".body-sidebar .sidebar-items .active-sidebar > a.item-anchor[href]",
+	);
 	return anchor ? anchor.getAttribute("href") : null;
 }
 

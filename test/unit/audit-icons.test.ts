@@ -87,12 +87,18 @@ describe("parseGlyphModule and diffGeneratedFile", () => {
 		assert.deepEqual(diffGeneratedFile("x.ts", generated, formatted.replace("M1", "M2")), [
 			"up16's markup differs",
 		]);
-		assert.match(diffGeneratedFile("x.ts", generated, formatted.replace("1.0.0", "1.0.1")).join(), /header/);
+		assert.match(
+			diffGeneratedFile("x.ts", generated, formatted.replace("1.0.0", "1.0.1")).join(),
+			/header/,
+		);
 		assert.deepEqual(diffGeneratedFile("x.ts", generated, header), ["up16 is missing"]);
 		assert.deepEqual(diffGeneratedFile("x.ts", header, formatted), ["up16 is no longer listed"]);
 	});
 	it("catches code the generator never writes, after or between the entries", () => {
-		for (const extra of ['export const evil16 = "<svg></svg>";', "export function boom() { return 1; }"]) {
+		for (const extra of [
+			'export const evil16 = "<svg></svg>";',
+			"export function boom() { return 1; }",
+		]) {
 			assert.match(
 				diffGeneratedFile("x.ts", generated, `${formatted}${extra}\n`).join(),
 				/text the generator/,

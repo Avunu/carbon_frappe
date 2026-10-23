@@ -392,7 +392,9 @@ export class DataManagerShim {
 	}
 	/** `report_view.get_column_widths()` calls this with `true`. */
 	getColumns(skipStandardColumns?: boolean): DataTableColumn[] {
-		return skipStandardColumns ? this.host.columns.slice(this.getStandardColumnCount()) : this.host.columns;
+		return skipStandardColumns
+			? this.host.columns.slice(this.getStandardColumnCount())
+			: this.host.columns;
 	}
 	getFilteredRowIndices(): DataTableRowIndex[] {
 		return this.host.engine.table.getRowModel().rows.map(rowIndexOf);
@@ -668,7 +670,9 @@ export class ColumnManagerShim {
 	}
 	focusFilter(colIndex: DataTableColIndex): string | null {
 		const column = this.host.engineColumnId(colIndex);
-		const input = this.host.container.querySelector<HTMLElement>(`.dt-filter[data-col-index="${colIndex}"]`);
+		const input = this.host.container.querySelector<HTMLElement>(
+			`.dt-filter[data-col-index="${colIndex}"]`,
+		);
 		if (input) input.focus();
 		return column;
 	}

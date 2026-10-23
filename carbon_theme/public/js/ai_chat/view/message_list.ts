@@ -148,7 +148,12 @@ export function createMessageList(deps: MessageListDeps): MessageList {
 	processingLabel.textContent = __("Thinking…");
 	processing.append(dots, processingLabel);
 
-	const handle = (end: "top" | "bottom", text: string, label: string, action: string): HTMLButtonElement => {
+	const handle = (
+		end: "top" | "bottom",
+		text: string,
+		label: string,
+		action: string,
+	): HTMLButtonElement => {
 		const button = el("button", `cf-ai-scroll-handle cf-ai-scroll-handle--${end}`, text);
 		button.type = "button";
 		button.setAttribute("aria-label", label);
@@ -469,7 +474,9 @@ export function createMessageList(deps: MessageListDeps): MessageList {
 				const old = before.messages[index];
 				if (message === old) return;
 				const earlier =
-					old?.id === message.id || message.id === undefined ? old : lastById(before.messages, message.id);
+					old?.id === message.id || message.id === undefined
+						? old
+						: lastById(before.messages, message.id);
 				announceItems(message, earlier);
 			});
 		}
@@ -523,7 +530,8 @@ export function createMessageList(deps: MessageListDeps): MessageList {
 		const state = store.get();
 		const messages = state.messages;
 
-		if (hydrating || messages.length === 0) windowStart = initialWindowStart(messages.length, isTurnStart);
+		if (hydrating || messages.length === 0)
+			windowStart = initialWindowStart(messages.length, isTurnStart);
 		windowStart = Math.min(windowStart, messages.length);
 
 		const ids = new Set<string>();
@@ -676,7 +684,9 @@ export function createMessageList(deps: MessageListDeps): MessageList {
 	earlierButton.addEventListener("click", showEarlier);
 
 	function rowElements(): HTMLElement[] {
-		return Array.from(listEl.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
+		return Array.from(listEl.children).filter(
+			(child): child is HTMLElement => child instanceof HTMLElement,
+		);
 	}
 
 	function focusRow(row: HTMLElement | undefined): void {

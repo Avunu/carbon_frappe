@@ -65,7 +65,10 @@ function framesOf(wire: string): { event: string; data: unknown }[] {
 		.filter((block) => block !== "")
 		.map((block) => {
 			const [eventLine = "", dataLine = ""] = block.split("\n");
-			return { event: eventLine.slice("event: ".length), data: JSON.parse(dataLine.slice("data: ".length)) };
+			return {
+				event: eventLine.slice("event: ".length),
+				data: JSON.parse(dataLine.slice("data: ".length)),
+			};
 		});
 }
 
@@ -98,7 +101,12 @@ describe("events.ts: parseFlowEvent", () => {
 		);
 		assert.deepEqual(parseFlowEvent("text", { type: "text", delta: "hi" }), ev.text("hi"));
 		assert.deepEqual(
-			parseFlowEvent("tool_started", { type: "tool_started", id: "c", name: "read", arguments: { a: 1 } }),
+			parseFlowEvent("tool_started", {
+				type: "tool_started",
+				id: "c",
+				name: "read",
+				arguments: { a: 1 },
+			}),
 			ev.toolStarted("c", "read", { a: 1 }),
 		);
 		assert.deepEqual(
@@ -274,7 +282,13 @@ describe("events.ts: questions", () => {
 			key: 5,
 			options: "x",
 		});
-		assert.deepEqual(loose, { prompt: "p", options: [], multi_select: false, allow_other: true, key: null });
+		assert.deepEqual(loose, {
+			prompt: "p",
+			options: [],
+			multi_select: false,
+			allow_other: true,
+			key: null,
+		});
 	});
 
 	it("drops an entry without a string prompt", () => {
@@ -468,12 +482,16 @@ describe("docs.ts: guards", () => {
 		for (const status of ["Running", "Paused", "Completed", "Failed"]) {
 			assert.equal(isFlowRunStatus(status), true);
 		}
-		for (const status of ["running", "Stopped", "", null, 1]) assert.equal(isFlowRunStatus(status), false);
+		for (const status of ["running", "Stopped", "", null, 1])
+			assert.equal(isFlowRunStatus(status), false);
 	});
 
 	it("isFlowSessionMessageRow rejects near misses", () => {
 		assert.equal(isFlowSessionMessageRow({ role: "user" }), true);
-		assert.equal(isFlowSessionMessageRow({ role: "user", content: null, tool_calls: [], run: "r" }), true);
+		assert.equal(
+			isFlowSessionMessageRow({ role: "user", content: null, tool_calls: [], run: "r" }),
+			true,
+		);
 		assert.equal(isFlowSessionMessageRow({ role: "anything-goes", content: "x" }), true);
 		assert.equal(isFlowSessionMessageRow({}), false);
 		assert.equal(isFlowSessionMessageRow({ role: 1 }), false);
@@ -643,7 +661,10 @@ describe("tool_result.ts", () => {
 		});
 
 		it("prefers the error key over failures", () => {
-			assert.equal(toolError(pyJson({ error: "top", created: [], failures: [{ error: "row" }] })), "top");
+			assert.equal(
+				toolError(pyJson({ error: "top", created: [], failures: [{ error: "row" }] })),
+				"top",
+			);
 		});
 	});
 

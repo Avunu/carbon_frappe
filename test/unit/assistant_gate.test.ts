@@ -44,7 +44,10 @@ describe("panel state", () => {
 	it("round-trips", () => {
 		for (const open of [true, false]) {
 			for (const expanded of [true, false]) {
-				assert.deepEqual(parsePanelState(serialisePanelState({ open, expanded })), { open, expanded });
+				assert.deepEqual(parsePanelState(serialisePanelState({ open, expanded })), {
+					open,
+					expanded,
+				});
 			}
 		}
 	});
@@ -67,7 +70,10 @@ describe("panel state", () => {
 		assert.deepEqual(parsePanelState('{"v":2,"open":true,"expanded":true}'), closed);
 	});
 	it("takes only a real true as true", () => {
-		assert.deepEqual(parsePanelState('{"v":1,"open":"yes","expanded":1}'), { open: false, expanded: false });
+		assert.deepEqual(parsePanelState('{"v":1,"open":"yes","expanded":1}'), {
+			open: false,
+			expanded: false,
+		});
 		assert.deepEqual(parsePanelState('{"v":1,"open":true}'), { open: true, expanded: false });
 	});
 	it("does not hand out the shared default to be mutated", () => {

@@ -288,7 +288,10 @@ export function mountSwitcher(header: HTMLElement, global: HTMLElement): ShellSw
 		const target = e.target;
 		if (!(target instanceof Node)) return;
 		if (button.contains(target)) return;
-		if (panel.contains(target) && !(isHTMLElement(target) && target.closest("a.cds--switcher__item-link")))
+		if (
+			panel.contains(target) &&
+			!(isHTMLElement(target) && target.closest("a.cds--switcher__item-link"))
+		)
 			return;
 		close();
 	});

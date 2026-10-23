@@ -416,7 +416,10 @@ export async function newPage(port: number): Promise<Page> {
 			await new Promise((wake) => setTimeout(wake, 150));
 		},
 		async screenshot(file: string, { fullPage = false }: ScreenshotOptions = {}): Promise<string> {
-			const r = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: fullPage });
+			const r = await send("Page.captureScreenshot", {
+				format: "png",
+				captureBeyondViewport: fullPage,
+			});
 			const data = isRecord(r) ? r["data"] : undefined;
 			if (typeof data !== "string") {
 				throw new Error(`Page.captureScreenshot returned no image data for ${file}`);
@@ -436,7 +439,9 @@ export async function newPage(port: number): Promise<Page> {
 			return events
 				.filter(
 					(e): e is CdpLogEntryAddedEvent =>
-						isLogEntryAdded(e) && e.params.entry.level === "error" && e.params.entry.source !== "network",
+						isLogEntryAdded(e) &&
+						e.params.entry.level === "error" &&
+						e.params.entry.source !== "network",
 				)
 				.map((e) => `${e.params.entry.source}: ${e.params.entry.text}`);
 		},
@@ -444,7 +449,9 @@ export async function newPage(port: number): Promise<Page> {
 			return events
 				.filter(
 					(e): e is CdpLogEntryAddedEvent =>
-						isLogEntryAdded(e) && e.params.entry.level === "error" && e.params.entry.source === "network",
+						isLogEntryAdded(e) &&
+						e.params.entry.level === "error" &&
+						e.params.entry.source === "network",
 				)
 				.map((e) => e.params.entry.text);
 		},

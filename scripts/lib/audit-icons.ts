@@ -148,9 +148,12 @@ export function diffGeneratedFile(file: string, expected: string, committed: str
 			else if (got.value !== e.value) problems.push(`${e.name}'s markup differs`);
 			else if (got.doc !== e.doc) problems.push(`${e.name}'s doc comment differs`);
 		}
-		for (const e of have.exports) if (!wantNames.has(e.name)) problems.push(`${e.name} is no longer listed`);
+		for (const e of have.exports)
+			if (!wantNames.has(e.name)) problems.push(`${e.name} is no longer listed`);
 		if (have.rest !== want.rest) {
-			problems.push(`it has text the generator does not write: ${JSON.stringify(have.rest.slice(0, 60))}`);
+			problems.push(
+				`it has text the generator does not write: ${JSON.stringify(have.rest.slice(0, 60))}`,
+			);
 		}
 		if (
 			!problems.length &&

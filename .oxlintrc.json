@@ -72,7 +72,7 @@
 			}
 		},
 		{
-			"files": ["carbon_theme/public/js/ai_chat/register.ts", "carbon_theme/public/js/ai_chat/entry.ts"],
+			"files": ["carbon_theme/public/js/ai_chat/{register,entry}.ts"],
 			"rules": {
 				"import/no-unassigned-import": "off"
 			}

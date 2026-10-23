@@ -1335,7 +1335,9 @@ export default class CarbonTable<TData extends RowData = CarbonTableData>
 	 * See render.ts#renderRow for why this seam exists.
 	 */
 	createRowNode(row: CarbonRow<TData>): HTMLTableRowElement | null | undefined {
-		return typeof this.options.createRowNode === "function" ? this.options.createRowNode(row, this) : null;
+		return typeof this.options.createRowNode === "function"
+			? this.options.createRowNode(row, this)
+			: null;
 	}
 
 	/** Let an adapter own a filter cell's contents. Truthy skips the default input. */

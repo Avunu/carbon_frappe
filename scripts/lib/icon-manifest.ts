@@ -200,7 +200,8 @@ export const LEGACY_GLYPHS: readonly LegacyGlyph[] = [
 		name: "lock",
 		icon: "locked",
 		apps: ["frappe"],
-		emitters: "core/doctype/file/file.py, utils/file_manager.py, desk/form/activity.py (private-file link)",
+		emitters:
+			"core/doctype/file/file.py, utils/file_manager.py, desk/form/activity.py (private-file link)",
 	},
 	{
 		family: "fa",
@@ -261,8 +262,20 @@ export const LEGACY_GLYPHS: readonly LegacyGlyph[] = [
 		apps: ["print_designer"],
 		emitters: "AppLayer, LayersPanel",
 	},
-	{ family: "fa", name: "image", icon: "image", apps: ["print_designer"], emitters: "AppLayer, LayersPanel" },
-	{ family: "fa", name: "table", icon: "table", apps: ["print_designer"], emitters: "AppLayer, LayersPanel" },
+	{
+		family: "fa",
+		name: "image",
+		icon: "image",
+		apps: ["print_designer"],
+		emitters: "AppLayer, LayersPanel",
+	},
+	{
+		family: "fa",
+		name: "table",
+		icon: "table",
+		apps: ["print_designer"],
+		emitters: "AppLayer, LayersPanel",
+	},
 	{
 		family: "fa",
 		name: "square-o",

@@ -148,19 +148,17 @@ if (process.argv.includes("--serve")) {
 		".css": "text/css",
 		".map": "application/json",
 	};
-	http
-		.createServer((req, res) => {
-			// `split` always yields at least one element, but an index into it is
-			// typed as possibly missing; the fallback is the path a bare "/"
-			// already takes below.
-			const rel = (req.url || "/").split("?")[0] ?? "/";
-			const file = path.join(outDir, rel === "/" ? "table-demo.html" : rel);
-			if (!file.startsWith(outDir) || !fs.existsSync(file)) {
-				res.writeHead(404).end("not found");
-				return;
-			}
-			res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream" });
-			fs.createReadStream(file).pipe(res);
-		})
-		.listen(port, () => console.log(`serving http://127.0.0.1:${port}/`));
+	http.createServer((req, res) => {
+		// `split` always yields at least one element, but an index into it is
+		// typed as possibly missing; the fallback is the path a bare "/"
+		// already takes below.
+		const rel = (req.url || "/").split("?")[0] ?? "/";
+		const file = path.join(outDir, rel === "/" ? "table-demo.html" : rel);
+		if (!file.startsWith(outDir) || !fs.existsSync(file)) {
+			res.writeHead(404).end("not found");
+			return;
+		}
+		res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream" });
+		fs.createReadStream(file).pipe(res);
+	}).listen(port, () => console.log(`serving http://127.0.0.1:${port}/`));
 }

@@ -683,7 +683,9 @@ describe("paused runs", () => {
 		await h.controller.send(text);
 
 		assert.equal(h.client.starts.length, 1, "a redirect never starts a run");
-		assert.deepEqual(h.client.resumes, [{ run: RUN, answers: { [CALL_CREATE]: text, [CALL_DELETE]: text } }]);
+		assert.deepEqual(h.client.resumes, [
+			{ run: RUN, answers: { [CALL_CREATE]: text, [CALL_DELETE]: text } },
+		]);
 		assert.equal(h.store.get().messages.length, count, "the redirect adds no request row");
 		const response = lastResponse(h.store);
 		const cards = response.output.generic.filter(isFlowApprovalItem);
@@ -1033,7 +1035,10 @@ describe("start", () => {
 
 		h.client.nextResume(replay(RESUME_DENIED.events));
 		await h.controller.send("not now");
-		assert.deepEqual(h.client.resumes[0]?.answers, { [CALL_CREATE]: "not now", [CALL_DELETE]: "not now" });
+		assert.deepEqual(h.client.resumes[0]?.answers, {
+			[CALL_CREATE]: "not now",
+			[CALL_DELETE]: "not now",
+		});
 		assert.equal(pendingApproval(h.store.get().messages), undefined);
 		assert.equal(h.store.get().status, "ready");
 	});
@@ -1066,7 +1071,10 @@ describe("start", () => {
 		assert.equal(h.storage.data.get(SESSION_KEY), "");
 	});
 
-	for (const failure of [new TypeError("Failed to fetch"), new FlowHttpError("Request failed (502)", 502)]) {
+	for (const failure of [
+		new TypeError("Failed to fetch"),
+		new FlowHttpError("Request failed (502)", 502),
+	]) {
 		it(`${failure.message} keeps the session, and starting again retries it`, async () => {
 			const h = harness({ [SESSION_KEY]: SESSION }, { status: "loading" });
 			mock.method(console, "error", () => {});
@@ -1211,7 +1219,11 @@ describe("stream lease", () => {
 
 	it("start() never recovers the session, with or without a lease", async () => {
 		// a run another browser streams cannot be told apart from one a closed tab left behind
-		for (const lease of [`${OTHER}@${NOW - 4_000}@${SESSION}`, `${OTHER}@${NOW - 60_000}@${SESSION}`, ""]) {
+		for (const lease of [
+			`${OTHER}@${NOW - 4_000}@${SESSION}`,
+			`${OTHER}@${NOW - 60_000}@${SESSION}`,
+			"",
+		]) {
 			const h = harness(
 				{ [SESSION_KEY]: SESSION, ...(lease === "" ? {} : { [STREAM_KEY]: lease }) },
 				{ status: "loading" },
@@ -1761,12 +1773,18 @@ describe("selectSession", () => {
 		assert.equal(errors.mock.callCount(), 1);
 
 		h.client.sessions.set("s-b", new TypeError("Failed to fetch"));
-		await assert.rejects(h.controller.selectSession("s-b"), /^Error: Could not open this conversation\.$/);
+		await assert.rejects(
+			h.controller.selectSession("s-b"),
+			/^Error: Could not open this conversation\.$/,
+		);
 		assert.equal(h.store.get().status, "ready");
 	});
 
 	it("puts a hydration error back when the switch away from it fails", async () => {
-		const h = harness({}, { status: "error", error: { errorType: "HYDRATION", message: "Could not load." } });
+		const h = harness(
+			{},
+			{ status: "error", error: { errorType: "HYDRATION", message: "Could not load." } },
+		);
 		mock.method(console, "error", () => {});
 		h.client.sessions.set("s-b", new TypeError("Failed to fetch"));
 		await assert.rejects(h.controller.selectSession("s-b"));
@@ -1775,7 +1793,10 @@ describe("selectSession", () => {
 	});
 
 	it("goes back to the state before a chain of switches when the last one fails", async () => {
-		const h = harness({}, { status: "error", error: { errorType: "HYDRATION", message: "Could not load." } });
+		const h = harness(
+			{},
+			{ status: "error", error: { errorType: "HYDRATION", message: "Could not load." } },
+		);
 		mock.method(console, "error", () => {});
 		const hold = deferred();
 		h.client.holds.set("s-a", hold.promise);
@@ -2136,7 +2157,10 @@ describe("deleteSession", () => {
 		assert.equal(errors.mock.callCount(), 1);
 
 		h.client.deleteFails = new TypeError("Failed to fetch");
-		await assert.rejects(h.controller.deleteSession("s-a"), /^Error: Could not delete this conversation\.$/);
+		await assert.rejects(
+			h.controller.deleteSession("s-a"),
+			/^Error: Could not delete this conversation\.$/,
+		);
 	});
 
 	it("stops a turn that began in the deleted conversation while the request was out", async () => {
@@ -2291,7 +2315,11 @@ describe("a session still holding a Running run", () => {
 		await h.controller.send("again");
 
 		assert.equal(h.client.starts.length, 1);
-		assert.deepEqual(h.client.recovers, [], "a dropped request is recovered by the interruption path only");
+		assert.deepEqual(
+			h.client.recovers,
+			[],
+			"a dropped request is recovered by the interruption path only",
+		);
 	});
 
 	it("does not start a second run once the first has produced a frame", async () => {
@@ -2525,7 +2553,13 @@ describe("addFiles", () => {
 		const h = attachHarness();
 		const a = txt("a.txt");
 		const b = txt("b.csv");
-		const result = h.controller.addFiles([a, txt("bad.exe"), b, txt("empty.txt", 0), txt("big.txt", 1001)]);
+		const result = h.controller.addFiles([
+			a,
+			txt("bad.exe"),
+			b,
+			txt("empty.txt", 0),
+			txt("big.txt", 1001),
+		]);
 
 		assert.deepEqual(
 			pendingOf(h).map((upload) => upload.id),
@@ -2672,7 +2706,13 @@ describe("the upload pipeline", () => {
 		assert.equal("errorMessage" in done, false);
 		assert.deepEqual(done.contributedData, {
 			fields: [
-				fileFieldFor({ type: "reference", id: "D1", name: "a.txt", size: 10, mime_type: "text/plain" }),
+				fileFieldFor({
+					type: "reference",
+					id: "D1",
+					name: "a.txt",
+					size: 10,
+					mime_type: "text/plain",
+				}),
 			],
 		});
 		assert.equal(h.store.get().hasInFlightUploads, false);
@@ -3368,7 +3408,10 @@ describe("retryLast", () => {
 			],
 			attachments: [{ file: "F9", file_name: "old.txt", file_size: 4, run: "run-r" }],
 		};
-		h.client.sessions.set("s-r", { session, runs: [{ name: "run-r", session: "s-r", status: "Completed" }] });
+		h.client.sessions.set("s-r", {
+			session,
+			runs: [{ name: "run-r", session: "s-r", status: "Completed" }],
+		});
 		await h.controller.selectSession("s-r");
 		h.client.nextStart(replay(TEXT_ONLY.events));
 
@@ -3557,7 +3600,11 @@ describe("pagehide with files", () => {
 			await finish(h, 0, "D1");
 			h.controller.dispose();
 			page.dispatchEvent(hide(false));
-			assert.deepEqual(h.client.fileDeletes, ["D1"], "dispose already deleted it; the page adds nothing");
+			assert.deepEqual(
+				h.client.fileDeletes,
+				["D1"],
+				"dispose already deleted it; the page adds nothing",
+			);
 		}));
 });
 

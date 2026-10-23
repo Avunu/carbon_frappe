@@ -252,7 +252,8 @@ function createQuestionView(
 			// question (a tool that asks the user something) is its prompt, whose text is
 			// the content and whose tool name would only say "Ask user".
 			const tool = step?.tool_name;
-			const confirmation = step !== undefined && tool !== undefined && question.options.includes(APPROVE);
+			const confirmation =
+				step !== undefined && tool !== undefined && question.options.includes(APPROVE);
 			const info = confirmation ? approvalTitle(tool, step.request?.args, __) : null;
 			const parts = splitPrompt(question.prompt);
 			const heading = info ? info.title : parts.title;
@@ -263,7 +264,9 @@ function createQuestionView(
 				title.querySelector("svg")?.remove();
 				title.insertAdjacentHTML(
 					"afterbegin",
-					iconSvg(danger ? ICONS.warningAlt16 : ICONS.security16, { class: "cf-ai-approval__icon" }),
+					iconSvg(danger ? ICONS.warningAlt16 : ICONS.security16, {
+						class: "cf-ai-approval__icon",
+					}),
 				);
 				iconDanger = danger;
 			}
@@ -310,7 +313,8 @@ function createQuestionView(
 		},
 		focusFirst() {
 			if (answered) return;
-			const target = redirectOpen || freeText ? field : actions.querySelector<HTMLElement>("[data-action]");
+			const target =
+				redirectOpen || freeText ? field : actions.querySelector<HTMLElement>("[data-action]");
 			if (target) focusWhenReady(target);
 		},
 	};

@@ -196,7 +196,11 @@ describe("feedbackRun", () => {
 	it("skips items with is_on false, an empty id, or no feedback", () => {
 		const generic: GenericItem[] = [
 			{ response_type: "text", text: "a", message_item_options: on("r1") },
-			{ response_type: "text", text: "b", message_item_options: { feedback: { is_on: false, id: "r2" } } },
+			{
+				response_type: "text",
+				text: "b",
+				message_item_options: { feedback: { is_on: false, id: "r2" } },
+			},
 			{ response_type: "text", text: "c", message_item_options: on("") },
 			{ response_type: "text", text: "d", message_item_options: { feedback: { is_on: true } } },
 			{ response_type: "text", text: "e" },

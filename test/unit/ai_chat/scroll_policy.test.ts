@@ -104,7 +104,12 @@ describe("growOnlySpacerHeight", () => {
 
 	it("is zero for an empty spacer on content that reaches the pin", () => {
 		assert.equal(
-			growOnlySpacerHeight({ scrollHeight: 3000, clientHeight: 800, spacerHeight: 0, pinnedScrollTop: 440 }),
+			growOnlySpacerHeight({
+				scrollHeight: 3000,
+				clientHeight: 800,
+				spacerHeight: 0,
+				pinnedScrollTop: 440,
+			}),
 			0,
 		);
 	});

@@ -415,7 +415,11 @@ try {
 		after.cellBg === "rgb(0, 128, 0)" && after.cellFw === "700",
 		JSON.stringify({ bg: after.cellBg, fw: after.cellFw }),
 	);
-	ok("cellHeight honoured (36 -> Carbon md 40)", after.rowH >= 32 && after.rowH <= 44, `rowH=${after.rowH}`);
+	ok(
+		"cellHeight honoured (36 -> Carbon md 40)",
+		after.rowH >= 32 && after.rowH <= 44,
+		`rowH=${after.rowH}`,
+	);
 
 	// getEditor path
 	const edit = await page.eval<EditProbe>(`(() => {

@@ -240,7 +240,12 @@ describe("reduceFlowEvent: tool steps", () => {
 	it("creates the step on the first frame without request, then fills it", () => {
 		const first = reduceFlowEvent(START, ev.toolStarted(CALL_READ, "read", {}));
 		assert.deepEqual(steps(first), [
-			{ tool_call_id: CALL_READ, tool_name: "read", title: "Reading DocType Records", status: "processing" },
+			{
+				tool_call_id: CALL_READ,
+				tool_name: "read",
+				title: "Reading DocType Records",
+				status: "processing",
+			},
 		]);
 		assert.equal("request" in step(first, CALL_READ), false);
 
@@ -285,7 +290,10 @@ describe("reduceFlowEvent: tool steps", () => {
 	});
 
 	it("turns an empty tool_ended into success with empty content when done is Completed", () => {
-		const state = play([ev.toolStarted("c1", "read", { doctype: "ToDo" }), ev.toolEnded("c1", "read", "")]);
+		const state = play([
+			ev.toolStarted("c1", "read", { doctype: "ToDo" }),
+			ev.toolEnded("c1", "read", ""),
+		]);
 		assert.equal(step(state, "c1").status, "processing");
 		assert.deepEqual(state.emptyEnded, ["c1"]);
 
@@ -579,7 +587,10 @@ describe("reduceFlowEvent: done", () => {
 
 	it("attaches no feedback without a run, or without any text", () => {
 		assert.deepEqual(feedbackOn(play([ev.text("Hi"), ev.done("Completed", "Hi", 1, {})])), []);
-		assert.deepEqual(feedbackOn(play([ev.runStarted(RUN, SESSION), ev.done("Completed", null, 0, {})])), []);
+		assert.deepEqual(
+			feedbackOn(play([ev.runStarted(RUN, SESSION), ev.done("Completed", null, 0, {})])),
+			[],
+		);
 	});
 
 	it("a Paused done with no questions pauses without a card", () => {
@@ -591,7 +602,10 @@ describe("reduceFlowEvent: done", () => {
 
 	it("a duplicate Paused done refreshes the open card in place", () => {
 		const first = play(PAUSED_TWO_QUESTIONS.events);
-		const second = reduceFlowEvent(first, ev.done("Paused", null, 1, {}, [QUESTION_CREATE, QUESTION_DELETE]));
+		const second = reduceFlowEvent(
+			first,
+			ev.done("Paused", null, 1, {}, [QUESTION_CREATE, QUESTION_DELETE]),
+		);
 		assert.deepEqual(items(second), items(first));
 		assert.equal(items(second).filter(isFlowApprovalItem).length, 1);
 	});
@@ -806,7 +820,11 @@ describe("stopStream", () => {
 		assert.equal(state.phase, "complete");
 		assert.equal(state.textOpen, false);
 		assert.deepEqual(items(state), [
-			{ response_type: "text", text: "partial", streaming_metadata: { id: "text-1", stream_stopped: true } },
+			{
+				response_type: "text",
+				text: "partial",
+				streaming_metadata: { id: "text-1", stream_stopped: true },
+			},
 		]);
 		assert.equal(step(state, "c1").status, "failure");
 		assert.deepEqual(feedbackOn(state), []);
@@ -932,7 +950,11 @@ describe("structural sharing", () => {
 	});
 
 	it("updating one step keeps the other steps and the output by identity", () => {
-		const prev = play([ev.text("a"), ev.toolStarted("c1", "read", {}), ev.toolStarted("c2", "describe", {})]);
+		const prev = play([
+			ev.text("a"),
+			ev.toolStarted("c1", "read", {}),
+			ev.toolStarted("c2", "describe", {}),
+		]);
 		const next = reduceFlowEvent(prev, ev.toolEnded("c2", "describe", '{"fields": []}'));
 		assert.equal(steps(next)[0], steps(prev)[0]);
 		assert.notEqual(steps(next)[1], steps(prev)[1]);
@@ -1035,7 +1057,11 @@ describe("totality", () => {
 				if (random() < 0.05) state = stopStream(state);
 			}
 			const ids = items(state).map((item) => item.streaming_metadata?.id);
-			assert.equal(new Set(ids).size, ids.length, `round ${round}: duplicate item ids ${ids.join(",")}`);
+			assert.equal(
+				new Set(ids).size,
+				ids.length,
+				`round ${round}: duplicate item ids ${ids.join(",")}`,
+			);
 			const stepIds = steps(state).map((entry) => entry.tool_call_id);
 			assert.equal(new Set(stepIds).size, stepIds.length, `round ${round}: duplicate step ids`);
 			assert.ok(

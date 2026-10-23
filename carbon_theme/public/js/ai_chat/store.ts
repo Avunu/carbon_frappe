@@ -110,7 +110,9 @@ export function createChatStore(initial?: Partial<ChatState>): ChatStore {
 			do {
 				redeliver = false;
 				if (++passes > MAX_DELIVERY_PASSES) {
-					console.error(new Error("ChatStore: listeners keep mutating the store; giving up on delivery."));
+					console.error(
+						new Error("ChatStore: listeners keep mutating the store; giving up on delivery."),
+					);
 					break;
 				}
 				deliverPass();
@@ -192,9 +194,13 @@ export function createChatStore(initial?: Partial<ChatState>): ChatStore {
 		remove(ids) {
 			const doomed = new Set(ids);
 			for (const id of doomed) messageStates.delete(id);
-			const kept = state.messages.filter((message) => message.id === undefined || !doomed.has(message.id));
+			const kept = state.messages.filter(
+				(message) => message.id === undefined || !doomed.has(message.id),
+			);
 			const activeResponseId =
-				state.activeResponseId !== null && doomed.has(state.activeResponseId) ? null : state.activeResponseId;
+				state.activeResponseId !== null && doomed.has(state.activeResponseId)
+					? null
+					: state.activeResponseId;
 			commit({
 				...state,
 				messages: kept.length === state.messages.length ? state.messages : kept,

@@ -523,7 +523,11 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 		toggleClass(node, "cf-table__cell--pinned-end", pinned === "end");
 		// The last start-pinned / first end-pinned column carries the divider
 		// shadow, matching tanstack-carbon's sticky-columns example.
-		toggleClass(node, "cf-table__cell--pinned-last", pinned === "start" && column.getIsLastColumn("start"));
+		toggleClass(
+			node,
+			"cf-table__cell--pinned-last",
+			pinned === "start" && column.getIsLastColumn("start"),
+		);
 		toggleClass(node, "cf-table__cell--pinned-first", pinned === "end" && column.getIsFirstColumn("end"));
 	}
 
@@ -792,7 +796,12 @@ export default class TableRenderer<THost extends TableRendererHost<THost>> {
 				const suppliedCell = this.host.createCellNode(row, column, i);
 				if (suppliedCell) {
 					suppliedCell.classList.add("cf-table__cell");
-					cell = { td: suppliedCell, content: suppliedCell, rendered: undefined, adapterOwned: true };
+					cell = {
+						td: suppliedCell,
+						content: suppliedCell,
+						rendered: undefined,
+						adapterOwned: true,
+					};
 				} else {
 					const td = el("td", { className: "cf-table__cell" });
 					const content = el("div", { className: "cf-table__cell-content" });

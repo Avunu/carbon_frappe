@@ -340,7 +340,8 @@ function findProblems(js: JsBuild, css: CssBuild, sizes: Sizes): string[] {
 		);
 	}
 	for (const name of js.files.keys()) {
-		if (name.includes(".bundle.")) problems.push(`output ${name} matches frappe's *.bundle.* index pattern`);
+		if (name.includes(".bundle."))
+			problems.push(`output ${name} matches frappe's *.bundle.* index pattern`);
 	}
 	const manifest = { entry: js.entry, css: css.name };
 	if (!isLoadableManifest(manifest)) {

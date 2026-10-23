@@ -142,9 +142,10 @@ describe("diffMirror", () => {
 			diffMirror(frappeDesk, ours, { bundle: "desk", frappeEntryDir: "frappe/public/scss", omit }),
 			[],
 		);
-		assert.deepEqual(diffMirror(frappeDesk, ours, { bundle: "desk", frappeEntryDir: "frappe/public/scss" }), [
-			"frappe/public/css/fonts/inter/inter",
-		]);
+		assert.deepEqual(
+			diffMirror(frappeDesk, ours, { bundle: "desk", frappeEntryDir: "frappe/public/scss" }),
+			["frappe/public/css/fonts/inter/inter"],
+		);
 	});
 });
 
@@ -238,16 +239,20 @@ describe("the theme's own semantic pins", () => {
 	// The SPA partial declares frappe-ui's names on purpose and is not held to the roles.
 	const pinned = new Set<string>();
 	for (const f of fs.readdirSync(mapDir).filter((n) => n.endsWith(".scss") && !n.endsWith("-spa.scss"))) {
-		for (const name of pinnedCustomProps(fs.readFileSync(path.join(mapDir, f), "utf-8"))) pinned.add(name);
+		for (const name of pinnedCustomProps(fs.readFileSync(path.join(mapDir, f), "utf-8")))
+			pinned.add(name);
 	}
 
 	it("pins every neutral role", () => {
-		for (const role of SEMANTIC_ROLE_PINS) assert.ok(pinned.has(role), `${role} is not pinned in scss/map`);
+		for (const role of SEMANTIC_ROLE_PINS)
+			assert.ok(pinned.has(role), `${role} is not pinned in scss/map`);
 	});
 	it("pins no other semantic name literally: the ramp remap owns them", () => {
 		const stray = [...pinned].filter(
 			(name) =>
-				isSemanticName(name) && !SEMANTIC_ROLE_PINS.includes(name) && !SHIMS.some((s) => s.name === name),
+				isSemanticName(name) &&
+				!SEMANTIC_ROLE_PINS.includes(name) &&
+				!SHIMS.some((s) => s.name === name),
 		);
 		assert.deepEqual(stray, []);
 	});

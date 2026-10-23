@@ -107,7 +107,8 @@ export function announcementText(markdown: string, maxLength: number): string {
 		} else {
 			// a fence closes on a bare marker of the same character that is at least as long
 			const closing = FENCE_CLOSE.exec(line)?.[1];
-			if (closing !== undefined && closing[0] === fence[0] && closing.length >= fence.length) fence = null;
+			if (closing !== undefined && closing[0] === fence[0] && closing.length >= fence.length)
+				fence = null;
 			else lines.push(line);
 			continue;
 		}

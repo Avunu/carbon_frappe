@@ -154,7 +154,8 @@ function isSearchField(element: Element | null): element is HTMLElement & { valu
 
 /** Resolves once a Lit element has rendered; at once for anything else. */
 async function rendered(element: HTMLElement): Promise<void> {
-	if ("updateComplete" in element && element.updateComplete instanceof Promise) await element.updateComplete;
+	if ("updateComplete" in element && element.updateComplete instanceof Promise)
+		await element.updateComplete;
 }
 
 interface PendingDelete {
@@ -336,7 +337,8 @@ export function createHistoryView(deps: HistoryViewDeps): HistoryView {
 		for (const row of rows) {
 			const link = row.shadowRoot?.querySelector("button.cds--side-nav__link");
 			if (link === null || link === undefined) continue;
-			if (row.dataset["session"] === deps.store.get().session) link.setAttribute("aria-current", "true");
+			if (row.dataset["session"] === deps.store.get().session)
+				link.setAttribute("aria-current", "true");
 			else link.removeAttribute("aria-current");
 		}
 		// a static list: the bodies are removed while it is walked
@@ -401,7 +403,9 @@ export function createHistoryView(deps: HistoryViewDeps): HistoryView {
 				children.push(empty);
 			}
 			if (state.truncated) {
-				note.textContent = __("Showing your {0} most recent conversations.", [String(state.items.length)]);
+				note.textContent = __("Showing your {0} most recent conversations.", [
+					String(state.items.length),
+				]);
 				children.push(note);
 			}
 			syncChildren(content, children);
@@ -415,7 +419,9 @@ export function createHistoryView(deps: HistoryViewDeps): HistoryView {
 		}
 		syncChildren(
 			shell,
-			pendingDelete === null ? [header, toolbar, current] : [header, toolbar, current, pendingDelete.panel],
+			pendingDelete === null
+				? [header, toolbar, current]
+				: [header, toolbar, current, pendingDelete.panel],
 		);
 		setInert();
 		root.setAttribute("aria-busy", String(pendingSelects > 0 || state.status === "loading"));
@@ -757,7 +763,8 @@ export function createHistoryView(deps: HistoryViewDeps): HistoryView {
 	};
 	// the side-nav base has no arrow-key model, so a long list would be Tab-only (two stops per row)
 	function onArrow(event: KeyboardEvent): void {
-		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+			return;
 		const path = event.composedPath();
 		const origin = path[0];
 		// only the row's own button: the overflow menu and the rename field have their own arrow keys

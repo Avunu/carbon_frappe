@@ -229,7 +229,9 @@ export function filterFn_frappe(
 		}
 		case "containsNumber": {
 			const number = parseFloat(filter.text);
-			return number === parseFloat(String(raw)) || filterText(row, columnId, meta).includes(filter.text);
+			return (
+				number === parseFloat(String(raw)) || filterText(row, columnId, meta).includes(filter.text)
+			);
 		}
 		default: {
 			const needle = filter.text;

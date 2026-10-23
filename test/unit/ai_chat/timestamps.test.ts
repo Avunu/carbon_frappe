@@ -30,7 +30,10 @@ describe("readTimeZones", () => {
 	});
 
 	it("defaults the user zone to the system zone, as frappe does", () => {
-		assert.deepEqual(readTimeZones({ time_zone: { system: KOLKATA } }), { system: KOLKATA, user: KOLKATA });
+		assert.deepEqual(readTimeZones({ time_zone: { system: KOLKATA } }), {
+			system: KOLKATA,
+			user: KOLKATA,
+		});
 	});
 
 	it("falls back to sysdefaults for the system zone", () => {
@@ -38,10 +41,13 @@ describe("readTimeZones", () => {
 			system: NEW_YORK,
 			user: NEW_YORK,
 		});
-		assert.deepEqual(readTimeZones({ time_zone: { user: KOLKATA }, sysdefaults: { time_zone: NEW_YORK } }), {
-			system: NEW_YORK,
-			user: KOLKATA,
-		});
+		assert.deepEqual(
+			readTimeZones({ time_zone: { user: KOLKATA }, sysdefaults: { time_zone: NEW_YORK } }),
+			{
+				system: NEW_YORK,
+				user: KOLKATA,
+			},
+		);
 	});
 
 	it("returns nothing for a boot that has no usable zone", () => {

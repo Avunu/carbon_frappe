@@ -140,7 +140,10 @@ describe("toHistoryItem", () => {
 	});
 
 	it("reads an unparseable or missing modified as null", () => {
-		assert.equal(toHistoryItem({ name: "s", title: "t", modified: "soon" }, { translate }).modified, null);
+		assert.equal(
+			toHistoryItem({ name: "s", title: "t", modified: "soon" }, { translate }).modified,
+			null,
+		);
 		assert.equal(toHistoryItem({ name: "s", title: "t" }, { translate }).modified, null);
 		assert.equal(toHistoryItem({ name: "s", title: "t", modified: null }, { translate }).modified, null);
 	});

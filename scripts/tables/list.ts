@@ -665,7 +665,11 @@ try {
 		resize.recorded === 50 && Number(resize.dfWidth) === 50 && resize.size === 50,
 		JSON.stringify({ recorded: resize.recorded, df: resize.dfWidth, size: resize.size }),
 	);
-	ok("a Tag column and an unknown column are not persisted", resize.tagCalls === 0, String(resize.tagCalls));
+	ok(
+		"a Tag column and an unknown column are not persisted",
+		resize.tagCalls === 0,
+		String(resize.tagCalls),
+	);
 
 	// the real gesture, end to end: grab the handle and pull it 40px right
 	// the width is set first and the handle located AFTER the table has settled:

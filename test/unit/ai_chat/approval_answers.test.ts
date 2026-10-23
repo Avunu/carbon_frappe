@@ -107,7 +107,10 @@ describe("displayArgs", () => {
 
 describe("stepFor", () => {
 	it("matches the step whose tool call id is the question key", () => {
-		const steps: ChainOfThoughtStep[] = [{ tool_call_id: "a" }, { tool_call_id: "b", tool_name: "create" }];
+		const steps: ChainOfThoughtStep[] = [
+			{ tool_call_id: "a" },
+			{ tool_call_id: "b", tool_name: "create" },
+		];
 		assert.equal(stepFor(steps, "b")?.tool_name, "create");
 		assert.equal(stepFor(steps, "z"), undefined);
 	});

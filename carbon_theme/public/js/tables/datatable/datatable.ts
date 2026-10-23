@@ -796,7 +796,8 @@ export default class CarbonDataTable {
 			// 100k-row report would put every row in the DOM.
 			scrollHeight: this.options.scrollHeight || "calc(100vh - 260px)",
 			profile: datatableProfile(this.scopeClass),
-			renderTotal: (entry, column, colIndex, host) => this.renderTotalCell(entry, column, colIndex, host),
+			renderTotal: (entry, column, colIndex, host) =>
+				this.renderTotalCell(entry, column, colIndex, host),
 			events: {
 				// Every render: the renderer recycles row nodes as the window
 				// scrolls, and a recycled node comes back with the markup
@@ -1357,7 +1358,9 @@ export default class CarbonDataTable {
 
 	persistSorting(): void {
 		try {
-			const key = this.options.sortingKey ? `${this.options.sortingKey}::sortedColumns` : "sortedColumns";
+			const key = this.options.sortingKey
+				? `${this.options.sortingKey}::sortedColumns`
+				: "sortedColumns";
 			localStorage.setItem(key, JSON.stringify(this.engine.state.sorting || []));
 		} catch {
 			/* private mode / quota — sorting simply is not remembered */
@@ -1372,7 +1375,9 @@ export default class CarbonDataTable {
 	removeColumn(colIndex: DataTableColIndex): void {
 		const col = this.columns[colIndex];
 		if (!col) return;
-		this.options.columns = this.options.columns.filter((_c, i) => i !== colIndex - this.standardColumnCount);
+		this.options.columns = this.options.columns.filter(
+			(_c, i) => i !== colIndex - this.standardColumnCount,
+		);
 		this.refresh(this.options.data, this.options.columns);
 		this.fireEvent("onRemoveColumn", col);
 	}

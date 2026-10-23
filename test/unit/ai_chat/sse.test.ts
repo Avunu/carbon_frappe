@@ -112,7 +112,9 @@ describe("SSEFrameParser", () => {
 	});
 
 	it("treats CRLF and bare CR as line ends in a single push", () => {
-		assert.deepEqual(new SSEFrameParser().push("event: a\r\ndata: x\r\n\r\n"), [{ event: "a", data: "x" }]);
+		assert.deepEqual(new SSEFrameParser().push("event: a\r\ndata: x\r\n\r\n"), [
+			{ event: "a", data: "x" },
+		]);
 		assert.deepEqual(new SSEFrameParser().push("event: a\rdata: x\r\r"), [{ event: "a", data: "x" }]);
 	});
 
@@ -139,7 +141,9 @@ describe("SSEFrameParser", () => {
 	});
 
 	it("joins multi-line data with newlines", () => {
-		assert.deepEqual(new SSEFrameParser().push("data: a\ndata: b\n\n"), [{ event: "message", data: "a\nb" }]);
+		assert.deepEqual(new SSEFrameParser().push("data: a\ndata: b\n\n"), [
+			{ event: "message", data: "a\nb" },
+		]);
 		assert.deepEqual(new SSEFrameParser().push("data: a\ndata:\ndata: b\n\n"), [
 			{ event: "message", data: "a\n\nb" },
 		]);
@@ -298,7 +302,10 @@ const TRANSCRIPTS: [string, Transcript][] = [
 describe("readFlowEvents", () => {
 	for (const [name, transcript] of TRANSCRIPTS) {
 		it(`yields the ${name} events from one chunk`, async () => {
-			assert.deepEqual(await collect(readFlowEvents(bodyFrom([transcript.wire]).stream)), transcript.events);
+			assert.deepEqual(
+				await collect(readFlowEvents(bodyFrom([transcript.wire]).stream)),
+				transcript.events,
+			);
 		});
 	}
 
@@ -306,7 +313,9 @@ describe("readFlowEvents", () => {
 		await Promise.all(
 			TRANSCRIPTS.flatMap(([name, transcript]) =>
 				[1, 2, 3, 7, 64].map(async (size) => {
-					const events = await collect(readFlowEvents(bodyFrom(chunkBytes(transcript.wire, size)).stream));
+					const events = await collect(
+						readFlowEvents(bodyFrom(chunkBytes(transcript.wire, size)).stream),
+					);
 					assert.deepEqual(events, transcript.events, `${name} in ${size}-byte chunks`);
 				}),
 			),
@@ -334,7 +343,10 @@ describe("readFlowEvents", () => {
 
 	it("keeps multi-byte characters split across chunks intact", async () => {
 		const bytes = encode(TEXT_UNICODE_RAW);
-		const splits = Array.from({ length: bytes.length + 1 }, (_, at) => [bytes.slice(0, at), bytes.slice(at)]);
+		const splits = Array.from({ length: bytes.length + 1 }, (_, at) => [
+			bytes.slice(0, at),
+			bytes.slice(at),
+		]);
 		const chunkings = [chunkBytes(TEXT_UNICODE_RAW, 1), chunkBytes(TEXT_UNICODE_RAW, 2), ...splits];
 		await Promise.all(
 			chunkings.map(async (chunks, index) => {
@@ -416,7 +428,10 @@ describe("readFlowEvents", () => {
 
 	it("ignores comments and keepalives between frames", async () => {
 		const wire = `: connected\n\n${frame(ev.text("a"))}: keepalive\n\n${frame(ev.text("b"))}`;
-		assert.deepEqual(await collect(readFlowEvents(bodyFrom([wire]).stream)), [ev.text("a"), ev.text("b")]);
+		assert.deepEqual(await collect(readFlowEvents(bodyFrom([wire]).stream)), [
+			ev.text("a"),
+			ev.text("b"),
+		]);
 	});
 
 	it("completes with no events for an empty stream", async () => {

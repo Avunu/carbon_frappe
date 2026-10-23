@@ -184,7 +184,10 @@ const FILE_PATHS = ["/files/", "/private/files/"];
 function imageSrc(src: string): string {
 	try {
 		const url = new URL(src, window.location.origin);
-		if (url.origin === window.location.origin && FILE_PATHS.some((path) => url.pathname.startsWith(path))) {
+		if (
+			url.origin === window.location.origin &&
+			FILE_PATHS.some((path) => url.pathname.startsWith(path))
+		) {
 			return src;
 		}
 	} catch {

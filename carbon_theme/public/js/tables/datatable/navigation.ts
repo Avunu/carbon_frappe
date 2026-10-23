@@ -270,9 +270,13 @@ export default class CellNavigation {
 			// the loop body simply finds no node.
 			const rowIndex = order[p] ?? -1;
 			for (let c = b.c1; c <= b.c2; c++) {
-				const node = this.host.engine.getCellNode(this.host.rowIdFor(rowIndex), this.host.engineColumnId(c));
+				const node = this.host.engine.getCellNode(
+					this.host.rowIdFor(rowIndex),
+					this.host.engineColumnId(c),
+				);
 				if (!node) continue;
-				const isFocus = this.focused && this.focused.colIndex === c && this.focused.rowIndex === rowIndex;
+				const isFocus =
+					this.focused && this.focused.colIndex === c && this.focused.rowIndex === rowIndex;
 				node.classList.add(isFocus ? "dt-cell--focus" : "dt-cell--highlight");
 				this._highlighted.push(node);
 			}
@@ -361,9 +365,13 @@ export default class CellNavigation {
 				if (insideEditorUI(e.target)) return;
 				const td = isElement(e.target) && e.target.closest(".dt-cell");
 				if (!td || td.closest("thead")) return;
-				this.focus(Number(td.getAttribute("data-col-index")), Number(td.getAttribute("data-row-index")), {
-					extend: true,
-				});
+				this.focus(
+					Number(td.getAttribute("data-col-index")),
+					Number(td.getAttribute("data-row-index")),
+					{
+						extend: true,
+					},
+				);
 			},
 			{ signal },
 		);

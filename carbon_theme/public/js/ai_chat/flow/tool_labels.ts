@@ -130,15 +130,21 @@ export function approvalTitle(
 	if (tool === "create" && doctype) {
 		const n = count(parsed["records"]);
 		title =
-			n === 1 ? __("Create 1 {0} record", [doctype]) : __("Create {0} {1} records", [String(n), doctype]);
+			n === 1
+				? __("Create 1 {0} record", [doctype])
+				: __("Create {0} {1} records", [String(n), doctype]);
 	} else if (tool === "update" && doctype) {
 		const n = count(parsed["names"]);
 		title =
-			n === 1 ? __("Update 1 {0} record", [doctype]) : __("Update {0} {1} records", [String(n), doctype]);
+			n === 1
+				? __("Update 1 {0} record", [doctype])
+				: __("Update {0} {1} records", [String(n), doctype]);
 	} else if (tool === "delete" && doctype) {
 		const n = count(parsed["names"]);
 		title =
-			n === 1 ? __("Delete 1 {0} record", [doctype]) : __("Delete {0} {1} records", [String(n), doctype]);
+			n === 1
+				? __("Delete 1 {0} record", [doctype])
+				: __("Delete {0} {1} records", [String(n), doctype]);
 	} else if (tool === "run_action" && typeof action === "string" && action) {
 		const target = doctype ? `${count(parsed["names"])} ${doctype}` : __("records");
 		title = __('Run "{0}" on {1}', [humanize(action), target]);

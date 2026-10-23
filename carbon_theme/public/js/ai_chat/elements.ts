@@ -432,7 +432,14 @@ const isPromptLine = (element: HTMLElement): element is PromptLineElement =>
 const isSendControl = (element: HTMLElement): element is SendControlElement =>
 	hasAll(element, ["hasValidInput", "isStopStreamingButtonVisible", "buttonLabel", "stopResponseLabel"]);
 const isMarkdown = (element: HTMLElement): element is MarkdownElement =>
-	hasAll(element, ["markdown", "streaming", "sanitizeHTML", "removeHTML", "tableLocale", "customRenderers"]);
+	hasAll(element, [
+		"markdown",
+		"streaming",
+		"sanitizeHTML",
+		"removeHTML",
+		"tableLocale",
+		"customRenderers",
+	]);
 const isChainOfThought = (element: HTMLElement): element is ChainOfThoughtElement =>
 	hasAll(element, ["open", "panelId"]);
 const isChainOfThoughtToggle = (element: HTMLElement): element is ChainOfThoughtToggleElement =>

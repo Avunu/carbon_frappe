@@ -561,7 +561,10 @@ try {
   })()`);
 	ok(
 		"df.width drives the column: honoured exactly, and held to 60-600",
-		dfWidth.exact === 222 && dfWidth.cell === 222 && dfWidth.clampedHigh === 600 && dfWidth.clampedLow === 60,
+		dfWidth.exact === 222 &&
+			dfWidth.cell === 222 &&
+			dfWidth.clampedHigh === 600 &&
+			dfWidth.clampedLow === 60,
 		JSON.stringify(dfWidth),
 	);
 
@@ -635,7 +638,9 @@ try {
 	);
 	ok(
 		"every column is saved with a width, and only data columns get a handle",
-		Object.values(resize.saved[0]?.widths ?? {}).every((v) => typeof v === "number" && v >= 60 && v <= 600) &&
+		Object.values(resize.saved[0]?.widths ?? {}).every(
+			(v) => typeof v === "number" && v >= 60 && v <= 600,
+		) &&
 			resize.handles === widths.rows.length &&
 			resize.gutterHandles === 0,
 		JSON.stringify({ h: resize.handles, cols: widths.rows.length, g: resize.gutterHandles }),

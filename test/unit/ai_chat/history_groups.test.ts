@@ -157,7 +157,10 @@ describe("groupByDate", () => {
 			asked.push(source);
 			return `[${identityTranslate(source, replace)}]`;
 		};
-		const groups = groupByDate([item("a", now), item("b", now - DAY)], now, { translate, timeZone: "UTC" });
+		const groups = groupByDate([item("a", now), item("b", now - DAY)], now, {
+			translate,
+			timeZone: "UTC",
+		});
 		assert.deepEqual(
 			groups.map((group) => group.label),
 			["[Today]", "[Yesterday]"],

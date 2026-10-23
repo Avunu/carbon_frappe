@@ -138,7 +138,9 @@ if (!/^\s*--radius\s*:/m.test(allScssText)) {
 // is written against. Pin the premise here so the SCSS and this script can't
 // drift apart silently.
 if (!/@include\s+theme\.theme\(\s*themes\.\$g10\s*\)/.test(allScssText)) {
-	warn("light theme is not themes.$g10 — the background/layer ladder assumed by scss/desk would be inverted");
+	warn(
+		"light theme is not themes.$g10 — the background/layer ladder assumed by scss/desk would be inverted",
+	);
 }
 // (4) the UI Shell zone must SHARE the g100 emission. desk/_ui-shell.scss and
 // js/anatomy/ui_shell.ts both assume `.cf-zone-g100` carries every g100 token;
@@ -232,11 +234,15 @@ const jsHooks: readonly JsHook[] = [
 	},
 	{
 		file: "frappe/public/js/frappe/list/list_view.js",
-		tests: [[/is_numeric_field\(.*\)\s*\?\s*"text-right"/, ".list-row-col.text-right (numeric list cells)"]],
+		tests: [
+			[/is_numeric_field\(.*\)\s*\?\s*"text-right"/, ".list-row-col.text-right (numeric list cells)"],
+		],
 	},
 	{
 		file: "frappe/public/js/frappe/ui/theme_switcher.js",
-		tests: [[/setAttribute\(\s*["']data-theme["']/, "data-theme attribute write (chart re-theme observer)"]],
+		tests: [
+			[/setAttribute\(\s*["']data-theme["']/, "data-theme attribute write (chart re-theme observer)"],
+		],
 	},
 ];
 for (const { file, tests } of jsHooks) {
@@ -525,7 +531,10 @@ const isFrappeFile = (fromFrappeRoot: string): boolean => {
 	return fs.existsSync(abs) && fs.statSync(abs).isFile();
 };
 for (const file of hasEspressoV2 ? fs.readdirSync(scssRoot).filter((f) => f.endsWith(".bundle.scss")) : []) {
-	for (const imp of missingFrappeImports(fs.readFileSync(path.join(scssRoot, file), "utf-8"), isFrappeFile)) {
+	for (const imp of missingFrappeImports(
+		fs.readFileSync(path.join(scssRoot, file), "utf-8"),
+		isFrappeFile,
+	)) {
 		warn(
 			imp.startsWith("frappe/") && !imp.startsWith("frappe/public/node_modules/")
 				? `${file} imports "${imp}", which frappe no longer has — the bundle will not compile (removed upstream; drop the import or vendor the asset)`

@@ -288,7 +288,8 @@ function groupedSentences(
 	const sentences: string[] = [];
 	for (const [reason, { names, messages }] of groups) {
 		const listed = names.slice(0, LISTED_NAMES);
-		if (names.length > listed.length) listed.push(__("+{0} more", [String(names.length - listed.length)]));
+		if (names.length > listed.length)
+			listed.push(__("+{0} more", [String(names.length - listed.length)]));
 		const list = listed.join(", ");
 		if (names.length === 0) sentences.push(...messages);
 		else if (reason === "type") sentences.push(__("Not a supported file type: {0}.", [list]));
@@ -321,7 +322,8 @@ export function summarizeFailures(
 	const reasons = new Set<string>();
 	for (const upload of failed) {
 		const reason = upload.errorMessage?.trim() ?? "";
-		if (reason !== "") reasons.add(/[.!?\u2026\u3002\uFF01\uFF1F]$/u.test(reason) ? reason : `${reason}.`);
+		if (reason !== "")
+			reasons.add(/[.!?\u2026\u3002\uFF01\uFF1F]$/u.test(reason) ? reason : `${reason}.`);
 	}
 	return {
 		title: __("File upload error"),

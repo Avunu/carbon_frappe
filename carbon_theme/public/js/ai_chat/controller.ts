@@ -397,7 +397,9 @@ function pausedResponse(
 		if (!isResponse(message) || message.id === undefined) continue;
 		const holdsCard = message.output.generic.some(
 			(item) =>
-				isFlowApprovalItem(item) && item.user_defined.run === run && item.user_defined.answers === undefined,
+				isFlowApprovalItem(item) &&
+				item.user_defined.run === run &&
+				item.user_defined.answers === undefined,
 		);
 		if (holdsCard) return { ...message, id: message.id };
 	}
@@ -681,7 +683,10 @@ export function createController(deps: ControllerDeps): Controller {
 			return;
 		}
 		// The views say why; sending half of what the user attached would be worse than saying nothing.
-		if (snapshot.hasInFlightUploads || snapshot.pendingUploads.some((upload) => upload.status === "error")) {
+		if (
+			snapshot.hasInFlightUploads ||
+			snapshot.pendingUploads.some((upload) => upload.status === "error")
+		) {
 			return;
 		}
 		await startTurn(content, fileFieldsOf(snapshot.pendingUploads), snapshot.pendingUploads);
@@ -792,7 +797,8 @@ export function createController(deps: ControllerDeps): Controller {
 		const live = turn.state.phase === "streaming";
 		turn.state = stopStream(turn.state);
 		// Nothing to mark when no frame has produced content yet: the row would be empty.
-		if (store.getMessageState(turn.id) !== undefined) store.upsert(turn.id, "complete", turn.state.response);
+		if (store.getMessageState(turn.id) !== undefined)
+			store.upsert(turn.id, "complete", turn.state.response);
 		store.setStatus("ready");
 		// A `done` that already arrived ended the run server-side; there is nothing to stop.
 		if (!live) return;
@@ -867,7 +873,12 @@ export function createController(deps: ControllerDeps): Controller {
 		for (const file of accepted) {
 			uploadCounter += 1;
 			const id = `upload-${uploadCounter}`;
-			const entry: UploadEntry = { abort: new AbortController(), doc: null, sent: false, discarded: false };
+			const entry: UploadEntry = {
+				abort: new AbortController(),
+				doc: null,
+				sent: false,
+				discarded: false,
+			};
 			uploads.set(id, entry);
 			hookPageHide();
 			store.addPendingUpload({ id, file, status: "uploading", progress: 0 });
@@ -889,7 +900,8 @@ export function createController(deps: ControllerDeps): Controller {
 			const value = Math.min(Math.max(loaded / total, 0), PROGRESS_CEILING);
 			// An unchanged value writes nothing and so starts no window; progress never goes back.
 			const shown = store.get().pendingUploads.find((upload) => upload.id === id);
-			if (shown === undefined || shown.status !== "uploading" || !(value > (shown.progress ?? 0))) return;
+			if (shown === undefined || shown.status !== "uploading" || !(value > (shown.progress ?? 0)))
+				return;
 			lastWrite = at;
 			store.updatePendingUpload(id, (previous) => ({ ...previous, progress: value }));
 		};
@@ -1103,7 +1115,9 @@ export function createController(deps: ControllerDeps): Controller {
 
 	async function removeSession(name: string): Promise<void> {
 		if (elsewhere()?.session === name) {
-			throw new Error(__("This conversation is replying in another tab. Try again when it has finished."));
+			throw new Error(
+				__("This conversation is replying in another tab. Try again when it has finished."),
+			);
 		}
 		if (current !== null && (current.state.session ?? store.get().session) === name) {
 			throw new Error(__("This conversation is replying. Try again when it has finished."));

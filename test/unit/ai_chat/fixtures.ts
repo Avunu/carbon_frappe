@@ -275,8 +275,7 @@ export const REDIRECT_RESULT = pyJson({
 export const CREATE_HIGH_ARGS = { doctype: "ToDo", records: [{ description: "Call Bob", priority: "High" }] };
 
 export const QUESTION_CREATE_AGAIN: FlowQuestion = {
-	prompt:
-		'Approve `create`?\n\nCreate 1 ToDo record(s):\n\n{\n  "description": "Call Bob",\n  "priority": "High"\n}',
+	prompt: 'Approve `create`?\n\nCreate 1 ToDo record(s):\n\n{\n  "description": "Call Bob",\n  "priority": "High"\n}',
 	options: ["Approve", "Deny"],
 	multi_select: false,
 	allow_other: true,
@@ -585,7 +584,12 @@ export const SESSION_MALFORMED: { session: FlowSessionDoc; runs: FlowRunDoc[] } 
 			run: RUN_3,
 		}),
 		row({ role: "tool", content: "plain text, not JSON", tool_call_id: "call_nobody", run: RUN_3 }),
-		row({ role: "assistant", content: "That did not go well.", tool_calls: "not json at all", run: RUN_3 }),
+		row({
+			role: "assistant",
+			content: "That did not go well.",
+			tool_calls: "not json at all",
+			run: RUN_3,
+		}),
 		// A turn whose stream died before a reply was persisted, then the next turn.
 		row({ role: "user", content: "Hello? Anyone there?", run: RUN_4 }),
 		row({ role: "user", content: "Try again please", run: RUN_1 }),

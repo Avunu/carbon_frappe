@@ -40,7 +40,12 @@ async function ready(p: Page, shell: string): Promise<void> {
 }
 
 async function viewport(p: Page, width: number, height: number): Promise<void> {
-	await p.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
+	await p.send("Emulation.setDeviceMetricsOverride", {
+		width,
+		height,
+		deviceScaleFactor: 1,
+		mobile: false,
+	});
 	await sleep(400);
 }
 
@@ -142,7 +147,8 @@ try {
 	// A site that configures Carbon Settings brand colours (the dev bench does) repaints the g100 zone, so
 	// the cases that assert Carbon's own tokens fail there. CF_NO_BRAND=1 stops the page loading
 	// /carbon-brand.css, which is what makes them measure the stock values.
-	if (process.env["CF_NO_BRAND"]) await page.send("Network.setBlockedURLs", { urls: ["*carbon-brand.css*"] });
+	if (process.env["CF_NO_BRAND"])
+		await page.send("Network.setBlockedURLs", { urls: ["*carbon-brand.css*"] });
 	await viewport(page, 1600, 1000);
 
 	// -- 1. name -------------------------------------------------------------
@@ -199,7 +205,9 @@ try {
 	}))()`);
 	ok(
 		"the current link is the one row frappe lit (.active-sidebar)",
-		current.sidebar.length === 1 && current.header.length === 1 && current.header[0] === current.sidebar[0],
+		current.sidebar.length === 1 &&
+			current.header.length === 1 &&
+			current.header[0] === current.sidebar[0],
 		JSON.stringify(current),
 	);
 	await shoot(page, "projects");
@@ -478,7 +486,11 @@ try {
 		await page.eval(`document.querySelector('.cf-switcher__toggle[data-group="Accounting"]').focus()`);
 		await key(page, "ArrowDown");
 		const intoGroup = await page.eval<string>(`document.activeElement.textContent.trim()`);
-		ok("ArrowDown from an expanded toggle enters its first child", intoGroup === expectedKids[0], intoGroup);
+		ok(
+			"ArrowDown from an expanded toggle enters its first child",
+			intoGroup === expectedKids[0],
+			intoGroup,
+		);
 		await key(page, "ArrowUp");
 		await key(page, "ArrowLeft");
 		await key(page, "ArrowDown");
@@ -826,7 +838,12 @@ try {
 			!!layout.dock &&
 			layout.sidebar.left >= layout.dock.right - 1 &&
 			layout.overflowY <= 0,
-		JSON.stringify({ sidebar: layout.sidebar, main: layout.main, dock: layout.dock, over: layout.overflowY }),
+		JSON.stringify({
+			sidebar: layout.sidebar,
+			main: layout.main,
+			dock: layout.dock,
+			over: layout.overflowY,
+		}),
 	);
 	ok(
 		"what the header replaces is not drawn: the search/notification band, the sidebar's user chip, the dock's avatar, the landing navbar",

@@ -120,7 +120,8 @@ if (fs.existsSync(assetsPath)) {
 		}
 	} catch (e) {
 		warn(
-			`assets.json is unreadable (${e instanceof Error ? e.message : String(e)})` + assetsHint(assetsPath),
+			`assets.json is unreadable (${e instanceof Error ? e.message : String(e)})` +
+				assetsHint(assetsPath),
 		);
 	}
 	const stolen = SHADOWED_BUNDLES.filter((name) => {
@@ -213,7 +214,9 @@ function checkChatDist(): void {
 		if (typeof name !== "string") {
 			warn(`dist/ai_chat/manifest.json has no "${key}" string — the loader will reject it`);
 		} else if (!fs.existsSync(path.join(chatDist, name))) {
-			warn(`dist/ai_chat/manifest.json names ${key} ${name}, which does not exist. Run \`yarn build:chat\`.`);
+			warn(
+				`dist/ai_chat/manifest.json names ${key} ${name}, which does not exist. Run \`yarn build:chat\`.`,
+			);
 		}
 	}
 

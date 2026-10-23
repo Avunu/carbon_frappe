@@ -318,7 +318,11 @@ function planFor(
 	if (has("TOOL READ")) {
 		const tool = pickTool(toolNames, "read");
 		if (tool === undefined) {
-			return { keyword: "TOOL READ", slices: slice("CF AI Test mock: no read tool offered.", 8), gapMs: 10 };
+			return {
+				keyword: "TOOL READ",
+				slices: slice("CF AI Test mock: no read tool offered.", 8),
+				gapMs: 10,
+			};
 		}
 		return {
 			keyword: "TOOL READ",
@@ -368,7 +372,11 @@ export async function startMockLlm(options: MockLlmOptions = {}): Promise<MockLl
 			const message: Record<string, unknown> = { role: "assistant", content: plan.slices.join("") };
 			if (plan.tool) {
 				message["tool_calls"] = [
-					{ id: callId, type: "function", function: { name: plan.tool.name, arguments: plan.tool.args } },
+					{
+						id: callId,
+						type: "function",
+						function: { name: plan.tool.name, arguments: plan.tool.args },
+					},
 				];
 			}
 			res.writeHead(200, { "Content-Type": "application/json" });
@@ -416,7 +424,12 @@ export async function startMockLlm(options: MockLlmOptions = {}): Promise<MockLl
 			res.write(
 				delta({
 					tool_calls: [
-						{ index: 0, id: callId, type: "function", function: { name: plan.tool.name, arguments: "" } },
+						{
+							index: 0,
+							id: callId,
+							type: "function",
+							function: { name: plan.tool.name, arguments: "" },
+						},
 					],
 				}),
 			);
@@ -444,7 +457,9 @@ export async function startMockLlm(options: MockLlmOptions = {}): Promise<MockLl
 
 		if (req.method === "GET" && route === "/v1/models") return json(200, { object: "list", data: [] });
 		if (req.method !== "POST" || route !== "/v1/chat/completions") {
-			return json(404, { error: { message: `no route for ${req.method} ${route}`, type: "not_found" } });
+			return json(404, {
+				error: { message: `no route for ${req.method} ${route}`, type: "not_found" },
+			});
 		}
 
 		const chunks: Buffer[] = [];
@@ -453,7 +468,9 @@ export async function startMockLlm(options: MockLlmOptions = {}): Promise<MockLl
 		try {
 			parsed = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
 		} catch {
-			return json(400, { error: { message: "request body is not JSON", type: "invalid_request_error" } });
+			return json(400, {
+				error: { message: "request body is not JSON", type: "invalid_request_error" },
+			});
 		}
 		if (!isRecord(parsed)) {
 			return json(400, {

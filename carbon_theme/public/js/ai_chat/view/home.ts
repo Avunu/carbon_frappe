@@ -83,7 +83,8 @@ export function createHome(deps: HomeDeps): HomeView {
 	link.addEventListener(
 		"click",
 		(event) => {
-			if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+			if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+				return;
 			event.preventDefault();
 			frappe.set_route("List", "Flow Model").catch(console.error);
 		},

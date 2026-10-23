@@ -877,7 +877,12 @@ try {
 	ok(
 		"the range is painted and exactly one cell keeps the ring",
 		range.highlighted >= 3 && range.focusRings === 1,
-		JSON.stringify({ h: range.highlighted, f: range.focusRings, n: range.inRange, rings: range.ringNodes }),
+		JSON.stringify({
+			h: range.highlighted,
+			f: range.focusRings,
+			n: range.inRange,
+			rings: range.ringNodes,
+		}),
 	);
 
 	const copied = await page.eval<CopiedProbe>(`(() => {
@@ -887,7 +892,11 @@ try {
     const n = dt.navigation.copy();
     return { n, cells: dt.cellmanager.getCellsInRange().length };
   })()`);
-	ok("ctrl+C copies the selection as TSV", copied.n === copied.cells && copied.n > 1, JSON.stringify(copied));
+	ok(
+		"ctrl+C copies the selection as TSV",
+		copied.n === copied.cells && copied.n > 1,
+		JSON.stringify(copied),
+	);
 
 	const editable = await page.eval<EditableProbe>(`(() => {
     const dt = cur_list.datatable;
@@ -1521,7 +1530,8 @@ try {
     })()`);
 		ok(
 			"dragging the mouse across cells selects a range",
-			dragged.bounds && (dragged.bounds.c2 > dragged.bounds.c1 || dragged.bounds.p2 > dragged.bounds.p1),
+			dragged.bounds &&
+				(dragged.bounds.c2 > dragged.bounds.c1 || dragged.bounds.p2 > dragged.bounds.p1),
 			JSON.stringify(dragged),
 		);
 		ok(

@@ -422,7 +422,8 @@ export function xhrTransport(create: () => XhrLike): UploadTransport {
 					const request = create();
 					xhr = request;
 					request.open("POST", url);
-					for (const [name, value] of Object.entries(options.headers)) request.setRequestHeader(name, value);
+					for (const [name, value] of Object.entries(options.headers))
+						request.setRequestHeader(name, value);
 					request.onProgress((progress) => {
 						if (!settled) options.onProgress?.(progress);
 					});

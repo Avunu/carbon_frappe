@@ -162,7 +162,9 @@ describe("startRun", () => {
 
 	it("includes model, and attachments only when non-empty", async () => {
 		const h = harness(sse([]));
-		await collect(startRun({ input: "hi", model: "gpt", attachments: ["a.pdf", "b.png"] }, undefined, h.env));
+		await collect(
+			startRun({ input: "hi", model: "gpt", attachments: ["a.pdf", "b.png"] }, undefined, h.env),
+		);
 		assert.deepEqual(sentBody(h.fetches[0]), {
 			input: "hi",
 			stream: true,
@@ -190,7 +192,11 @@ describe("resumeRun", () => {
 		assert.equal(h.fetches[0]?.url, "/api/method/flow.api.resume_run");
 		assert.equal(h.fetches[0]?.init.method, "POST");
 		assert.equal(new Headers(h.fetches[0]?.init.headers).get("X-Frappe-CSRF-Token"), "tok");
-		assert.deepEqual(sentBody(h.fetches[0]), { run_name: RUN, answers: ANSWERS_APPROVE_ALL, stream: true });
+		assert.deepEqual(sentBody(h.fetches[0]), {
+			run_name: RUN,
+			answers: ANSWERS_APPROVE_ALL,
+			stream: true,
+		});
 		assert.deepEqual(events, RESUME_APPROVED.events);
 	});
 
@@ -221,7 +227,10 @@ describe("stream failures", () => {
 
 	it("reads _error_message for a 403", async () => {
 		const h = harness(
-			() => new Response(JSON.stringify(HTTP_ERROR_FORBIDDEN.body), { status: HTTP_ERROR_FORBIDDEN.status }),
+			() =>
+				new Response(JSON.stringify(HTTP_ERROR_FORBIDDEN.body), {
+					status: HTTP_ERROR_FORBIDDEN.status,
+				}),
 		);
 		await assert.rejects(collect(resumeRun(RUN, {}, undefined, h.env)), (error: unknown) => {
 			assert.ok(error instanceof FlowHttpError);
@@ -363,7 +372,10 @@ describe("serverMessage", () => {
 			"Not allowed",
 		);
 		assert.equal(serverMessage({ exception: "Plain failure" }), "Plain failure");
-		assert.equal(serverMessage({ exception: "Note: keep the later colon: ok" }), "keep the later colon: ok");
+		assert.equal(
+			serverMessage({ exception: "Note: keep the later colon: ok" }),
+			"keep the later colon: ok",
+		);
 	});
 
 	it("strips markup from exception, and drops a bare class name as no message", () => {
@@ -389,7 +401,10 @@ describe("serverMessage", () => {
 	it("falls through malformed _server_messages instead of throwing", () => {
 		assert.equal(serverMessage({ _server_messages: "not json", _error_message: "kept" }), "kept");
 		assert.equal(serverMessage({ _server_messages: '{"a": 1}', _error_message: "kept" }), "kept");
-		assert.equal(serverMessage({ _server_messages: '["not json either"]', _error_message: "kept" }), "kept");
+		assert.equal(
+			serverMessage({ _server_messages: '["not json either"]', _error_message: "kept" }),
+			"kept",
+		);
 		assert.equal(serverMessage({ _server_messages: 5, _error_message: "kept" }), "kept");
 	});
 
@@ -520,7 +535,10 @@ describe("session and run reads", () => {
 
 	it("getSession drops invalid rows but keeps the session", async () => {
 		const h = harness();
-		h.reply.value = { name: SESSION, messages: [{ role: "user", content: "hi" }, { content: "no role" }] };
+		h.reply.value = {
+			name: SESSION,
+			messages: [{ role: "user", content: "hi" }, { content: "no role" }],
+		};
 		const doc = await getSession(SESSION, h.env);
 		assert.equal(doc.name, SESSION);
 		assert.deepEqual(doc.messages, [{ role: "user", content: "hi" }]);
@@ -544,7 +562,11 @@ describe("session and run reads", () => {
 
 	it("listRuns asks for creation asc with no page limit and parses the reply", async () => {
 		const h = harness();
-		h.reply.value = [...SESSION_COMPLETED.runs, { name: "bad" }, { name: "x", session: "s", status: "Odd" }];
+		h.reply.value = [
+			...SESSION_COMPLETED.runs,
+			{ name: "bad" },
+			{ name: "x", session: "s", status: "Odd" },
+		];
 		const runs = await listRuns(SESSION, h.env);
 		assert.deepEqual(h.calls, [
 			{
@@ -677,13 +699,16 @@ describe("defaultFlowEnv", () => {
 		await assert.rejects(
 			env.call("flow.api.stop_run", {}),
 			(error: unknown) =>
-				error instanceof FlowHttpError && error.status === 417 && error.message === HTTP_ERROR_PAUSED.message,
+				error instanceof FlowHttpError &&
+				error.status === 417 &&
+				error.message === HTTP_ERROR_PAUSED.message,
 		);
 
 		respond.response = () => Response.json(HTTP_ERROR_FORBIDDEN.body, { status: 403 });
 		await assert.rejects(
 			env.call("frappe.client.get", {}),
-			(error: unknown) => error instanceof FlowHttpError && error.message === HTTP_ERROR_FORBIDDEN.message,
+			(error: unknown) =>
+				error instanceof FlowHttpError && error.message === HTTP_ERROR_FORBIDDEN.message,
 		);
 
 		// A 404/500 with no JSON body at all, which xcall also turns into `undefined`.
@@ -872,7 +897,9 @@ describe("uploadFile", () => {
 		await assert.rejects(
 			uploadFile(new File(["a"], "a.txt"), {}, h.env),
 			(error: unknown) =>
-				error instanceof FlowHttpError && error.status === 417 && error.message === HTTP_ERROR_PAUSED.message,
+				error instanceof FlowHttpError &&
+				error.status === 417 &&
+				error.message === HTTP_ERROR_PAUSED.message,
 		);
 	});
 
@@ -890,7 +917,9 @@ describe("uploadFile", () => {
 		await assert.rejects(
 			uploadFile(new File(["a"], "a.txt"), {}, h.env),
 			(error: unknown) =>
-				error instanceof FlowHttpError && error.status === 502 && error.message === "Upload failed (502)",
+				error instanceof FlowHttpError &&
+				error.status === 502 &&
+				error.message === "Upload failed (502)",
 		);
 	});
 
@@ -917,7 +946,10 @@ describe("uploadFile", () => {
 		const expired = "Your session may have expired. Reload the page and try again.";
 		assert.equal(await failure(403, { exception: "frappe.exceptions.PermissionError" }), expired);
 		assert.equal(await failure(401, {}), expired);
-		assert.equal(await failure(500, { exception: "OSError: Truncated File Read" }), "Upload failed (500)");
+		assert.equal(
+			await failure(500, { exception: "OSError: Truncated File Read" }),
+			"Upload failed (500)",
+		);
 		assert.equal(
 			await failure(413, { exception: "werkzeug.exceptions.RequestEntityTooLarge" }),
 			"The file is larger than the server accepts.",
@@ -1143,7 +1175,10 @@ describe("xhrTransport", () => {
 		const xhr = new FakeXhr();
 		xhr.firesAbort = false;
 		const { controller } = watchedSignal();
-		const pending = xhrTransport(() => xhr).post("/up", form(), { headers: {}, signal: controller.signal });
+		const pending = xhrTransport(() => xhr).post("/up", form(), {
+			headers: {},
+			signal: controller.signal,
+		});
 		controller.abort();
 		await assert.rejects(pending, isAbortError);
 	});
@@ -1172,7 +1207,11 @@ describe("xhrTransport", () => {
 		controller.abort();
 		assert.deepEqual(await pending, { status: 200, body: "first" });
 		assert.equal(listeners(), 0);
-		assert.deepEqual(xhr.calls, ["open POST /up", "send"], "an abort after the response is not forwarded");
+		assert.deepEqual(
+			xhr.calls,
+			["open POST /up", "send"],
+			"an abort after the response is not forwarded",
+		);
 	});
 
 	it("removes the signal listener after a load, an error and an abort event alike", async () => {
@@ -1286,7 +1325,8 @@ describe("attachFile", () => {
 	});
 
 	it("says the session may have expired for a 403 that carries no message", async () => {
-		const exception = "frappe.exceptions.PermissionError: <details>Function is not whitelisted.</details>";
+		const exception =
+			"frappe.exceptions.PermissionError: <details>Function is not whitelisted.</details>";
 		const h = harness(() => Response.json({ exception }, { status: 403 }));
 		await assert.rejects(
 			attachFile("abc", undefined, h.env),
@@ -1309,7 +1349,9 @@ describe("attachFile", () => {
 		const h = harness(
 			(state) =>
 				new Promise<Response>((_resolve, reject) => {
-					state.fetches[0]?.init.signal?.addEventListener("abort", () => reject(controller.signal.reason));
+					state.fetches[0]?.init.signal?.addEventListener("abort", () =>
+						reject(controller.signal.reason),
+					);
 				}),
 		);
 		const pending = attachFile("abc", controller.signal, h.env);

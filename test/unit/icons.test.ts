@@ -73,7 +73,10 @@ describe("legacyStylesheet", () => {
 		);
 	});
 	it("sets one mask per class from the rendered glyph", () => {
-		assert.match(css, /\.fa-lock \{\n\t\/\/ locked\n\t--cf-legacy-icon: url\("data:image\/svg\+xml,%3Csvg /);
+		assert.match(
+			css,
+			/\.fa-lock \{\n\t\/\/ locked\n\t--cf-legacy-icon: url\("data:image\/svg\+xml,%3Csvg /,
+		);
 		assert.match(css, /\.octicon-file-directory \{\n\t\/\/ folder\n/);
 	});
 	it("states which @carbon/icons it was drawn from", () => {
@@ -83,7 +86,8 @@ describe("legacyStylesheet", () => {
 		assert.match(css, /\.fa-fw::before,\n\.fa-fixed-width::before \{/);
 		// an inline <i> ignores transform, so the spin must turn the pseudo-element
 		assert.match(css, /\.fa-spin::before \{\n\tanimation: cf-legacy-icon-spin/);
-		for (const modifier of LEGACY_MODIFIERS) assert.match(css, new RegExp(`\\.${modifier}::before[,\\s{]`));
+		for (const modifier of LEGACY_MODIFIERS)
+			assert.match(css, new RegExp(`\\.${modifier}::before[,\\s{]`));
 	});
 	it("holds the spinner still under reduced motion", () => {
 		assert.match(
@@ -135,7 +139,10 @@ describe("icon manifest", () => {
 	it("leaves the modifiers to the stylesheet, not to either table", () => {
 		const bridged = new Set(LEGACY_GLYPHS.map(legacyClassName));
 		for (const modifier of LEGACY_MODIFIERS) {
-			assert.ok(!bridged.has(modifier) && !(modifier in LEGACY_UNMAPPED), `${modifier} is listed twice`);
+			assert.ok(
+				!bridged.has(modifier) && !(modifier in LEGACY_UNMAPPED),
+				`${modifier} is listed twice`,
+			);
 		}
 	});
 	it("pre-classes the expand chevron with the class the engine's CSS targets", () => {

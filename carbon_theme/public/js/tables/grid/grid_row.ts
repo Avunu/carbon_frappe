@@ -256,7 +256,9 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 					? this.open_form_cell.get(0)
 					: document.createElement("div");
 			if (!cell) {
-				throw new Error("CarbonGridRow.menu_node: open_form_cell reported a length but held no element");
+				throw new Error(
+					"CarbonGridRow.menu_node: open_form_cell reported a length but held no element",
+				);
 			}
 			this.menu_cell = cell;
 			this.menu_cell.classList.add("cf-grid__row-menu-cell");
@@ -353,7 +355,9 @@ export default class CarbonGridRow extends GridRow implements CarbonGridRowShape
 		// super toggles these through `this.wrapper.find(...)`, which no longer
 		// contains the form. Re-apply against the host it actually lives in.
 		const cannot_add_rows = this.grid.cannot_add_rows || (this.grid.df && this.grid.df.cannot_add_rows);
-		$(host).find(".grid-insert-row-below, .grid-insert-row, .grid-duplicate-row").toggle(!cannot_add_rows);
+		$(host)
+			.find(".grid-insert-row-below, .grid-insert-row, .grid-duplicate-row")
+			.toggle(!cannot_add_rows);
 		$(host)
 			.find(".grid-delete-row")
 			.toggle(!(this.grid.df && this.grid.df.cannot_delete_rows));

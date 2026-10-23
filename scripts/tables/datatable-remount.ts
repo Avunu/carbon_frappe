@@ -50,7 +50,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 async function countListeners(page: Page, expression: string, type: string): Promise<number> {
 	const objRes = await page.send("Runtime.evaluate", { expression });
-	const objectId = isRecord(objRes) && isRecord(objRes["result"]) ? objRes["result"]["objectId"] : undefined;
+	const objectId =
+		isRecord(objRes) && isRecord(objRes["result"]) ? objRes["result"]["objectId"] : undefined;
 	if (typeof objectId !== "string") {
 		throw new Error(`countListeners: could not resolve an objectId for ${expression}`);
 	}

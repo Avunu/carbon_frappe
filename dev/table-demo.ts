@@ -97,7 +97,8 @@ const columns: CarbonColumnSpec<DemoRow>[] = [
 		id: "status",
 		label: "Status",
 		size: 130,
-		cell: (ctx) => `<span class="pill pill-${String(ctx.value).toLowerCase()}">${String(ctx.value)}</span>`,
+		cell: (ctx) =>
+			`<span class="pill pill-${String(ctx.value).toLowerCase()}">${String(ctx.value)}</span>`,
 	},
 	{ id: "qty", label: "Qty", size: 100, align: "right" },
 	{ id: "rate", label: "Rate", size: 130, align: "right", cell: (ctx) => asNumber(ctx.value).toFixed(2) },

@@ -136,7 +136,14 @@ const boot: FrappeDesktopIconRecord[] = [
 	icon({ label: "Home", hidden: 1 }),
 	icon({ label: "Empty Folder", icon_type: "Folder", link_to: "" }),
 	icon({ label: "Broken", parent_icon: null, idx: 9 }),
-	icon({ label: "ERPNext", icon_type: "App", link_type: "External", link: "/app/home", hidden: 1, idx: 100 }),
+	icon({
+		label: "ERPNext",
+		icon_type: "App",
+		link_type: "External",
+		link: "/app/home",
+		hidden: 1,
+		idx: 100,
+	}),
 ];
 
 /** The grid's `get_route`: what an icon opens, and the shell it names. `Broken` resolves to nothing. */
@@ -181,7 +188,10 @@ describe("buildDesktopTree (the Desktop Icon grid, desktop_icons.bundle.js)", ()
 			?.children.find((c) => c.label === "Invoicing");
 		assert.equal(invoicing?.selected, true);
 		assert.equal(tree.find((e) => e.label === "Assets")?.selected, false);
-		assert.equal(buildDesktopTree(boot, "Assets", resolve).find((e) => e.label === "Assets")?.selected, true);
+		assert.equal(
+			buildDesktopTree(boot, "Assets", resolve).find((e) => e.label === "Assets")?.selected,
+			true,
+		);
 	});
 	it("selects nothing on the launcher", () => {
 		const t = buildDesktopTree(boot, "", resolve);

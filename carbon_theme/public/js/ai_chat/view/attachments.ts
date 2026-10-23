@@ -283,7 +283,8 @@ export function createAttachments(deps: AttachmentsDeps): Attachments {
 		const summary = summarizeRejections(result.rejections, deps.limits, __, deps.locale);
 		refusal = summary;
 		renderLine(store.get().pendingUploads);
-		if (summary !== null) announcer.announce(`${summary.title} ${summary.description}`.trim(), "assertive");
+		if (summary !== null)
+			announcer.announce(`${summary.title} ${summary.description}`.trim(), "assertive");
 	}
 
 	// -- store -> DOM --------------------------------------------------------------

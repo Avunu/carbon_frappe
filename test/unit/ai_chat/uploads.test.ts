@@ -212,7 +212,9 @@ describe("validateFiles", () => {
 	it("rejects an empty file", () => {
 		const result = check([file("e.txt", 0)]);
 		assert.deepEqual(result.accepted, []);
-		assert.deepEqual(result.rejections, [{ reason: "empty", fileName: "e.txt", message: "e.txt is empty." }]);
+		assert.deepEqual(result.rejections, [
+			{ reason: "empty", fileName: "e.txt", message: "e.txt is empty." },
+		]);
 	});
 
 	it("rejects an unsupported or missing extension as a type error", () => {
@@ -384,10 +386,13 @@ describe("summarizeRejections", () => {
 	});
 
 	it("uses a lone rejection's own sentence", () => {
-		assert.deepEqual(summarize([rejection("size", "big.txt", "big.txt is larger than the 1,000 B limit.")]), {
-			title: "Files not attached",
-			description: "big.txt is larger than the 1,000 B limit.",
-		});
+		assert.deepEqual(
+			summarize([rejection("size", "big.txt", "big.txt is larger than the 1,000 B limit.")]),
+			{
+				title: "Files not attached",
+				description: "big.txt is larger than the 1,000 B limit.",
+			},
+		);
 	});
 
 	it("lists the supported types after a lone type rejection", () => {
@@ -614,7 +619,10 @@ describe("file fields", () => {
 			done("a"),
 			upload("b"),
 			upload("c", { status: "error", contributedData: { fields: [fileFieldFor(reference("c"))] } }),
-			upload("d", { status: "complete", contributedData: { fields: [other, fileFieldFor(reference("d"))] } }),
+			upload("d", {
+				status: "complete",
+				contributedData: { fields: [other, fileFieldFor(reference("d"))] },
+			}),
 			upload("e", { status: "complete" }),
 			done("f"),
 		]);
@@ -667,7 +675,10 @@ describe("fileFieldsFromRows", () => {
 
 	it("adds name and size only when present", () => {
 		const [field] = fileFieldsFromRows(
-			[row("f1", { run: "R", file_name: "", file_size: null }), row("f2", { run: "R", file_name: null })],
+			[
+				row("f1", { run: "R", file_name: "", file_size: null }),
+				row("f2", { run: "R", file_name: null }),
+			],
 			"R",
 		);
 		assert.deepEqual(field?.value, { type: "reference", id: "f1" });
@@ -699,7 +710,11 @@ describe("attachmentChipsOf", () => {
 			structured_data: {
 				fields: [
 					fileFieldFor(
-						reference("a", { name: "A.txt", mime_type: "text/plain", url: "/private/files/A.txt" }),
+						reference("a", {
+							name: "A.txt",
+							mime_type: "text/plain",
+							url: "/private/files/A.txt",
+						}),
 					),
 					fileFieldFor(reference("b")),
 				],

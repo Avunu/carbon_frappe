@@ -211,7 +211,10 @@ describe("approvalTitle", () => {
 			title: "Update 2 ToDo records",
 			danger: false,
 		});
-		assert.equal(approvalTitle("update", { doctype: "ToDo", names: ["A"] }).title, "Update 1 ToDo record");
+		assert.equal(
+			approvalTitle("update", { doctype: "ToDo", names: ["A"] }).title,
+			"Update 1 ToDo record",
+		);
 	});
 	it("delete is dangerous and counts names", () => {
 		assert.deepEqual(approvalTitle("delete", { doctype: "ToDo", names: ["A", "B", "C"] }), {
@@ -271,10 +274,13 @@ describe("approvalTitle", () => {
 		assert.equal(approvalTitle("update", {}).title, "Updating Records");
 	});
 	it("normalizes a token-polluted name, including for danger", () => {
-		assert.deepEqual(approvalTitle("delete<|channel|>commentary", { doctype: "ToDo", names: ["A", "B"] }), {
-			title: "Delete 2 ToDo records",
-			danger: true,
-		});
+		assert.deepEqual(
+			approvalTitle("delete<|channel|>commentary", { doctype: "ToDo", names: ["A", "B"] }),
+			{
+				title: "Delete 2 ToDo records",
+				danger: true,
+			},
+		);
 	});
 	it("reads arguments from a JSON string", () => {
 		assert.equal(
@@ -288,7 +294,10 @@ describe("approvalTitle", () => {
 			"CREATE 2 TODO RECORDS",
 		);
 		assert.equal(approvalTitle("create", { doctype: "ToDo" }, upper).title, "CREATE 1 TODO RECORD");
-		assert.equal(approvalTitle("run_action", { action: "submit" }, upper).title, 'RUN "SUBMIT" ON RECORDS');
+		assert.equal(
+			approvalTitle("run_action", { action: "submit" }, upper).title,
+			'RUN "SUBMIT" ON RECORDS',
+		);
 		assert.equal(approvalTitle("execute", {}, upper).title, "RUN PYTHON CODE");
 		assert.equal(approvalTitle("update", {}, upper).title, "UPDATING RECORDS");
 	});

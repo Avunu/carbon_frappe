@@ -124,7 +124,9 @@ const fixturePort = await new Promise<number>((resolve, reject) => {
 		// 127.0.0.1 only ever lands in the AddressInfo branch.
 		const address = s.address();
 		if (address === null || typeof address === "string") {
-			s.close(() => reject(new Error(`could not read an ephemeral port (got ${JSON.stringify(address)})`)));
+			s.close(() =>
+				reject(new Error(`could not read an ephemeral port (got ${JSON.stringify(address)})`)),
+			);
 			return;
 		}
 		const { port } = address;

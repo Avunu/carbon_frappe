@@ -151,7 +151,10 @@ describe("pausedRun", () => {
 		assert.equal(pausedRun([runDoc(RUN, "Paused", { questions: '{"prompt": "x"}' })]), undefined);
 		assert.equal(pausedRun([runDoc(RUN, "Paused", { questions: null })]), undefined);
 		assert.equal(pausedRun([runDoc(RUN, "Paused")]), undefined);
-		assert.equal(pausedRun([runDoc(RUN, "Running", { questions: pyJson([QUESTION_CREATE]) })]), undefined);
+		assert.equal(
+			pausedRun([runDoc(RUN, "Running", { questions: pyJson([QUESTION_CREATE]) })]),
+			undefined,
+		);
 	});
 
 	it("accepts already-parsed questions", () => {
@@ -284,7 +287,9 @@ describe("sessionToMessages: paused run", () => {
 
 	it("fails the calls and shows no card when the run list is missing", () => {
 		const response = at(responsesOf(sessionToMessages(SESSION_PAUSED.session, [])), 0);
-		assert.deepEqual(response.output.generic, [textItem(1, "I'll create that ToDo and remove the old one.")]);
+		assert.deepEqual(response.output.generic, [
+			textItem(1, "I'll create that ToDo and remove the old one."),
+		]);
 		assert.deepEqual(
 			response.message_options?.chain_of_thought?.map((step) => step.status),
 			["failure", "failure"],
@@ -353,7 +358,14 @@ describe("sessionToMessages: malformed rows", () => {
 	const responses = responsesOf(messages);
 
 	it("produces request/response pairs in order with unique ids", () => {
-		assert.deepEqual(kinds(messages), ["request", "response", "request", "response", "request", "response"]);
+		assert.deepEqual(kinds(messages), [
+			"request",
+			"response",
+			"request",
+			"response",
+			"request",
+			"response",
+		]);
 		assert.deepEqual(ids(messages), [
 			`request-${RUN_3}`,
 			`response-${RUN_3}`,
@@ -425,7 +437,10 @@ describe("sessionToMessages: malformed rows", () => {
 			},
 			message_options: { chain_of_thought: [] },
 		});
-		assert.deepEqual(at(requestsOf(messages), 2).input, { message_type: "text", text: "Try again please" });
+		assert.deepEqual(at(requestsOf(messages), 2).input, {
+			message_type: "text",
+			text: "Try again please",
+		});
 	});
 
 	it("still rebuilds the turn after the interrupted one", () => {
@@ -447,7 +462,10 @@ describe("sessionToMessages: turns without a reply", () => {
 	it("shows a stopped marker, not an error, for either error string the server stores on Stop", () => {
 		for (const error of ["Stopped by user.", "Stream interrupted", " Stream interrupted\n"]) {
 			const session = doc([{ role: "user", content: "Hi", run: RUN_4 }]);
-			const response = at(responsesOf(sessionToMessages(session, [runDoc(RUN_4, "Failed", { error })])), 0);
+			const response = at(
+				responsesOf(sessionToMessages(session, [runDoc(RUN_4, "Failed", { error })])),
+				0,
+			);
 			assert.deepEqual(response.output.generic, [
 				{
 					response_type: "text",
@@ -789,7 +807,8 @@ describe("sessionToMessages: row handling", () => {
 				run: RUN_1,
 			},
 		]);
-		const [step] = at(responsesOf(sessionToMessages(session, [])), 0).message_options?.chain_of_thought ?? [];
+		const [step] =
+			at(responsesOf(sessionToMessages(session, [])), 0).message_options?.chain_of_thought ?? [];
 		assert.equal(step?.tool_name, "describe");
 		assert.equal(step?.title, "Reading DocType Meta: ToDo");
 	});
@@ -801,12 +820,17 @@ describe("sessionToMessages: row handling", () => {
 				role: "assistant",
 				content: "",
 				tool_calls: [
-					{ id: "c1", type: "function", function: { name: "read", arguments: { doctype: "ToDo" } } },
+					{
+						id: "c1",
+						type: "function",
+						function: { name: "read", arguments: { doctype: "ToDo" } },
+					},
 				],
 				run: RUN_1,
 			},
 		]);
-		const [step] = at(responsesOf(sessionToMessages(session, [])), 0).message_options?.chain_of_thought ?? [];
+		const [step] =
+			at(responsesOf(sessionToMessages(session, [])), 0).message_options?.chain_of_thought ?? [];
 		assert.deepEqual(step?.request, { args: { doctype: "ToDo" } });
 	});
 
@@ -827,12 +851,20 @@ describe("sessionToMessages: failed and feedback", () => {
 			{ role: "assistant", content: "Partial answer", run: RUN_1 },
 		]);
 		const runs = [
-			runDoc(RUN_1, "Failed", { error: "Connection reset", feedback_rating: "Down", feedback_comment: "" }),
+			runDoc(RUN_1, "Failed", {
+				error: "Connection reset",
+				feedback_rating: "Down",
+				feedback_comment: "",
+			}),
 		];
 		const response = at(responsesOf(sessionToMessages(session, runs)), 0);
 		assert.deepEqual(response.output.generic, [
 			textItem(1, "Partial answer", RUN_1),
-			{ response_type: "inline_error", streaming_metadata: { id: "error-1" }, text: "Connection reset" },
+			{
+				response_type: "inline_error",
+				streaming_metadata: { id: "error-1" },
+				text: "Connection reset",
+			},
 		]);
 		assert.deepEqual(response.history, { feedback: { [RUN_1]: { is_positive: false } } });
 	});
@@ -842,7 +874,10 @@ describe("sessionToMessages: failed and feedback", () => {
 			{ role: "user", content: "Hi", run: RUN_1 },
 			{ role: "assistant", content: "Partial", run: RUN_1 },
 		]);
-		const response = at(responsesOf(sessionToMessages(session, [runDoc(RUN_1, "Failed", { error: "" })])), 0);
+		const response = at(
+			responsesOf(sessionToMessages(session, [runDoc(RUN_1, "Failed", { error: "" })])),
+			0,
+		);
 		const item = lastItem(response);
 		assert.ok(isInlineErrorItem(item));
 		assert.equal("text" in item, false);
@@ -987,7 +1022,10 @@ describe("sessionToMessages: timestamps", () => {
 		const before = process.env["TZ"];
 		try {
 			process.env["TZ"] = "UTC";
-			assert.equal(sessionToMessages(session, runs)[2]?.history?.timestamp, Date.UTC(2026, 9, 2, 14, 5, 9));
+			assert.equal(
+				sessionToMessages(session, runs)[2]?.history?.timestamp,
+				Date.UTC(2026, 9, 2, 14, 5, 9),
+			);
 		} finally {
 			if (before === undefined) delete process.env["TZ"];
 			else process.env["TZ"] = before;
@@ -1052,7 +1090,10 @@ describe("sessionToMessages: attachments", () => {
 
 	it("leaves a request with no files without a structured_data key", () => {
 		const messages = sessionToMessages(
-			withAttachments([user("one", RUN_1), reply("a", RUN_1), user("two", RUN_2)], [attachment("f1", RUN_1)]),
+			withAttachments(
+				[user("one", RUN_1), reply("a", RUN_1), user("two", RUN_2)],
+				[attachment("f1", RUN_1)],
+			),
 			[],
 		);
 		const [, second] = requestsOf(messages);
@@ -1079,7 +1120,10 @@ describe("sessionToMessages: attachments", () => {
 
 	it("restores a row with no file name as a bare reference", () => {
 		const messages = sessionToMessages(
-			withAttachments([user("one", RUN_1)], [attachment("f1", RUN_1, { file_name: null, file_size: null })]),
+			withAttachments(
+				[user("one", RUN_1)],
+				[attachment("f1", RUN_1, { file_name: null, file_size: null })],
+			),
 			[],
 		);
 		const field = requestsOf(messages)[0]?.input.structured_data?.fields[0];
@@ -1095,7 +1139,9 @@ describe("sessionToMessages: attachments", () => {
 			),
 			[],
 		);
-		assert.deepEqual(attachmentChipsOf(requestsOf(messages)[0]?.input), [{ id: "f1", name: "notes.txt" }]);
+		assert.deepEqual(attachmentChipsOf(requestsOf(messages)[0]?.input), [
+			{ id: "f1", name: "notes.txt" },
+		]);
 	});
 
 	it("does not change the other messages, ids or order", () => {
@@ -1112,7 +1158,10 @@ describe("sessionToMessages: attachments", () => {
 
 	it("does not mutate the session it reads", () => {
 		const session = frozen(
-			withAttachments([user("one", RUN_1)], [attachment("f1", RUN_1, { file_name: "x.txt", file_size: 1 })]),
+			withAttachments(
+				[user("one", RUN_1)],
+				[attachment("f1", RUN_1, { file_name: "x.txt", file_size: 1 })],
+			),
 		);
 		assert.doesNotThrow(() => sessionToMessages(session, []));
 	});

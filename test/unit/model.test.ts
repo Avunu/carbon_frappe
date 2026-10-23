@@ -97,7 +97,10 @@ describe("readSidebar (sidebar_item.html)", () => {
 		const body = new FakeNode().answer(
 			ROWS,
 			row("Task", { href: "/desk/projects/task" }),
-			section("Setup", [row("Activity Type", { href: "/desk/projects/activity-type" }), row("Toggle", {})]),
+			section("Setup", [
+				row("Activity Type", { href: "/desk/projects/activity-type" }),
+				row("Toggle", {}),
+			]),
 		);
 		const items = readSidebar(body);
 		assert.equal(items.length, 2);

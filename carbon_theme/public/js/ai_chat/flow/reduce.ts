@@ -238,7 +238,11 @@ function reduceToolStarted(state: StreamState, event: ToolStartedEvent, translat
 		request: { args: event.arguments },
 		title: toolStepTitle(event.name, event.arguments, translate),
 	};
-	return { ...state, response: withSteps(state.response, replaceAt(steps, index, updated)), textOpen: false };
+	return {
+		...state,
+		response: withSteps(state.response, replaceAt(steps, index, updated)),
+		textOpen: false,
+	};
 }
 
 function reduceToolEnded(state: StreamState, event: ToolEndedEvent): StreamState {
@@ -354,7 +358,11 @@ function reduceDone(state: StreamState, event: DoneEvent): StreamState {
 			textCount += 1;
 			response = withGeneric(response, [
 				...generic,
-				{ response_type: "text", text: event.output, streaming_metadata: { id: `text-${textCount}` } },
+				{
+					response_type: "text",
+					text: event.output,
+					streaming_metadata: { id: `text-${textCount}` },
+				},
 			]);
 		}
 		response = withFeedback(response, state.run);

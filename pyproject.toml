@@ -134,8 +134,7 @@ paths = { "@carbon/ai-chat-components/es/components/markdown/index.js" = [
 overrides = [
 	# side-effect-only imports: the ai-chat element registration and its entry
 	{ files = [
-		"carbon_theme/public/js/ai_chat/register.ts",
-		"carbon_theme/public/js/ai_chat/entry.ts",
+		"carbon_theme/public/js/ai_chat/{register,entry}.ts",
 	], rules = { "import/no-unassigned-import" = "off" } },
 	# the standalone table demo runs in a browser page and logs to it
 	{ files = [
