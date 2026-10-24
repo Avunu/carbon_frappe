@@ -2,5 +2,5 @@
 # For license information, please see license.txt
 
 # x-release-please-start-version
-__version__ = "16.3.0"
+__version__ = "16.3.1"
 # x-release-please-end
